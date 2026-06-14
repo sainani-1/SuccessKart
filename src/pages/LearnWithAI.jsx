@@ -168,6 +168,7 @@ const LearnWithAI = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [remaining, setRemaining] = useState(10);
+  const [dailyRemaining, setDailyRemaining] = useState(100);
   const [rateLimited, setRateLimited] = useState(false);
   const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState(0);
   const messagesEndRef = useRef(null);
@@ -315,6 +316,7 @@ const LearnWithAI = () => {
       }
 
       setRemaining(data.remaining);
+      setDailyRemaining(data.dailyRemaining);
       setMessages((prev) => [...prev, { role: 'assistant', content: data.reply, timestamp: new Date().toISOString() }]);
     } catch {
       setMessages((prev) => [...prev, { role: 'assistant', content: 'Network error. Please check your connection.', timestamp: new Date().toISOString(), isError: true }]);
@@ -334,14 +336,13 @@ const LearnWithAI = () => {
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">Premium Plus</h1>
             <p className="text-slate-500 mb-8 leading-relaxed">
-              Unlock the full power of <span className="text-emerald-600 font-semibold">Learn with AI</span> \u2014 available exclusively to Premium Plus members.
+              Unlock the full power of <span className="text-emerald-600 font-semibold">Learn with AI</span> available exclusively to Premium Plus members.
             </p>
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-8 text-left space-y-3">
               {[
                 'AI-Powered Learning Assistant',
                 'Instant academic answers',
                 'Study tips & exam prep',
-                'No daily usage limits',
                 'Priority support',
               ].map((benefit, i) => (
                 <div key={i} className="flex items-center gap-3 text-sm">
@@ -378,9 +379,9 @@ const LearnWithAI = () => {
         </div>
         <div className="flex items-center gap-1">
           {remaining !== null && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
               <Sparkles size={11} className="text-emerald-500" />
-              <span className="text-[10px] font-medium text-emerald-600">{remaining}</span>
+              <span className="text-[10px] font-medium text-emerald-600">{remaining}m / {dailyRemaining}d</span>
             </div>
           )}
           <button onClick={toggleSearch} className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors" title="Search">

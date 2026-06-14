@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     const { data: settingsData, error: settingsError } = await supabase
       .from('settings')
       .select('key, value')
-      .in('key', ['ai_grok_api_key', 'ai_rate_limit_per_minute']);
+      .in('key', ['ai_grok_api_key', 'ai_rate_limit_per_minute', 'ai_rate_limit_per_day']);
 
     if (settingsError) {
       return json(res, 500, { error: 'Failed to read settings', detail: settingsError.message, code: settingsError.code });
@@ -66,10 +66,12 @@ export default async function handler(req, res) {
 
     let apiKey = '';
     let rateLimit = 10;
+    let dailyLimit = 100;
 
     for (const row of settingsData || []) {
       if (row.key === 'ai_grok_api_key') apiKey = row.value;
       if (row.key === 'ai_rate_limit_per_minute') rateLimit = parseInt(row.value, 10) || 10;
+      if (row.key === 'ai_rate_limit_per_day') dailyLimit = parseInt(row.value, 10) || 100;
     }
 
     if (!apiKey) {
@@ -83,13 +85,15 @@ export default async function handler(req, res) {
 
     const { data: rateData, error: rateError } = await supabase
       .from('ai_rate_limits')
-      .select('request_count, window_start')
+      .select('request_count, window_start, daily_count, daily_date')
       .eq('user_id', userId)
       .maybeSingle();
 
     const now = new Date();
+    const today = now.toISOString().slice(0, 10);
     let requestCount = 0;
     let windowStart = now;
+    let dailyCount = 0;
 
     if (rateData && !rateError) {
       const windowStartDate = new Date(rateData.window_start);
@@ -110,9 +114,17 @@ export default async function handler(req, res) {
         requestCount = 1;
         windowStart = now;
       }
+
+      dailyCount = rateData.daily_date === today ? (rateData.daily_count || 0) + 1 : 1;
+      if (dailyCount > dailyLimit) {
+        return json(res, 429, {
+          error: `Daily limit exceeded. You can send ${dailyLimit} requests per day.`,
+        });
+      }
     } else {
       requestCount = 1;
       windowStart = now;
+      dailyCount = 1;
     }
 
     await supabase.from('ai_rate_limits').upsert(
@@ -120,6 +132,8 @@ export default async function handler(req, res) {
         user_id: userId,
         request_count: requestCount,
         window_start: windowStart.toISOString(),
+        daily_count: dailyCount,
+        daily_date: today,
       },
       { onConflict: 'user_id' }
     );
@@ -147,7 +161,7 @@ export default async function handler(req, res) {
     const aiData = await aiResponse.json();
     const replyText = aiData?.choices?.[0]?.message?.content || '';
 
-    return json(res, 200, { reply: replyText, remaining: rateLimit - requestCount });
+    return json(res, 200, { reply: replyText, remaining: rateLimit - requestCount, dailyRemaining: dailyLimit - dailyCount });
   } catch (error) {
     return json(res, 500, { error: 'Internal server error', details: error.message });
   }

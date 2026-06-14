@@ -51,6 +51,8 @@ const ChatWithTeacher = () => {
     return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); };
   }, []);
 
+  useEffect(() => { initChat(); }, []);
+
   const loadReceiverReadState = async (currentGroupId = groupId) => {
     if (!currentGroupId || !teacher?.id) return;
     try {

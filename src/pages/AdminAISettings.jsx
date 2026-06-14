@@ -5,6 +5,7 @@ import { Save, Key, Sliders, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } fr
 const AdminAISettings = () => {
   const [apiKey, setApiKey] = useState('');
   const [rateLimit, setRateLimit] = useState(10);
+  const [dailyLimit, setDailyLimit] = useState(100);
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -20,7 +21,7 @@ const AdminAISettings = () => {
       const { data, error } = await supabase
         .from('settings')
         .select('key, value')
-        .in('key', ['ai_grok_api_key', 'ai_rate_limit_per_minute']);
+        .in('key', ['ai_grok_api_key', 'ai_rate_limit_per_minute', 'ai_rate_limit_per_day']);
 
       if (error) throw error;
 
@@ -30,6 +31,9 @@ const AdminAISettings = () => {
         }
         if (row.key === 'ai_rate_limit_per_minute') {
           setRateLimit(parseInt(row.value, 10) || 10);
+        }
+        if (row.key === 'ai_rate_limit_per_day') {
+          setDailyLimit(parseInt(row.value, 10) || 100);
         }
       }
     } catch (err) {
@@ -47,6 +51,7 @@ const AdminAISettings = () => {
       const upserts = [
         { key: 'ai_grok_api_key', value: apiKey.trim() },
         { key: 'ai_rate_limit_per_minute', value: String(rateLimit) },
+        { key: 'ai_rate_limit_per_day', value: String(dailyLimit) },
       ];
 
       for (const setting of upserts) {
@@ -123,6 +128,27 @@ const AdminAISettings = () => {
               </div>
               <p className="text-xs text-purple-400 mt-1">
                 Maximum number of AI prompts each user can send per minute.
+              </p>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-purple-200 mb-2">
+                <Sliders size={16} /> Daily Limit (prompts per day per user)
+              </label>
+              <div className="flex items-center gap-4">
+                <input
+                  type="range"
+                  min={10}
+                  max={1000}
+                  step={10}
+                  value={dailyLimit}
+                  onChange={(e) => setDailyLimit(parseInt(e.target.value, 10))}
+                  className="flex-1 accent-purple-500"
+                />
+                <span className="text-white font-bold text-lg w-16 text-center">{dailyLimit}</span>
+              </div>
+              <p className="text-xs text-purple-400 mt-1">
+                Maximum number of AI prompts each user can send per day.
               </p>
             </div>
           </div>
