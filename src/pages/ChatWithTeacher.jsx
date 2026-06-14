@@ -33,6 +33,8 @@ const ChatWithTeacher = () => {
     requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }));
   };
 
+  const loadMessagesRef = useRef(null);
+
   useEffect(() => { if (isAtBottom) scrollToBottom(); }, [messages]);
 
   useEffect(() => {
@@ -52,6 +54,36 @@ const ChatWithTeacher = () => {
   }, []);
 
   useEffect(() => { initChat(); }, []);
+
+  useEffect(() => {
+    if (!groupId) return;
+    loadMessagesRef.current?.();
+
+    const channel = supabase
+      .channel(`chat-messages-${groupId}`)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `group_id=eq.${groupId}` },
+        async (payload) => {
+          const { data } = await supabase
+            .from('chat_messages')
+            .select('*, profiles(full_name, avatar_url)')
+            .eq('id', payload.new.id)
+            .single();
+          if (data) {
+            setMessages(prev => [...prev, data]);
+            await markChatAsRead(profile.id, groupId);
+          }
+        }
+      )
+      .subscribe();
+
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      loadMessagesRef.current?.();
+    }, 2000);
+
+    return () => { supabase.removeChannel(channel); clearInterval(interval); };
+  }, [groupId]);
 
   const loadReceiverReadState = async (currentGroupId = groupId) => {
     if (!currentGroupId || !teacher?.id) return;
@@ -137,14 +169,13 @@ const ChatWithTeacher = () => {
         .from('chat_messages')
         .select('*, profiles(full_name, avatar_url)')
         .eq('group_id', groupId)
-        .order('created_at', { ascending: false })
-        .limit(8);
-      setMessages((data || []).reverse());
-      setHasMoreOldMessages((data || []).length === 8);
+        .order('created_at', { ascending: true });
+      setMessages(data || []);
       await markChatAsRead(profile.id, groupId);
       await loadReceiverReadState(groupId);
     } catch (err) { logError({ message: 'Error loading messages:', source: 'ChatWithTeacher', details: err }); }
   };
+  loadMessagesRef.current = loadMessages;
 
   const loadNewMessagesOnly = async () => {
     if (!groupId) return;
