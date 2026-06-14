@@ -88,7 +88,54 @@ const sections = [
     ],
   },
   {
-    title: '12. Updates to Terms',
+    title: '12. AI Disclaimer — Learn with AI',
+    points: [
+      'SucessKart AI is an educational assistant designed to help students learn and understand academic topics. It is not a substitute for professional advice, instruction, or certified teaching.',
+      'SucessKart AI can make mistakes. You should not rely solely on AI-generated answers — always verify important information with your teacher, textbooks, or trusted sources.',
+      'The SucessKart team is not responsible for any issues, errors, misunderstandings, or outcomes resulting from the use of the AI assistant. The AI is provided "as is" to support your learning journey.',
+      'By using the "Learn with AI" feature, you acknowledge that you understand these limitations and agree to use the tool responsibly as a supplementary learning aid only.',
+    ],
+  },
+  {
+    title: '13. Privacy Policy Reference',
+    points: [
+      'Your use of the platform is also governed by our Privacy Policy, which explains how we collect, use, store, and protect your personal data.',
+      'By accepting these Terms, you also acknowledge and agree to the practices described in the Privacy Policy.',
+      'If there is any conflict between these Terms and the Privacy Policy, the Privacy Policy shall prevail for data-related matters.',
+    ],
+  },
+  {
+    title: '14. Governing Law and Jurisdiction',
+    points: [
+      'These Terms and any disputes arising from your use of the platform shall be governed by and construed in accordance with the laws of India.',
+      'Any legal actions, suits, or proceedings arising out of or relating to these Terms shall be exclusively submitted to the courts located in Hyderabad, Telangana, India.',
+      'You agree to submit to the personal jurisdiction of such courts and waive any objection based on improper venue or inconvenient forum.',
+    ],
+  },
+  {
+    title: '15. Contact Information',
+    points: [
+      'For any questions, concerns, complaints, or legal notices regarding these Terms or the platform, you may contact us at the registered address and email provided on the platform.',
+      'We will make reasonable efforts to respond to your inquiry within a reasonable time frame.',
+      'For urgent legal or policy matters, please send written communication to the registered business address available on our website or contact us through the platform support channels.',
+    ],
+  },
+  {
+    title: '16. Severability',
+    points: [
+      'If any provision of these Terms is found to be invalid, illegal, or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect.',
+      'The invalid provision shall be modified to the minimum extent necessary to make it valid and enforceable while preserving its intent to the greatest extent possible.',
+    ],
+  },
+  {
+    title: '17. Waiver',
+    points: [
+      'The failure of the platform to enforce any right or provision of these Terms shall not constitute a waiver of such right or provision.',
+      'No waiver of any term shall be deemed a further or continuing waiver of such term or any other term, and the platform expressly reserves all rights not expressly granted in these Terms.',
+    ],
+  },
+  {
+    title: '18. Updates to Terms',
     points: [
       'These Terms may be revised anytime. Continued usage after updates means renewed acceptance.',
       'Users are responsible for periodically reviewing this page for the latest version.',

@@ -17,6 +17,7 @@ const PLAN_FEATURES = {
     'Everything in Premium',
     'Ask a Doubt',
     'Mentoring Session Request',
+    'Learn with AI',
     'Notes Library',
     'Priority Support',
     '2 Resume Reviews per Cycle',

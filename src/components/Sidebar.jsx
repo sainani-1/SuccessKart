@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { useNotifications } from '../context/NotificationContext';
@@ -674,6 +674,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Trophy size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Project Showcase</span>}
             </NavLink>
+            <NavLink to="/app/learn-with-ai" className={navItemClass} title="Learn with AI">
+              <Brain size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Learn with AI</span>}
+            </NavLink>
             <NavLink to="/app/resume-builder" className={navItemClass} title="Resume Builder">
               <FileText size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Resume Builder</span>}
@@ -1001,6 +1005,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/admin/plans" className={navItemClass} title="Plan Management">
               <CreditCard size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Plan Management</span>}
+            </NavLink>
+            <NavLink to="/app/admin/ai-settings" className={navItemClass} title="AI Settings">
+              <Brain size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">AI Settings</span>}
             </NavLink>
             <NavLink to="/app/admin/notes-library" className={navItemClass} title="Notes Library Admin">
               <FileText size={28} />

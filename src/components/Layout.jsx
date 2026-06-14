@@ -156,6 +156,7 @@ const Layout = () => {
       { label: 'Mock Interviews', path: '/app/mock-interviews' },
       { label: 'Personal Roadmap', path: '/app/personal-roadmap' },
       { label: 'Attendance', path: '/app/attendance' },
+      { label: 'Learn with AI', path: '/app/learn-with-ai' },
       { label: 'Ask a Doubt', path: '/app/chat' },
       { label: 'Request Teacher', path: '/app/request-teacher' },
     ];
@@ -249,6 +250,7 @@ const Layout = () => {
       { label: 'Issue Reports', path: '/app/admin/issue-reports' },
       { label: 'MFA Management', path: '/app/admin/mfa-management' },
       { label: 'Login OTP', path: '/app/admin/login-otp' },
+      { label: 'AI Settings', path: '/app/admin/ai-settings' },
       { label: 'MFA Rules', path: '/app/admin/mfa-rules' },
       { label: 'Deleted Accounts', path: '/app/admin/deleted-accounts' },
       { label: 'Startup Ideas', path: '/app/admin/startup-ideas' },
