@@ -147,8 +147,11 @@ const AdminTriedToRegister = lazy(() => import('./pages/AdminTriedToRegister'));
 const AdminUserTools = lazy(() => import('./pages/AdminUserTools'));
 const AdminErrorLogs = lazy(() => import('./pages/AdminErrorLogs'));
 const LearnWithAI = lazy(() => import('./pages/LearnWithAI'));
+const AIInterviewPrep = lazy(() => import('./pages/AIInterviewPrep'));
+const TalkMockInterviews = lazy(() => import('./pages/TalkMockInterviews'));
 const AdminAISettings = lazy(() => import('./pages/AdminAISettings'));
 const AdminResumeLimits = lazy(() => import('./pages/AdminResumeLimits'));
+const AdminVMISettings = lazy(() => import('./pages/AdminVMISettings'));
 const AchievementTimeline = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AchievementTimeline })));
 const AdminAtRiskStudents = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AdminAtRiskStudents })));
 const AdminSecurityReview = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AdminSecurityReview })));
@@ -449,6 +452,8 @@ function App() {
           <Route path="discussion-forum" element={<DiscussionForum />} />
           <Route path="skill-badges" element={<SkillBadges />} />
           <Route path="learn-with-ai" element={<LearnWithAI />} />
+          <Route path="ai-prep" element={<AIInterviewPrep />} />
+          <Route path="talk-mock-interviews" element={<TalkMockInterviews />} />
           <Route path="resume-builder" element={<ResumeBuilder />} />
           <Route path="portfolio" element={<PortfolioBuilder />} />
           <Route path="career-support" element={<CareerSupportDashboard />} />
@@ -543,6 +548,7 @@ function App() {
           <Route path="admin/active-coupons" element={<AdminRoute><AdminActiveCoupons /></AdminRoute>} />
           <Route path="admin/ai-settings" element={<AdminRoute><AdminAISettings /></AdminRoute>} />
           <Route path="admin/resume-limits" element={<AdminRoute><AdminResumeLimits /></AdminRoute>} />
+          <Route path="admin/vmi-settings" element={<AdminRoute><AdminVMISettings /></AdminRoute>} />
           <Route path="admin/change-course" element={<AdminRoute><AdminChangeCourse /></AdminRoute>} />
           <Route path="admin/logic-building-admin-scoreboard" element={<AdminRoute><AdminScoreboard /></AdminRoute>} />
         </Route>

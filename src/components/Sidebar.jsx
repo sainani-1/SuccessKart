@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { useNotifications } from '../context/NotificationContext';
@@ -25,6 +25,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
   const [newStartupIdeas, setNewStartupIdeas] = useState(0);
   const [newMultiSessionAlerts, setNewMultiSessionAlerts] = useState(0);
   const [lastPathname, setLastPathname] = useState(location.pathname);
+  const [vmiAccess, setVmiAccess] = useState(null);
   const premiumActive = isPremium(profile);
   const premiumPlusActive = isPremiumPlus(profile);
   const isMissingTargetUserColumn = (err) => {
@@ -418,6 +419,38 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
     return () => clearInterval(interval);
   }, [profile?.id, role, location.pathname]);
 
+  useEffect(() => {
+    if (!profile?.id || role !== 'student') {
+      setVmiAccess(null);
+      return;
+    }
+    const cached = sessionStorage.getItem('vmi_access_sidebar');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.userId === profile.id) {
+          setVmiAccess(parsed.data || null);
+          return;
+        }
+      } catch {}
+    }
+    const timeout = setTimeout(() => setVmiAccess(null), 4000);
+    supabase
+      .from('vmi_access')
+      .select('ai_prep_enabled, talk_mock_enabled, access_limit')
+      .eq('user_id', profile.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        clearTimeout(timeout);
+        sessionStorage.setItem('vmi_access_sidebar', JSON.stringify({ userId: profile.id, data: data || null }));
+        setVmiAccess(data || null);
+      })
+      .catch(() => {
+        clearTimeout(timeout);
+        setVmiAccess(null);
+      });
+  }, [profile?.id, role]);
+
   const sidebarWidthClass = isCollapsed && !isHovered ? 'w-20' : 'w-64';
   const desktopSidebarClass = `${sidebarWidthClass} bg-nani-dark text-white h-screen flex flex-col fixed left-0 top-0 transition-all duration-600 z-30`;
   const mobileSidebarClass = `w-[88vw] max-w-[320px] bg-nani-dark text-white h-screen flex flex-col fixed left-0 top-0 z-50 transform transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`;
@@ -678,6 +711,18 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Brain size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Learn with AI</span>}
             </NavLink>
+            {vmiAccess?.ai_prep_enabled && (
+              <NavLink to="/app/ai-prep" className={navItemClass} title="AI Prep">
+                <Sparkles size={28} />
+                {shouldShowText && <span className="truncate text-sm font-medium">AI Prep</span>}
+              </NavLink>
+            )}
+            {vmiAccess?.talk_mock_enabled && (
+              <NavLink to="/app/talk-mock-interviews" className={navItemClass} title="Talk Mock Interviews">
+                <Mic size={28} />
+                {shouldShowText && <span className="truncate text-sm font-medium">Talk Mock Interviews</span>}
+              </NavLink>
+            )}
             <NavLink to="/app/resume-builder" className={navItemClass} title="Resume Builder">
               <FileText size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Resume Builder</span>}
@@ -1013,6 +1058,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/admin/resume-limits" className={navItemClass} title="Resume Limits">
               <FileText size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Resume Limits</span>}
+            </NavLink>
+            <NavLink to="/app/admin/vmi-settings" className={navItemClass} title="VMI Settings">
+              <Mic size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">VMI Settings</span>}
             </NavLink>
             <NavLink to="/app/admin/notes-library" className={navItemClass} title="Notes Library Admin">
               <FileText size={28} />
