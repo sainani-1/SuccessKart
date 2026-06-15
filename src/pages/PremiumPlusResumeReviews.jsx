@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FileText, Upload, Eye, MessageSquare, CheckCircle } from 'lucide-react';
+import { FileText, Upload, Eye, Sparkles, Brain, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -9,6 +9,7 @@ import {
   RESUME_REVIEW_LIMIT,
   canUseCareerSupport,
   formatCareerCycle,
+  formatResumeForAI,
   getCareerCycleMonth,
   isCareerStaff,
   notifyCareerTeacher,
@@ -18,77 +19,86 @@ import {
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '-');
 
-const ResumeField = ({ label, children }) => (
-  <div>
-    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-    <div className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-700">{children || 'Not added'}</div>
-  </div>
-);
-
-const ResumeExperience = ({ title, company, period, description }) => (
-  <div className="rounded-xl border border-slate-200 bg-white p-4">
-    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <p className="font-bold text-slate-900">{title || 'Role not added'}</p>
-        <p className="text-sm text-slate-500">{company || 'Organization not added'}</p>
-      </div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{period || 'Period not added'}</p>
-    </div>
-    <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{description || 'Description not added'}</p>
-  </div>
-);
-
-const ResumePreview = ({ resume }) => {
+const ResumePreview = ({ resume, profile, user }) => {
   if (!resume) {
     return <p className="text-sm text-slate-500">No resume builder data found yet. Open Resume Builder and save your details first.</p>;
   }
+  const skillList = (resume.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const fullName = profile?.full_name || user?.email?.split('@')[0] || 'Your Name';
   return (
-    <div className="space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
-      <div className="rounded-xl bg-white p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Full Resume</p>
-        <h3 className="mt-2 text-2xl font-bold text-slate-900">{resume.role || 'Target role not added'}</h3>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-          <span className="rounded-lg bg-slate-100 px-3 py-2">{resume.email || 'Email not added'}</span>
-          <span className="rounded-lg bg-slate-100 px-3 py-2">{resume.phone || 'Phone not added'}</span>
-          <span className="rounded-lg bg-slate-100 px-3 py-2">{resume.location || 'Location not added'}</span>
-          <span className="rounded-lg bg-slate-100 px-3 py-2">{resume.linkedin || 'LinkedIn not added'}</span>
-          <span className="rounded-lg bg-slate-100 px-3 py-2">{resume.portfolio || 'Portfolio not added'}</span>
-        </div>
-      </div>
-      <ResumeField label="Professional Summary">{resume.summary}</ResumeField>
-      <ResumeField label="Core Skills">{resume.skills}</ResumeField>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Experience</p>
-        <div className="mt-2 grid gap-3">
-          <ResumeExperience
-            title={resume.experience1Title}
-            company={resume.experience1Company}
-            period={resume.experience1Period}
-            description={resume.experience1Description}
-          />
-          <ResumeExperience
-            title={resume.experience2Title}
-            company={resume.experience2Company}
-            period={resume.experience2Period}
-            description={resume.experience2Description}
-          />
-        </div>
-      </div>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Projects</p>
-        <div className="mt-2 grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <p className="font-bold text-slate-900">{resume.project1Title || 'Project title not added'}</p>
-            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{resume.project1Description || 'Project description not added'}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <p className="font-bold text-slate-900">{resume.project2Title || 'Project title not added'}</p>
-            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{resume.project2Description || 'Project description not added'}</p>
+    <div className="overflow-auto rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] p-3 md:p-4 shadow-inner">
+      <div className="mx-auto w-full max-w-[850px] bg-white min-h-[600px] overflow-hidden rounded-xl border border-slate-300 shadow-xl">
+        <div className="border-b border-slate-300 px-6 py-8 md:px-8 md:py-10">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.32em] text-slate-500">Professional Resume</p>
+              <h2 className="mt-2 text-2xl md:text-3xl font-serif font-bold text-slate-950">{fullName}</h2>
+              <p className="mt-1 text-lg text-slate-600">{resume.role}</p>
+            </div>
+            <div className="text-sm leading-7 text-slate-600 md:text-right">
+              <p>{resume.email || 'Email not added'}</p>
+              <p>{resume.phone || 'Phone not added'}</p>
+              <p>{resume.location || 'Location not added'}</p>
+              <p>{resume.linkedin || 'LinkedIn not added'}</p>
+              <p>{resume.portfolio || 'Portfolio not added'}</p>
+            </div>
           </div>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.8fr] gap-0">
+          <div className="px-6 py-6 md:px-8 md:py-8 space-y-6">
+            <div>
+              <p className="font-bold text-slate-900 mb-2">Profile Summary</p>
+              <p className="text-slate-700 leading-7">{resume.summary}</p>
+            </div>
+            <div>
+              <p className="font-bold text-slate-900 mb-2">Experience</p>
+              <div className="space-y-4">
+                <div className="border-l-2 border-slate-300 pl-4">
+                  <p className="font-bold text-slate-900">{resume.experience1Title || 'Role not added'} <span className="font-normal text-slate-500">— {resume.experience1Company || 'Organization not added'}</span></p>
+                  <p className="text-xs uppercase tracking-wide text-slate-400">{resume.experience1Period || 'Period not added'}</p>
+                  <p className="mt-2 text-slate-700 leading-7 whitespace-pre-line">{resume.experience1Description || 'Description not added'}</p>
+                </div>
+                <div className="border-l-2 border-slate-300 pl-4">
+                  <p className="font-bold text-slate-900">{resume.experience2Title || 'Role not added'} <span className="font-normal text-slate-500">— {resume.experience2Company || 'Organization not added'}</span></p>
+                  <p className="text-xs uppercase tracking-wide text-slate-400">{resume.experience2Period || 'Period not added'}</p>
+                  <p className="mt-2 text-slate-700 leading-7 whitespace-pre-line">{resume.experience2Description || 'Description not added'}</p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p className="font-bold text-slate-900 mb-2">Selected Projects</p>
+              <div className="space-y-3">
+                <div>
+                  <p className="font-bold text-slate-900">{resume.project1Title || 'Project title not added'}</p>
+                  <p className="mt-1 text-slate-700 leading-7 whitespace-pre-line">{resume.project1Description || 'Project description not added'}</p>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900">{resume.project2Title || 'Project title not added'}</p>
+                  <p className="mt-1 text-slate-700 leading-7 whitespace-pre-line">{resume.project2Description || 'Project description not added'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-slate-50/70 px-6 py-6 md:px-8 md:py-8 space-y-6 border-t md:border-t-0 md:border-l border-slate-200">
+            <div>
+              <p className="font-bold text-slate-900 mb-2">Core Skills</p>
+              <div className="flex flex-wrap gap-2">
+                {skillList.length > 0 ? skillList.map((skill) => (
+                  <span key={skill} className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800">{skill}</span>
+                )) : <p className="text-sm text-slate-500">Not added</p>}
+              </div>
+            </div>
+            <div>
+              <p className="font-bold text-slate-900 mb-2">Education</p>
+              <p className="text-slate-700 leading-7 whitespace-pre-line">{resume.education || 'Not added'}</p>
+            </div>
+            <div>
+              <p className="font-bold text-slate-900 mb-2">Achievements</p>
+              <p className="text-slate-700 leading-7 whitespace-pre-line">{resume.achievements || 'Not added'}</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <ResumeField label="Education">{resume.education}</ResumeField>
-      <ResumeField label="Certifications And Achievements">{resume.achievements}</ResumeField>
     </div>
   );
 };
@@ -105,8 +115,6 @@ const PremiumPlusResumeReviews = () => {
   const [selectedSource, setSelectedSource] = useState('builder');
   const [resumeFile, setResumeFile] = useState(null);
   const [showBuilderPreview, setShowBuilderPreview] = useState(false);
-  const [feedbackDrafts, setFeedbackDrafts] = useState({});
-  const [teacherFilter, setTeacherFilter] = useState('pending');
   const [profileReviews, setProfileReviews] = useState([]);
   const [profileReviewForm, setProfileReviewForm] = useState({ review_type: 'linkedin', url: '', student_note: '' });
   const [profileFeedbackDrafts, setProfileFeedbackDrafts] = useState({});
@@ -168,33 +176,13 @@ const PremiumPlusResumeReviews = () => {
     [reviews, profile?.id, cycleMonth]
   );
   const usedThisCycle = currentCycleReviews.length;
-  const remaining = Math.max(RESUME_REVIEW_LIMIT - usedThisCycle, 0);
+  const userLimit = profile?.resume_review_limit != null
+    ? (profile.resume_review_limit === -1 ? Infinity : profile.resume_review_limit)
+    : RESUME_REVIEW_LIMIT;
+  const remaining = userLimit === Infinity ? Infinity : Math.max(userLimit - usedThisCycle, 0);
   const builderAts = useMemo(() => scoreResume(builderResume || {}), [builderResume]);
-  const visibleReviews = useMemo(() => {
-    if (!staff) return reviews;
-    if (teacherFilter === 'pending') {
-      return reviews.filter((row) => String(row.status || '').toLowerCase() !== 'reviewed');
-    }
-    if (teacherFilter === 'completed') {
-      return reviews.filter((row) => String(row.status || '').toLowerCase() === 'reviewed');
-    }
-    return reviews;
-  }, [reviews, staff, teacherFilter]);
-  const teacherCounts = useMemo(() => ({
-    pending: reviews.filter((row) => String(row.status || '').toLowerCase() !== 'reviewed').length,
-    completed: reviews.filter((row) => String(row.status || '').toLowerCase() === 'reviewed').length,
-    all: reviews.length,
-  }), [reviews]);
-  const visibleProfileReviews = useMemo(() => {
-    if (!staff) return profileReviews;
-    if (teacherFilter === 'pending') {
-      return profileReviews.filter((row) => String(row.status || '').toLowerCase() !== 'reviewed');
-    }
-    if (teacherFilter === 'completed') {
-      return profileReviews.filter((row) => String(row.status || '').toLowerCase() === 'reviewed');
-    }
-    return profileReviews;
-  }, [profileReviews, staff, teacherFilter]);
+  const visibleReviews = useMemo(() => reviews, [reviews]);
+  const visibleProfileReviews = useMemo(() => profileReviews, [profileReviews]);
 
   const uploadResumeFile = async (reviewId) => {
     if (!resumeFile) return {};
@@ -221,18 +209,39 @@ const PremiumPlusResumeReviews = () => {
     setError('');
     setMessage('');
     try {
-      const teacherId = profile.assigned_teacher_id || null;
-      const atsDetails = selectedSource === 'builder' ? scoreResume(builderResume || {}) : null;
+      const resumeData = selectedSource === 'builder' ? builderResume : {};
+      const atsDetails = selectedSource === 'builder' ? scoreResume(resumeData || {}) : null;
+
+      let aiFeedback = null;
+      if (selectedSource === 'builder') {
+        const fullName = profile?.full_name || user?.email?.split('@')[0] || '';
+        const resumeText = formatResumeForAI(resumeData, fullName);
+        const aiRes = await fetch('/api/ai-resume-review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: profile.id,
+            resumeText,
+            resume: resumeData,
+            studentNote: studentNote.trim() || null,
+          }),
+        });
+        const aiBody = await aiRes.json();
+        if (!aiRes.ok) throw new Error(aiBody.error || 'AI review failed, please try again.');
+        aiFeedback = aiBody.feedback;
+      }
+
       const payload = {
         student_id: profile.id,
-        teacher_id: teacherId,
         cycle_month: cycleMonth,
         source_type: selectedSource,
-        resume_snapshot: selectedSource === 'builder' ? builderResume : {},
+        resume_snapshot: resumeData,
         ats_score: atsDetails?.score ?? null,
         ats_details: atsDetails || {},
         student_note: studentNote.trim() || null,
-        status: 'pending',
+        status: aiFeedback ? 'reviewed' : 'pending',
+        teacher_feedback: aiFeedback,
+        reviewed_at: aiFeedback ? new Date().toISOString() : null,
       };
       const { data, error: insertError } = await supabase
         .from('career_resume_reviews')
@@ -257,13 +266,7 @@ const PremiumPlusResumeReviews = () => {
       setReviews((prev) => [patched, ...prev]);
       setStudentNote('');
       setResumeFile(null);
-      setMessage('Resume review request sent to your teacher.');
-      await notifyCareerTeacher({
-        teacherId,
-        title: 'Resume review request needs your review',
-        message: `${profile.full_name || profile.email || 'A student'} submitted a ${selectedSource === 'builder' ? 'SucessKart Resume Builder' : 'uploaded'} resume for review. Open Resume Reviews to view the full resume and add feedback.`,
-        source: 'resume_review',
-      });
+      setMessage(aiFeedback ? 'Resume reviewed by AI! Feedback is ready below.' : 'Resume submitted for review.');
     } catch (submitError) {
       setError(submitError.message || 'Failed to submit resume review.');
     } finally {
@@ -350,43 +353,6 @@ const PremiumPlusResumeReviews = () => {
     }
   };
 
-  const saveFeedback = async (review) => {
-    const feedback = String(feedbackDrafts[review.id] ?? review.teacher_feedback ?? '').trim();
-    if (!feedback) {
-      setError('Please enter feedback before marking the review completed.');
-      return;
-    }
-    setSaving(true);
-    setError('');
-    try {
-      const { data, error: updateError } = await supabase
-        .from('career_resume_reviews')
-        .update({
-          teacher_feedback: feedback,
-          status: 'reviewed',
-          reviewed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', review.id)
-        .select('*')
-        .single();
-      if (updateError) throw updateError;
-      setReviews((prev) => prev.map((row) => (row.id === review.id ? data : row)));
-      setMessage('Resume feedback saved.');
-      await sendAdminNotification({
-        target_user_id: review.student_id,
-        target_role: 'student',
-        title: 'Resume feedback is ready',
-        content: 'Your teacher reviewed your resume. Open Resume Reviews to read the feedback.',
-        type: 'resume_review_ready',
-      });
-    } catch (saveError) {
-      setError(saveError.message || 'Failed to save feedback.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (loading) return <LoadingSpinner message="Loading resume reviews..." />;
 
   if (!allowed) {
@@ -394,7 +360,7 @@ const PremiumPlusResumeReviews = () => {
       <PremiumPlusUpgradeGate
         profile={profile}
         title="Unlock Resume Reviews"
-        message="Resume reviews are available with Premium Plus. Upgrade to submit 2 teacher-reviewed resumes every calendar month."
+        message="Resume reviews are available with Premium Plus. Upgrade to submit 1 AI-reviewed resume every calendar month."
       />
     );
   }
@@ -405,7 +371,7 @@ const PremiumPlusResumeReviews = () => {
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-200">Premium Plus</p>
         <h1 className="mt-2 text-3xl font-bold">Resume Reviews</h1>
         <p className="mt-2 max-w-3xl text-slate-300">
-          Students get 2 teacher-reviewed resume submissions every calendar month.
+          Students get 1 AI-powered resume review every calendar month.
         </p>
       </section>
 
@@ -417,7 +383,7 @@ const PremiumPlusResumeReviews = () => {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-bold text-slate-900">{formatCareerCycle(cycleMonth)} Cycle</h2>
-              <p className="mt-1 text-sm text-slate-500">{usedThisCycle} of {RESUME_REVIEW_LIMIT} reviews used. {remaining} remaining.</p>
+              <p className="mt-1 text-sm text-slate-500">{userLimit === Infinity ? `${usedThisCycle} reviews used (unlimited)` : `${usedThisCycle} of ${userLimit} reviews used. ${remaining} remaining.`}</p>
             </div>
             <span className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700">{remaining} available</span>
           </div>
@@ -462,7 +428,7 @@ const PremiumPlusResumeReviews = () => {
                 <button type="button" onClick={() => setShowBuilderPreview((prev) => !prev)} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                   <Eye size={16} /> {showBuilderPreview ? 'Hide' : 'View'} Builder Resume
                 </button>
-                {showBuilderPreview ? <div className="mt-3"><ResumePreview resume={builderResume} /></div> : null}
+                {showBuilderPreview ? <div className="mt-3"><ResumePreview resume={builderResume} profile={profile} user={user} /></div> : null}
               </div>
             ) : (
               <input
@@ -485,7 +451,7 @@ const PremiumPlusResumeReviews = () => {
               disabled={saving || remaining <= 0}
               className="rounded-lg bg-slate-900 px-5 py-3 font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {remaining <= 0 ? 'Monthly Limit Used' : saving ? 'Submitting...' : 'Submit For Review'}
+              {remaining <= 0 ? (userLimit === Infinity ? 'Already Submitted This Cycle' : 'Monthly Limit Used') : saving ? 'AI is reviewing your resume...' : 'Submit For AI Review'}
             </button>
           </div>
         </section>
@@ -531,36 +497,10 @@ const PremiumPlusResumeReviews = () => {
       ) : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-xl font-bold text-slate-900">{staff ? 'Teacher Review Queue' : 'My Review History'}</h2>
-          {staff ? (
-            <div className="flex flex-wrap gap-2">
-              {[
-                ['pending', `Pending (${teacherCounts.pending})`],
-                ['completed', `Completed (${teacherCounts.completed})`],
-                ['all', `All (${teacherCounts.all})`],
-              ].map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setTeacherFilter(value)}
-                  className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-                    teacherFilter === value
-                      ? 'bg-slate-900 text-white'
-                      : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <h2 className="text-xl font-bold text-slate-900">My Review History</h2>
         <div className="mt-5 grid gap-4">
           {visibleReviews.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-              {staff ? `No ${teacherFilter === 'all' ? '' : teacherFilter} resume reviews found.` : 'No resume reviews yet.'}
-            </p>
+            <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">No resume reviews yet.</p>
           ) : visibleReviews.map((review) => {
             const student = profilesById[review.student_id];
             return (
@@ -582,37 +522,19 @@ const PremiumPlusResumeReviews = () => {
                   {review.resume_snapshot && Object.keys(review.resume_snapshot || {}).length ? (
                     <details className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3">
                       <summary className="cursor-pointer text-sm font-semibold text-slate-700">View Builder Resume</summary>
-                      <div className="mt-3"><ResumePreview resume={review.resume_snapshot} /></div>
+                      <div className="mt-3"><ResumePreview resume={review.resume_snapshot} profile={profilesById[review.student_id]} /></div>
                     </details>
                   ) : null}
                 </div>
 
-                {staff ? (
-                  <div className="mt-4">
-                    <textarea
-                      value={feedbackDrafts[review.id] ?? review.teacher_feedback ?? ''}
-                      onChange={(event) => setFeedbackDrafts((prev) => ({ ...prev, [review.id]: event.target.value }))}
-                      rows={4}
-                      placeholder="Write teacher feedback for this resume."
-                      className="w-full rounded-xl border border-slate-300 px-3 py-3 text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => saveFeedback(review)}
-                      disabled={saving}
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                      <CheckCircle size={16} /> Save Feedback
-                    </button>
-                  </div>
-                ) : review.teacher_feedback ? (
+                {review.teacher_feedback ? (
                   <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                    <p className="font-bold">Teacher Feedback</p>
+                    <p className="font-bold flex items-center gap-2"><Brain size={16} /> AI Feedback</p>
                     <p className="mt-2 whitespace-pre-line">{review.teacher_feedback}</p>
                   </div>
                 ) : (
                   <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
-                    <MessageSquare size={16} /> Waiting for teacher feedback
+                    <Sparkles size={16} /> AI review in progress...
                   </div>
                 )}
               </div>
@@ -622,7 +544,7 @@ const PremiumPlusResumeReviews = () => {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-bold text-slate-900">{staff ? 'Profile Review Queue' : 'My Profile Reviews'}</h2>
+        <h2 className="text-xl font-bold text-slate-900">Profile Reviews</h2>
         <div className="mt-5 grid gap-4">
           {visibleProfileReviews.length === 0 ? (
             <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">No profile reviews found.</p>

@@ -6,6 +6,7 @@ import { supabase } from '../supabaseClient';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PremiumPlusUpgradeGate from '../components/PremiumPlusUpgradeGate';
 import {
+  RESUME_REVIEW_LIMIT,
   canUseCareerSupport,
   formatCareerCycle,
   getCareerCycleMonth,
@@ -184,7 +185,7 @@ const CareerSupportDashboard = () => {
           Resume reviews and mock interviews reset every calendar month.
         </SectionHeader>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
-          <Link to="/app/resume-reviews" className="rounded-xl border border-slate-200 bg-slate-50 p-5 hover:bg-slate-100"><FileText /><p className="mt-3 font-bold">Resume Reviews</p><p className="text-sm text-slate-500">{quotaLabel(currentResumes.length, 2)}</p></Link>
+          <Link to="/app/resume-reviews" className="rounded-xl border border-slate-200 bg-slate-50 p-5 hover:bg-slate-100"><FileText /><p className="mt-3 font-bold">Resume Reviews</p><p className="text-sm text-slate-500">{quotaLabel(currentResumes.length, RESUME_REVIEW_LIMIT)}</p></Link>
           <Link to="/app/mock-interviews" className="rounded-xl border border-slate-200 bg-slate-50 p-5 hover:bg-slate-100"><MessageSquare /><p className="mt-3 font-bold">Mock Interview</p><p className="text-sm text-slate-500">{quotaLabel(currentInterviews.length, 1)}</p></Link>
           <Link to="/app/personal-roadmap" className="rounded-xl border border-slate-200 bg-slate-50 p-5 hover:bg-slate-100"><Sparkles /><p className="mt-3 font-bold">Roadmap</p><p className="text-sm text-slate-500">{roadmapScore ? 'Updated this month' : 'Not generated yet'}</p></Link>
         </div>

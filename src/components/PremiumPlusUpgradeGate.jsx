@@ -38,7 +38,7 @@ const PremiumPlusUpgradeGate = ({ profile, title = 'Premium Plus Required', mess
         {isPremium ? (
           <p className="mt-3 text-xs text-slate-500">Your Premium plan is active. Upgrade to Premium Plus to unlock this feature.</p>
         ) : (
-          <p className="mt-3 text-xs text-slate-500">Premium Plus unlocks resume reviews, mock interviews, and monthly roadmaps.</p>
+          <p className="mt-3 text-xs text-slate-500">Premium Plus unlocks AI-powered resume reviews, mock interviews, and monthly roadmaps.</p>
         )}
       </div>
     </div>

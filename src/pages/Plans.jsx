@@ -20,7 +20,7 @@ const PLAN_FEATURES = {
     'Learn with AI',
     'Notes Library',
     'Priority Support',
-    '2 Resume Reviews per Cycle',
+    '1 AI Resume Review per Month',
     '1 Mock Interview per Month',
     'Monthly Personal Roadmap Update',
   ],

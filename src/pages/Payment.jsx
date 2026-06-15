@@ -132,7 +132,7 @@ const PLAN_FEATURES = {
     'Mentoring Session Request',
     'Notes Library',
     'Priority Support',
-    '2 Resume Reviews per Cycle',
+    '1 AI Resume Review per Month',
     '1 Mock Interview per Month',
     'Monthly Personal Roadmap Update',
   ],

@@ -2,7 +2,7 @@ import { supabase } from '../supabaseClient';
 import { sendAdminNotification } from './adminNotifications';
 import { getPremiumPlanType } from './premium';
 
-export const RESUME_REVIEW_LIMIT = 2;
+export const RESUME_REVIEW_LIMIT = 1;
 export const MOCK_INTERVIEW_LIMIT = 1;
 
 export const getCareerCycleMonth = (date = new Date()) => {
@@ -132,6 +132,71 @@ export const getInterviewQuestionsForRole = (role = '') => {
     'Describe a challenge you faced and how you solved it.',
     'Why should a company hire you for this role?',
   ];
+};
+
+export const formatResumeForAI = (resume, fullName = '') => {
+  if (!resume) return '';
+  const sections = [];
+
+  sections.push('=== PROFESSIONAL RESUME ===');
+  sections.push('');
+  if (fullName) sections.push(`Name: ${fullName}`);
+  sections.push(`Target Role: ${resume.role || 'Not specified'}`);
+  sections.push('');
+
+  sections.push('Contact Information');
+  sections.push(`Email: ${resume.email || 'Not provided'}  |  Phone: ${resume.phone || 'Not provided'}  |  Location: ${resume.location || 'Not provided'}`);
+  sections.push(`LinkedIn: ${resume.linkedin || 'Not provided'}  |  Portfolio: ${resume.portfolio || 'Not provided'}`);
+  sections.push('');
+
+  sections.push('--- Profile Summary ---');
+  sections.push(resume.summary || 'Not provided');
+  sections.push('');
+
+  const skillList = (resume.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
+  sections.push('--- Core Skills ---');
+  sections.push(skillList.length > 0 ? skillList.join(', ') : 'Not provided');
+  sections.push('');
+
+  sections.push('--- Experience ---');
+  const exp1Title = resume.experience1Title || 'Role not added';
+  const exp1Company = resume.experience1Company || 'Organization not added';
+  const exp1Period = resume.experience1Period || 'Period not added';
+  const exp1Desc = resume.experience1Description || 'Description not added';
+  sections.push(`${exp1Title} — ${exp1Company} (${exp1Period})`);
+  sections.push(exp1Desc);
+  sections.push('');
+
+  const exp2Title = resume.experience2Title || null;
+  if (exp2Title) {
+    const exp2Company = resume.experience2Company || 'Organization not added';
+    const exp2Period = resume.experience2Period || 'Period not added';
+    const exp2Desc = resume.experience2Description || 'Description not added';
+    sections.push(`${exp2Title} — ${exp2Company} (${exp2Period})`);
+    sections.push(exp2Desc);
+    sections.push('');
+  }
+
+  sections.push('--- Selected Projects ---');
+  const proj1Title = resume.project1Title || 'Project title not added';
+  const proj1Desc = resume.project1Description || 'Project description not added';
+  sections.push(`${proj1Title}: ${proj1Desc}`);
+
+  const proj2Title = resume.project2Title || null;
+  if (proj2Title) {
+    const proj2Desc = resume.project2Description || 'Project description not added';
+    sections.push(`${proj2Title}: ${proj2Desc}`);
+  }
+  sections.push('');
+
+  sections.push('--- Education ---');
+  sections.push(resume.education || 'Not provided');
+  sections.push('');
+
+  sections.push('--- Achievements ---');
+  sections.push(resume.achievements || 'Not provided');
+
+  return sections.join('\n');
 };
 
 export const getOverdueHours = (createdAt, hours = 48) => {

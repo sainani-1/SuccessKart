@@ -1010,6 +1010,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Brain size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">AI Settings</span>}
             </NavLink>
+            <NavLink to="/app/admin/resume-limits" className={navItemClass} title="Resume Limits">
+              <FileText size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Resume Limits</span>}
+            </NavLink>
             <NavLink to="/app/admin/notes-library" className={navItemClass} title="Notes Library Admin">
               <FileText size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Notes Library</span>}
