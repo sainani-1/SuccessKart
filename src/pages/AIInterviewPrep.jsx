@@ -1,7 +1,34 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { Bot, User, Send, Loader2, Brain, Sparkles, CheckCircle, Target, BarChart3, RefreshCw, ArrowRight, Lock, Mail, Clock } from 'lucide-react';
+import { Bot, User, Send, Loader2, Brain, Sparkles, CheckCircle, Target, BarChart3, RefreshCw, ArrowRight, Lock, ShoppingCart } from 'lucide-react';
+
+const incrementVMIUsage = async (userId, feature) => {
+  if (!userId) return;
+  try {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' });
+    const month = formatter.format(now).slice(0, 7);
+    const { data: existing } = await supabase
+      .from('vmi_usage')
+      .select('id, used_count')
+      .eq('user_id', userId)
+      .eq('feature', feature)
+      .eq('month', month)
+      .maybeSingle();
+    if (existing) {
+      await supabase
+        .from('vmi_usage')
+        .update({ used_count: existing.used_count + 1, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('vmi_usage')
+        .insert({ user_id: userId, feature, used_count: 1, month });
+    }
+  } catch {}
+};
 
 const TOTAL_QUESTIONS = 10;
 
@@ -28,6 +55,7 @@ GUIDELINES:
 
 const AIInterviewPrep = () => {
   const { profile, user, isPremiumPlus } = useAuth();
+  const navigate = useNavigate();
   const isPp = profile ? isPremiumPlus(profile) : false;
   const [phase, setPhase] = useState('role');
   const [role, setRole] = useState('');
@@ -40,27 +68,16 @@ const AIInterviewPrep = () => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  const [accessCheck, setAccessCheck] = useState({ loading: true, granted: false, requestSent: false });
+  const [accessCheck, setAccessCheck] = useState({ loading: true, granted: false });
 
   useEffect(() => {
     if (!profile?.id) {
-      setAccessCheck({ loading: false, granted: false, requestSent: false });
+      setAccessCheck({ loading: false, granted: false });
       return;
-    }
-    const cached = sessionStorage.getItem('vmi_access_ai_prep');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed.userId === profile.id) {
-          const granted = parsed.granted === true;
-          setAccessCheck({ loading: false, granted, requestSent: false });
-          if (granted) return;
-        }
-      } catch {}
     }
     setAccessCheck((p) => ({ ...p, loading: true }));
     const timeout = setTimeout(() => {
-      setAccessCheck({ loading: false, granted: false, requestSent: false });
+      setAccessCheck({ loading: false, granted: false });
     }, 4000);
     supabase
       .from('vmi_access')
@@ -70,12 +87,11 @@ const AIInterviewPrep = () => {
       .then(({ data, error }) => {
         clearTimeout(timeout);
         const granted = !error && data?.ai_prep_enabled === true;
-        sessionStorage.setItem('vmi_access_ai_prep', JSON.stringify({ userId: profile.id, granted }));
-        setAccessCheck({ loading: false, granted, requestSent: false });
+        setAccessCheck({ loading: false, granted });
       })
       .catch(() => {
         clearTimeout(timeout);
-        setAccessCheck({ loading: false, granted: false, requestSent: false });
+        setAccessCheck({ loading: false, granted: false });
       });
   }, [profile?.id]);
 
@@ -88,19 +104,6 @@ const AIInterviewPrep = () => {
       inputRef.current?.focus();
     }
   }, [phase, loading]);
-
-  const sendAccessRequest = async () => {
-    setError('');
-    try {
-      const { error: insertErr } = await supabase
-        .from('vmi_access_requests')
-        .insert({ user_id: profile?.id, requested_feature: 'ai_prep' });
-      if (insertErr) throw insertErr;
-      setAccessCheck((p) => ({ ...p, requestSent: true }));
-    } catch (err) {
-      setError(err.message || 'Failed to send request.');
-    }
-  };
 
   const startInterview = async () => {
     const roleValue = role.trim();
@@ -181,6 +184,7 @@ const AIInterviewPrep = () => {
       if (isLastQuestion) {
         setPhase('completed');
         setAssessment(parseAssessment(data.reply));
+        incrementVMIUsage(profile?.id, 'ai_prep');
       } else {
         setQuestionCount(nextQuestionNum);
       }
@@ -243,36 +247,18 @@ const AIInterviewPrep = () => {
               AI Interview Prep is a restricted feature. You need approval from the SucessKart team to access it.
             </p>
 
-            {accessCheck.requestSent ? (
-              <div className="mt-6 rounded-xl bg-emerald-900/30 border border-emerald-500/30 p-5">
-                <CheckCircle size={28} className="mx-auto text-emerald-400" />
-                <p className="mt-3 font-semibold text-emerald-300">Request Sent!</p>
-                <p className="mt-1 text-sm text-emerald-200/70">The SucessKart team will review your request and grant access if approved.</p>
-                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-indigo-400">
-                  <Clock size={14} />
-                  <span>You can check back later or wait for a notification.</span>
-                </div>
-              </div>
-            ) : isPp ? (
-              <>
-                <div className="mt-6 rounded-xl bg-indigo-900/30 border border-indigo-500/30 p-4 text-left text-sm text-indigo-300 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Mail size={16} className="mt-0.5 shrink-0 text-indigo-400" />
-                    <span>Send a request to the SucessKart team for access to this feature.</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Lock size={16} className="mt-0.5 shrink-0 text-indigo-400" />
-                    <span>Only students with granted access can use AI Interview Prep.</span>
-                  </div>
-                </div>
+            {isPp ? (
+              <div className="mt-6 rounded-xl bg-indigo-900/30 border border-indigo-500/30 p-4 text-left text-sm text-indigo-300 space-y-3">
+                <p>This feature is available as an add-on for Premium Plus members.</p>
+                <p>Go to the Add-Ons page to purchase access for AI Interview Prep and Voice Mock Interviews.</p>
                 <button
                   type="button"
-                  onClick={sendAccessRequest}
-                  className="mt-5 w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2"
+                  onClick={() => navigate('/app/addons')}
+                  className="mt-2 w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-3.5 rounded-xl font-bold hover:shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2"
                 >
-                  <Mail size={20} /> Request Access
+                  <ShoppingCart size={20} /> Go to Add-Ons
                 </button>
-              </>
+              </div>
             ) : (
               <div className="mt-6 rounded-xl bg-gradient-to-br from-amber-900/30 to-orange-900/30 border border-amber-500/30 p-5">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/20">

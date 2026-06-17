@@ -41,7 +41,14 @@ const sections = [
     ],
   },
   {
-    title: '6. Payments, Plans, and Refunds',
+    title: '6. Live Class Availability and Add-On Packs',
+    points: [
+      'Only Live Classes are currently available. Due to budget and personnel constraints, pre-recorded video courses are not available at this time. All teaching is conducted through live sessions.',
+      'After taking a Premium Plus plan, there are Add-On Packs available (optional) which you may purchase separately to unlock more benefits and features for the best learning experience.',
+    ],
+  },
+  {
+    title: '7. Payments, Plans, and Refunds',
     points: [
       'Paid enrollments, subscriptions, and upgrades are final unless an explicit written refund policy applies.',
       'Chargeback abuse, payment fraud, or unauthorized payment reversal can result in account lock and legal recovery action.',
@@ -49,7 +56,7 @@ const sections = [
     ],
   },
   {
-    title: '7. Certificates and Verification',
+    title: '8. Certificates and Verification',
     points: [
       'Certificates are issued only when completion and integrity checks are satisfied.',
       'The platform may revoke or block certificates upon malpractice, disputed identity, or policy breach discovered later.',
@@ -57,7 +64,7 @@ const sections = [
     ],
   },
   {
-    title: '8. Intellectual Property and Content Use',
+    title: '9. Intellectual Property and Content Use',
     points: [
       'All platform content including videos, notes, assessments, logos, and certificates is protected intellectual property.',
       'Copying, recording, redistributing, resale, scraping, reverse engineering, or unauthorized public sharing is prohibited.',
@@ -65,7 +72,7 @@ const sections = [
     ],
   },
   {
-    title: '9. Data, Privacy, and Monitoring',
+    title: '10. Data, Privacy, and Monitoring',
     points: [
       'You authorize collection and processing of profile data, usage data, attendance, exam logs, and security events.',
       'Data may be used for platform operations, fraud prevention, quality assurance, legal compliance, and dispute resolution.',
@@ -73,7 +80,7 @@ const sections = [
     ],
   },
   {
-    title: '10. Suspension, Termination, and Appeals',
+    title: '11. Suspension, Termination, and Appeals',
     points: [
       'The platform may restrict, suspend, or terminate access at its sole discretion for suspected abuse, risk, or policy violations.',
       'Urgent risk cases may be actioned without prior notice; restoration is not guaranteed.',
@@ -81,14 +88,14 @@ const sections = [
     ],
   },
   {
-    title: '11. Liability Limitation',
+    title: '12. Liability Limitation',
     points: [
       'Platform services are provided on an as-available basis; uninterrupted access is not guaranteed.',
       'The platform is not liable for indirect, incidental, consequential, or third-party losses arising from service usage.',
     ],
   },
   {
-    title: '12. AI Disclaimer — Learn with AI',
+    title: '13. AI Disclaimer — Learn with AI',
     points: [
       'SucessKart AI is an educational assistant designed to help students learn and understand academic topics. It is not a substitute for professional advice, instruction, or certified teaching.',
       'SucessKart AI can make mistakes. You should not rely solely on AI-generated answers — always verify important information with your teacher, textbooks, or trusted sources.',
@@ -97,7 +104,7 @@ const sections = [
     ],
   },
   {
-    title: '13. Privacy Policy Reference',
+    title: '14. Privacy Policy Reference',
     points: [
       'Your use of the platform is also governed by our Privacy Policy, which explains how we collect, use, store, and protect your personal data.',
       'By accepting these Terms, you also acknowledge and agree to the practices described in the Privacy Policy.',
@@ -105,7 +112,7 @@ const sections = [
     ],
   },
   {
-    title: '14. Governing Law and Jurisdiction',
+    title: '15. Governing Law and Jurisdiction',
     points: [
       'These Terms and any disputes arising from your use of the platform shall be governed by and construed in accordance with the laws of India.',
       'Any legal actions, suits, or proceedings arising out of or relating to these Terms shall be exclusively submitted to the courts located in Hyderabad, Telangana, India.',
@@ -113,7 +120,7 @@ const sections = [
     ],
   },
   {
-    title: '15. Contact Information',
+    title: '16. Contact Information',
     points: [
       'For any questions, concerns, complaints, or legal notices regarding these Terms or the platform, you may contact us at the registered address and email provided on the platform.',
       'We will make reasonable efforts to respond to your inquiry within a reasonable time frame.',
@@ -121,21 +128,21 @@ const sections = [
     ],
   },
   {
-    title: '16. Severability',
+    title: '17. Severability',
     points: [
       'If any provision of these Terms is found to be invalid, illegal, or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect.',
       'The invalid provision shall be modified to the minimum extent necessary to make it valid and enforceable while preserving its intent to the greatest extent possible.',
     ],
   },
   {
-    title: '17. Waiver',
+    title: '18. Waiver',
     points: [
       'The failure of the platform to enforce any right or provision of these Terms shall not constitute a waiver of such right or provision.',
       'No waiver of any term shall be deemed a further or continuing waiver of such term or any other term, and the platform expressly reserves all rights not expressly granted in these Terms.',
     ],
   },
   {
-    title: '18. Updates to Terms',
+    title: '19. Updates to Terms',
     points: [
       'These Terms may be revised anytime. Continued usage after updates means renewed acceptance.',
       'Users are responsible for periodically reviewing this page for the latest version.',

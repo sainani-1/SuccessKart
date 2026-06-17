@@ -248,6 +248,7 @@ const Payment = () => {
   const [screenshotFile, setScreenshotFile] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState('');
   const [submittingManual, setSubmittingManual] = useState(false);
+  const [qrPayeeName, setQrPayeeName] = useState('');
   const [manualSubmitted, setManualSubmitted] = useState(false);
   const [alertModal, setAlertModal] = useState({ show: false, title: '', message: '', type: 'info' });
   const razorpayInstanceRef = useRef(null);
@@ -423,10 +424,11 @@ const Payment = () => {
         const { data } = await supabase
           .from('settings')
           .select('key, value')
-          .in('key', ['manual_payment_qr_premium', 'manual_payment_qr_plus']);
+          .in('key', ['manual_payment_qr_premium', 'manual_payment_qr_plus', 'manual_payment_qr_name']);
         (data || []).forEach((setting) => {
           if (setting.key === 'manual_payment_qr_premium') setPremiumQr(setting.value || '');
           if (setting.key === 'manual_payment_qr_plus') setPremiumPlusQr(setting.value || '');
+          if (setting.key === 'manual_payment_qr_name') setQrPayeeName(setting.value || '');
         });
       };
       loadManualConfig();
@@ -1378,6 +1380,11 @@ const Payment = () => {
                 <div className="p-8 bg-white rounded-lg border-2 border-dashed text-center text-slate-400">
                   QR code not configured. Please contact support.
                 </div>
+              )}
+              {qrPayeeName && (
+                <p className="mt-3 text-center text-sm font-semibold text-slate-700">
+                  Pay Only If Name Is: <span className="text-amber-600">{qrPayeeName}</span>
+                </p>
               )}
             </div>
 

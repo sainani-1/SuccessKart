@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { useNotifications } from '../context/NotificationContext';
@@ -424,16 +424,6 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
       setVmiAccess(null);
       return;
     }
-    const cached = sessionStorage.getItem('vmi_access_sidebar');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed.userId === profile.id) {
-          setVmiAccess(parsed.data || null);
-          return;
-        }
-      } catch {}
-    }
     const timeout = setTimeout(() => setVmiAccess(null), 4000);
     supabase
       .from('vmi_access')
@@ -442,7 +432,6 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
       .maybeSingle()
       .then(({ data }) => {
         clearTimeout(timeout);
-        sessionStorage.setItem('vmi_access_sidebar', JSON.stringify({ userId: profile.id, data: data || null }));
         setVmiAccess(data || null);
       })
       .catch(() => {
@@ -775,6 +764,12 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
                 </NavLink>
               </>
             )}
+            {premiumPlusActive && (
+              <NavLink to="/app/addons" className={navItemClass} title="Add Ons">
+                <Package size={28} />
+                {shouldShowText && <span className="truncate text-sm font-medium">Add Ons</span>}
+              </NavLink>
+            )}
             <NavLink to="/app/attendance" className={navItemClass} title="Attendance">
               <ClipboardList size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Attendance</span>}
@@ -1051,9 +1046,25 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <CreditCard size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Plan Management</span>}
             </NavLink>
+            <NavLink to="/app/admin/addons" className={navItemClass} title="Add-Ons Management">
+              <Package size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Add-Ons</span>}
+            </NavLink>
             <NavLink to="/app/admin/ai-settings" className={navItemClass} title="AI Settings">
               <Brain size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">AI Settings</span>}
+            </NavLink>
+            <NavLink to="/app/admin/ai-basic-limit" className={navItemClass} title="AI Basic Limit">
+              <Sliders size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">AI Basic Limit</span>}
+            </NavLink>
+            <NavLink to="/app/admin/ai-limit-increaser" className={navItemClass} title="AI Limit Increaser">
+              <BarChart3 size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">AI Limit Increaser</span>}
+            </NavLink>
+            <NavLink to="/app/admin/addon-payments" className={navItemClass} title="Add On Payment Requests">
+              <ListChecks size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Add On Payments</span>}
             </NavLink>
             <NavLink to="/app/admin/resume-limits" className={navItemClass} title="Resume Limits">
               <FileText size={28} />
@@ -1062,6 +1073,18 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/admin/vmi-settings" className={navItemClass} title="VMI Settings">
               <Mic size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">VMI Settings</span>}
+            </NavLink>
+            <NavLink to="/app/admin/vmi-limits" className={navItemClass} title="VMI Limits">
+              <Sliders size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">VMI Limits</span>}
+            </NavLink>
+            <NavLink to="/app/admin/vmi-limit-settings" className={navItemClass} title="VMI Limit Settings">
+              <Activity size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">VMI Limit Settings</span>}
+            </NavLink>
+            <NavLink to="/app/admin/lwai-limit-settings" className={navItemClass} title="LWAI Limit Settings">
+              <Brain size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">LWAI Limit Settings</span>}
             </NavLink>
             <NavLink to="/app/admin/notes-library" className={navItemClass} title="Notes Library Admin">
               <FileText size={28} />

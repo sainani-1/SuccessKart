@@ -83,60 +83,114 @@ export default async function handler(req, res) {
       });
     }
 
-    const { data: rateData, error: rateError } = await supabase
-      .from('ai_rate_limits')
-      .select('request_count, window_start, daily_count, daily_date')
-      .eq('user_id', userId)
+    const { data: overrideData } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'user_ai_limits')
       .maybeSingle();
 
-    const now = new Date();
-    const today = now.toISOString().slice(0, 10);
-    let requestCount = 0;
-    let windowStart = now;
-    let dailyCount = 0;
-
-    if (rateData && !rateError) {
-      const windowStartDate = new Date(rateData.window_start);
-      const secondsElapsed = (now - windowStartDate) / 1000;
-
-      if (secondsElapsed < 60) {
-        if (rateData.request_count >= rateLimit) {
-          const retryAfter = Math.ceil(60 - secondsElapsed);
-          res.setHeader('Retry-After', String(retryAfter));
-          return json(res, 429, {
-            error: `Rate limit exceeded. You can send ${rateLimit} requests per minute. Please try again after ${retryAfter} seconds.`,
-            retryAfter,
-          });
+    if (overrideData?.value) {
+      try {
+        const overrides = JSON.parse(overrideData.value);
+        const userOverride = overrides[userId];
+        if (userOverride) {
+          if (userOverride.minuteLimit) rateLimit = userOverride.minuteLimit;
+          if (userOverride.dayLimit) dailyLimit = userOverride.dayLimit;
         }
-        requestCount = rateData.request_count + 1;
-        windowStart = windowStartDate;
-      } else {
-        requestCount = 1;
-        windowStart = now;
+      } catch {
+        // ignore parse errors
       }
-
-      dailyCount = rateData.daily_date === today ? (rateData.daily_count || 0) + 1 : 1;
-      if (dailyCount > dailyLimit) {
-        return json(res, 429, {
-          error: `Daily limit exceeded. You can send ${dailyLimit} requests per day.`,
-        });
-      }
-    } else {
-      requestCount = 1;
-      windowStart = now;
-      dailyCount = 1;
     }
 
-    await supabase.from('ai_rate_limits').upsert(
-      {
-        user_id: userId,
-        request_count: requestCount,
-        window_start: windowStart.toISOString(),
-        daily_count: dailyCount,
-        daily_date: today,
-      },
-      { onConflict: 'user_id' }
-    );
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const today = formatter.format(now);
+    let requestCount = 1;
+    let dailyCount = 1;
+    let windowStart = now;
+
+    try {
+      const { data: rateData } = await supabase
+        .from('ai_rate_limits')
+        .select('request_count, window_start, daily_count, daily_date')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (rateData) {
+        const windowStartDate = new Date(rateData.window_start);
+        const secondsElapsed = (now - windowStartDate) / 1000;
+
+        dailyCount = rateData.daily_date === today ? (rateData.daily_count || 0) + 1 : 1;
+        if (dailyCount > dailyLimit) {
+          const midnight = new Date(now);
+          midnight.setHours(24, 0, 0, 0);
+          const secondsUntilMidnight = Math.ceil((midnight - now) / 1000);
+          return json(res, 429, {
+            type: 'daily',
+            error: 'Daily limit reached. Try again tomorrow.',
+            retryAfter: secondsUntilMidnight,
+          });
+        }
+
+        if (secondsElapsed < 60) {
+          if (rateData.request_count >= rateLimit) {
+            const retryAfter = Math.ceil(60 - secondsElapsed);
+            res.setHeader('Retry-After', String(retryAfter));
+            return json(res, 429, {
+              type: 'minute',
+              error: `Rate limit exceeded. You can send ${rateLimit} requests per minute. Please try again after ${retryAfter} seconds.`,
+              retryAfter,
+            });
+          }
+          requestCount = rateData.request_count + 1;
+          windowStart = windowStartDate;
+        }
+      }
+    } catch {
+      // If ai_rate_limits table read fails, use defaults (1/1)
+    }
+
+    try {
+      const { error: upsertErr } = await supabase
+        .from('ai_rate_limits')
+        .upsert({
+          user_id: userId,
+          request_count: requestCount,
+          window_start: windowStart.toISOString(),
+          daily_count: dailyCount,
+          daily_date: today,
+        });
+      if (upsertErr) {
+        // Fallback: try insert, then update
+        const { error: insertErr } = await supabase
+          .from('ai_rate_limits')
+          .insert({
+            user_id: userId,
+            request_count: requestCount,
+            window_start: windowStart.toISOString(),
+            daily_count: dailyCount,
+            daily_date: today,
+          });
+        if (insertErr) {
+          await supabase
+            .from('ai_rate_limits')
+            .update({
+              request_count: requestCount,
+              window_start: windowStart.toISOString(),
+              daily_count: dailyCount,
+              daily_date: today,
+            })
+            .eq('user_id', userId);
+        }
+      }
+    } catch {
+      // Rate limit tracking unavailable — continue without DB persistence
+    }
 
     const aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -161,7 +215,7 @@ export default async function handler(req, res) {
     const aiData = await aiResponse.json();
     const replyText = aiData?.choices?.[0]?.message?.content || '';
 
-    return json(res, 200, { reply: replyText, remaining: rateLimit - requestCount, dailyRemaining: dailyLimit - dailyCount });
+    return json(res, 200, { reply: replyText, remaining: rateLimit - requestCount, dailyRemaining: dailyLimit - dailyCount, rateLimit, dailyLimit });
   } catch (error) {
     return json(res, 500, { error: 'Internal server error', details: error.message });
   }

@@ -143,6 +143,11 @@ const AdminCareerAnalytics = lazy(() => import('./pages/AdminCareerAnalytics'));
 const PortfolioBuilder = lazy(() => import('./pages/PortfolioBuilder'));
 const PublicPortfolio = lazy(() => import('./pages/PublicPortfolio'));
 const AdminLoginOtpSettings = lazy(() => import('./pages/AdminLoginOtpSettings'));
+const Addons = lazy(() => import('./pages/Addons'));
+const AdminAddons = lazy(() => import('./pages/AdminAddons'));
+const AdminAddonPayments = lazy(() => import('./pages/AdminAddonPayments'));
+const AdminAIBasicLimit = lazy(() => import('./pages/AdminAIBasicLimit'));
+const AdminAILimitIncreaser = lazy(() => import('./pages/AdminAILimitIncreaser'));
 const AdminTriedToRegister = lazy(() => import('./pages/AdminTriedToRegister'));
 const AdminUserTools = lazy(() => import('./pages/AdminUserTools'));
 const AdminErrorLogs = lazy(() => import('./pages/AdminErrorLogs'));
@@ -152,6 +157,9 @@ const TalkMockInterviews = lazy(() => import('./pages/TalkMockInterviews'));
 const AdminAISettings = lazy(() => import('./pages/AdminAISettings'));
 const AdminResumeLimits = lazy(() => import('./pages/AdminResumeLimits'));
 const AdminVMISettings = lazy(() => import('./pages/AdminVMISettings'));
+const AdminVMILimits = lazy(() => import('./pages/AdminVMILimits'));
+const AdminVMILimitSettings = lazy(() => import('./pages/AdminVMILimitSettings'));
+const AdminLWAILimitSettings = lazy(() => import('./pages/AdminLWAILimitSettings'));
 const AchievementTimeline = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AchievementTimeline })));
 const AdminAtRiskStudents = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AdminAtRiskStudents })));
 const AdminSecurityReview = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AdminSecurityReview })));
@@ -549,8 +557,16 @@ function App() {
           <Route path="admin/ai-settings" element={<AdminRoute><AdminAISettings /></AdminRoute>} />
           <Route path="admin/resume-limits" element={<AdminRoute><AdminResumeLimits /></AdminRoute>} />
           <Route path="admin/vmi-settings" element={<AdminRoute><AdminVMISettings /></AdminRoute>} />
+          <Route path="admin/vmi-limits" element={<AdminRoute><AdminVMILimits /></AdminRoute>} />
+          <Route path="admin/vmi-limit-settings" element={<AdminRoute><AdminVMILimitSettings /></AdminRoute>} />
+          <Route path="admin/lwai-limit-settings" element={<AdminRoute><AdminLWAILimitSettings /></AdminRoute>} />
           <Route path="admin/change-course" element={<AdminRoute><AdminChangeCourse /></AdminRoute>} />
           <Route path="admin/logic-building-admin-scoreboard" element={<AdminRoute><AdminScoreboard /></AdminRoute>} />
+          <Route path="addons" element={<Addons />} />
+          <Route path="admin/addons" element={<AdminRoute><AdminAddons /></AdminRoute>} />
+          <Route path="admin/addon-payments" element={<AdminRoute><AdminAddonPayments /></AdminRoute>} />
+          <Route path="admin/ai-basic-limit" element={<AdminRoute><AdminAIBasicLimit /></AdminRoute>} />
+          <Route path="admin/ai-limit-increaser" element={<AdminRoute><AdminAILimitIncreaser /></AdminRoute>} />
         </Route>
 
         {/* Exam is outside layout for fullscreen enforcement */}

@@ -1,7 +1,34 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
-import { Mic, MicOff, Loader2, Brain, Sparkles, Target, Volume2, VolumeX, RefreshCw, Send, User, StopCircle, CheckCircle, Lock, Mail, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Mic, MicOff, Loader2, Brain, Sparkles, Target, Volume2, VolumeX, RefreshCw, Send, User, StopCircle, CheckCircle, Lock, ShoppingCart } from 'lucide-react';
+
+const incrementVMIUsage = async (userId, feature) => {
+  if (!userId) return;
+  try {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' });
+    const month = formatter.format(now).slice(0, 7);
+    const { data: existing } = await supabase
+      .from('vmi_usage')
+      .select('id, used_count')
+      .eq('user_id', userId)
+      .eq('feature', feature)
+      .eq('month', month)
+      .maybeSingle();
+    if (existing) {
+      await supabase
+        .from('vmi_usage')
+        .update({ used_count: existing.used_count + 1, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('vmi_usage')
+        .insert({ user_id: userId, feature, used_count: 1, month });
+    }
+  } catch {}
+};
 
 const TOTAL_QUESTIONS = 10;
 const STORAGE_KEY = 'talk_mock_interview_state';
@@ -42,6 +69,7 @@ const stripMarkdown = (text) => {
 
 const TalkMockInterviews = () => {
   const { profile, isPremiumPlus } = useAuth();
+  const navigate = useNavigate();
   const isPp = profile ? isPremiumPlus(profile) : false;
   const [phase, setPhase] = useState('role');
   const [role, setRole] = useState('');
@@ -60,7 +88,7 @@ const TalkMockInterviews = () => {
   const [savedState, setSavedState] = useState(null);
   const [pendingTranscript, setPendingTranscript] = useState('');
   const [interimText, setInterimText] = useState('');
-  const [accessCheck, setAccessCheck] = useState({ loading: true, granted: false, requestSent: false });
+  const [accessCheck, setAccessCheck] = useState({ loading: true, granted: false });
 
   const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -103,23 +131,12 @@ const TalkMockInterviews = () => {
 
   useEffect(() => {
     if (!profile?.id) {
-      setAccessCheck({ loading: false, granted: false, requestSent: false });
+      setAccessCheck({ loading: false, granted: false });
       return;
-    }
-    const cached = sessionStorage.getItem('vmi_access_talk_mock');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed.userId === profile.id) {
-          const granted = parsed.granted === true;
-          setAccessCheck({ loading: false, granted, requestSent: false });
-          if (granted) return;
-        }
-      } catch {}
     }
     setAccessCheck((p) => ({ ...p, loading: true }));
     const timeout = setTimeout(() => {
-      setAccessCheck({ loading: false, granted: false, requestSent: false });
+      setAccessCheck({ loading: false, granted: false });
     }, 4000);
     supabase
       .from('vmi_access')
@@ -129,12 +146,11 @@ const TalkMockInterviews = () => {
       .then(({ data, error }) => {
         clearTimeout(timeout);
         const granted = !error && data?.talk_mock_enabled === true;
-        sessionStorage.setItem('vmi_access_talk_mock', JSON.stringify({ userId: profile.id, granted }));
-        setAccessCheck({ loading: false, granted, requestSent: false });
+        setAccessCheck({ loading: false, granted });
       })
       .catch(() => {
         clearTimeout(timeout);
-        setAccessCheck({ loading: false, granted: false, requestSent: false });
+        setAccessCheck({ loading: false, granted: false });
       });
   }, [profile?.id]);
 
@@ -251,6 +267,7 @@ const TalkMockInterviews = () => {
 
     if (isLast) {
       setPhase('completed');
+      incrementVMIUsage(profile?.id, 'talk_mock');
       if (updatedCount < TOTAL_QUESTIONS) {
         setAssessment({
           score: 0,
@@ -420,19 +437,6 @@ const TalkMockInterviews = () => {
     sendToAI(text);
   }, [pendingTranscript, loading, messages, questionCount]);
 
-  const sendAccessRequest = async () => {
-    setError('');
-    try {
-      const { error: insertErr } = await supabase
-        .from('vmi_access_requests')
-        .insert({ user_id: profile?.id, requested_feature: 'talk_mock' });
-      if (insertErr) throw insertErr;
-      setAccessCheck((p) => ({ ...p, requestSent: true }));
-    } catch (err) {
-      setError(err.message || 'Failed to send request.');
-    }
-  };
-
   const parseAssessment = (text) => {
     const scoreMatch = text.match(/(\d{1,3})\s*\/\s*100/);
     const score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
@@ -503,36 +507,18 @@ const TalkMockInterviews = () => {
               Talk Mock Interviews is a restricted feature. You need approval from the SucessKart team to access it.
             </p>
 
-            {accessCheck.requestSent ? (
-              <div className="mt-6 rounded-xl bg-emerald-900/30 border border-emerald-500/30 p-5">
-                <CheckCircle size={28} className="mx-auto text-emerald-400" />
-                <p className="mt-3 font-semibold text-emerald-300">Request Sent!</p>
-                <p className="mt-1 text-sm text-emerald-200/70">The SucessKart team will review your request and grant access if approved.</p>
-                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-indigo-400">
-                  <Clock size={14} />
-                  <span>You can check back later or wait for a notification.</span>
-                </div>
-              </div>
-            ) : isPp ? (
-              <>
-                <div className="mt-6 rounded-xl bg-indigo-900/30 border border-indigo-500/30 p-4 text-left text-sm text-indigo-300 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Mail size={16} className="mt-0.5 shrink-0 text-indigo-400" />
-                    <span>Send a request to the SucessKart team for access to this feature.</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Lock size={16} className="mt-0.5 shrink-0 text-indigo-400" />
-                    <span>Only students with granted access can use Talk Mock Interviews.</span>
-                  </div>
-                </div>
+            {isPp ? (
+              <div className="mt-6 rounded-xl bg-indigo-900/30 border border-indigo-500/30 p-4 text-left text-sm text-indigo-300 space-y-3">
+                <p>This feature is available as an add-on for Premium Plus members.</p>
+                <p>Go to the Add-Ons page to purchase access for Voice Mock Interviews and AI Prep.</p>
                 <button
                   type="button"
-                  onClick={sendAccessRequest}
-                  className="mt-5 w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2"
+                  onClick={() => navigate('/app/addons')}
+                  className="mt-2 w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-3.5 rounded-xl font-bold hover:shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2"
                 >
-                  <Mail size={20} /> Request Access
+                  <ShoppingCart size={20} /> Go to Add-Ons
                 </button>
-              </>
+              </div>
             ) : (
               <div className="mt-6 rounded-xl bg-gradient-to-br from-amber-900/30 to-orange-900/30 border border-amber-500/30 p-5">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/20">

@@ -167,9 +167,13 @@ const LearnWithAI = () => {
   });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [remaining, setRemaining] = useState(10);
-  const [dailyRemaining, setDailyRemaining] = useState(100);
+  const readStored = (key, fallback) => { try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; } catch { return fallback; } };
+  const [remaining, setRemaining] = useState(() => readStored('ai_remaining', null));
+  const [dailyRemaining, setDailyRemaining] = useState(() => readStored('ai_daily_remaining', null));
+  const [rateLimit, setRateLimit] = useState(() => readStored('ai_rate_limit', 10));
+  const [dailyLimit, setDailyLimit] = useState(() => readStored('ai_daily_limit', 100));
   const [rateLimited, setRateLimited] = useState(false);
+  const [rateLimitType, setRateLimitType] = useState(null);
   const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState(0);
   const messagesEndRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -225,8 +229,19 @@ const LearnWithAI = () => {
   const clearChat = () => {
     setMessages([]);
     setRemaining(null);
+    setDailyRemaining(null);
+    setRateLimit(10);
+    setDailyLimit(100);
+    setRateLimited(false);
+    setRateLimitType(null);
     setShowMenu(false);
-    try { sessionStorage.removeItem('learn_with_ai_messages'); } catch {}
+    try {
+      sessionStorage.removeItem('learn_with_ai_messages');
+      localStorage.removeItem('ai_remaining');
+      localStorage.removeItem('ai_daily_remaining');
+      localStorage.removeItem('ai_rate_limit');
+      localStorage.removeItem('ai_daily_limit');
+    } catch {}
     requestAnimationFrame(() => inputRef.current?.focus());
   };
   const inputRef = useRef(null);
@@ -261,6 +276,7 @@ const LearnWithAI = () => {
           if (prev <= 1) {
             clearInterval(timer);
             setRateLimited(false);
+            setRateLimitType(null);
             return 0;
           }
           return prev - 1;
@@ -306,8 +322,13 @@ const LearnWithAI = () => {
         if (response.status === 429) {
           const retryAfter = data.retryAfter || 60;
           setRateLimited(true);
+          setRateLimitType(data.type || 'minute');
           setRateLimitRetryAfter(retryAfter);
-          setMessages((prev) => [...prev, { role: 'assistant', content: `\u23F3 Rate limit reached. Please try again in ${retryAfter} seconds.`, timestamp: new Date().toISOString(), isError: true }]);
+          if (data.type === 'daily') {
+            setMessages((prev) => [...prev, { role: 'assistant', content: `\u{1F31E} Daily limit reached. Try again tomorrow.`, timestamp: new Date().toISOString(), isError: true }]);
+          } else {
+            setMessages((prev) => [...prev, { role: 'assistant', content: `\u23F3 Rate limit reached. Please try again in ${retryAfter} seconds.`, timestamp: new Date().toISOString(), isError: true }]);
+          }
           return;
         }
         const errMsg = data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Something went wrong. Please try again.');
@@ -315,8 +336,20 @@ const LearnWithAI = () => {
         return;
       }
 
-      setRemaining(data.remaining);
-      setDailyRemaining(data.dailyRemaining);
+      const newRemaining = data.remaining;
+      const newDailyRemaining = data.dailyRemaining;
+      const newRateLimit = data.rateLimit || rateLimit;
+      const newDailyLimit = data.dailyLimit || dailyLimit;
+      setRemaining(newRemaining);
+      setDailyRemaining(newDailyRemaining);
+      setRateLimit(newRateLimit);
+      setDailyLimit(newDailyLimit);
+      try {
+        localStorage.setItem('ai_remaining', JSON.stringify(newRemaining));
+        localStorage.setItem('ai_daily_remaining', JSON.stringify(newDailyRemaining));
+        localStorage.setItem('ai_rate_limit', JSON.stringify(newRateLimit));
+        localStorage.setItem('ai_daily_limit', JSON.stringify(newDailyLimit));
+      } catch {}
       setMessages((prev) => [...prev, { role: 'assistant', content: data.reply, timestamp: new Date().toISOString() }]);
     } catch {
       setMessages((prev) => [...prev, { role: 'assistant', content: 'Network error. Please check your connection.', timestamp: new Date().toISOString(), isError: true }]);
@@ -378,10 +411,22 @@ const LearnWithAI = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          {remaining !== null && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
-              <Sparkles size={11} className="text-emerald-500" />
-              <span className="text-[10px] font-medium text-emerald-600">{remaining}m / {dailyRemaining}d</span>
+          {rateLimit != null && Number.isFinite(rateLimit) && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200">
+                <Sparkles size={11} className="text-blue-500" />
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[9px] font-semibold text-blue-600">MIN</span>
+                  <span className="text-[10px] font-medium text-blue-700">{remaining != null ? Math.min(rateLimit, rateLimit - remaining) : '-'} / {rateLimit}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200">
+                <Sparkles size={11} className="text-emerald-500" />
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[9px] font-semibold text-emerald-600">DAY</span>
+                  <span className="text-[10px] font-medium text-emerald-700">{dailyRemaining != null ? Math.min(dailyLimit, dailyLimit - dailyRemaining) : '-'} / {dailyLimit}</span>
+                </div>
+              </div>
             </div>
           )}
           <button onClick={toggleSearch} className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors" title="Search">
@@ -506,8 +551,21 @@ const LearnWithAI = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Rate limit */}
-      {rateLimited && (
+      {/* Rate limit banner */}
+      {rateLimited && rateLimitType === 'daily' && (
+        <div className="px-3 py-2">
+          <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center gap-3">
+            <AlertTriangle size={16} className="text-purple-500 flex-shrink-0" />
+            <p className="text-xs text-purple-700">Daily limit reached. Try again tomorrow.</p>
+            {rateLimitRetryAfter > 0 && (
+              <span className="ml-auto text-xs font-semibold text-purple-600 whitespace-nowrap">
+                Resets in {Math.floor(rateLimitRetryAfter / 3600)}h {Math.floor((rateLimitRetryAfter % 3600) / 60)}m
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      {rateLimited && rateLimitType !== 'daily' && (
         <div className="px-3 py-2">
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3">
             <AlertTriangle size={16} className="text-amber-500 flex-shrink-0" />

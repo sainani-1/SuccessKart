@@ -8,6 +8,7 @@ import { logError } from '../utils/errorLogger';
 const AdminPaymentQR = () => {
   const [premiumQr, setPremiumQr] = useState('');
   const [premiumPlusQr, setPremiumPlusQr] = useState('');
+  const [qrPayeeName, setQrPayeeName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [alertModal, setAlertModal] = useState({ show: false, title: '', message: '', type: 'info' });
@@ -23,10 +24,11 @@ const AdminPaymentQR = () => {
       const { data } = await supabase
         .from('settings')
         .select('key, value')
-        .in('key', ['manual_payment_qr_premium', 'manual_payment_qr_plus']);
+        .in('key', ['manual_payment_qr_premium', 'manual_payment_qr_plus', 'manual_payment_qr_name']);
       (data || []).forEach((setting) => {
         if (setting.key === 'manual_payment_qr_premium') setPremiumQr(setting.value || '');
         if (setting.key === 'manual_payment_qr_plus') setPremiumPlusQr(setting.value || '');
+        if (setting.key === 'manual_payment_qr_name') setQrPayeeName(setting.value || '');
       });
     } catch {} finally {
       setLoading(false);
@@ -60,6 +62,7 @@ const AdminPaymentQR = () => {
     try {
       if (premiumQr) await saveQrCode('manual_payment_qr_premium', premiumQr);
       if (premiumPlusQr) await saveQrCode('manual_payment_qr_plus', premiumPlusQr);
+      await saveQrCode('manual_payment_qr_name', qrPayeeName.trim());
       setAlertModal({
         show: true, title: 'Saved',
         message: 'QR codes saved successfully.',
@@ -147,6 +150,18 @@ const AdminPaymentQR = () => {
             {premiumPlusQr ? 'Change QR Code' : 'Upload QR Code'}
           </button>
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+        <h2 className="text-lg font-bold text-slate-900 mb-2">QR Payee Name</h2>
+        <p className="text-sm text-slate-500 mb-3">Set the name that appears below the QR code. Users should only pay if this name matches the UPI payee name.</p>
+        <input
+          type="text"
+          className="w-full p-3 border border-slate-300 rounded-lg"
+          placeholder="e.g. John Doe / Business Name"
+          value={qrPayeeName}
+          onChange={(e) => setQrPayeeName(e.target.value)}
+        />
       </div>
 
       <button
