@@ -684,6 +684,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Award size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Premium Membership</span>}
             </NavLink>
+            <NavLink to="/app/question-bank" className={navItemClass} title="Question Bank">
+              <HelpCircle size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Question Bank</span>}
+            </NavLink>
             <NavLink to="/app/offers" className={navItemClass} title="Discounts & Offers">
               <Gift size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Discounts & Offers</span>}
@@ -1269,6 +1273,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/admin/startup-collaborations" className={navItemClass} title="Startup Collaborations">
               <Users size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Startup Collabs</span>}
+            </NavLink>
+            <NavLink to="/app/admin/question-bank" className={navItemClass} title="Add Questions">
+              <HelpCircle size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Add Questions</span>}
             </NavLink>
             <NavLink to="/app/internships" className={navItemClass} title="Internships">
               <Briefcase size={28} />

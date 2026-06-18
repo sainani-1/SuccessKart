@@ -156,6 +156,8 @@ const AIInterviewPrep = lazy(() => import('./pages/AIInterviewPrep'));
 const TalkMockInterviews = lazy(() => import('./pages/TalkMockInterviews'));
 const AdminAISettings = lazy(() => import('./pages/AdminAISettings'));
 const AdminResumeLimits = lazy(() => import('./pages/AdminResumeLimits'));
+const AdminQuestionBank = lazy(() => import('./pages/AdminQuestionBank'));
+const StudentQuestionBank = lazy(() => import('./pages/StudentQuestionBank'));
 const AdminVMISettings = lazy(() => import('./pages/AdminVMISettings'));
 const AdminVMILimits = lazy(() => import('./pages/AdminVMILimits'));
 const AdminVMILimitSettings = lazy(() => import('./pages/AdminVMILimitSettings'));
@@ -562,6 +564,8 @@ function App() {
           <Route path="admin/lwai-limit-settings" element={<AdminRoute><AdminLWAILimitSettings /></AdminRoute>} />
           <Route path="admin/change-course" element={<AdminRoute><AdminChangeCourse /></AdminRoute>} />
           <Route path="admin/logic-building-admin-scoreboard" element={<AdminRoute><AdminScoreboard /></AdminRoute>} />
+          <Route path="admin/question-bank" element={<AdminRoute><AdminQuestionBank /></AdminRoute>} />
+          <Route path="question-bank" element={<StudentQuestionBank />} />
           <Route path="addons" element={<Addons />} />
           <Route path="admin/addons" element={<AdminRoute><AdminAddons /></AdminRoute>} />
           <Route path="admin/addon-payments" element={<AdminRoute><AdminAddonPayments /></AdminRoute>} />

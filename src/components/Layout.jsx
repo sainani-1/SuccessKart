@@ -138,6 +138,7 @@ const Layout = () => {
       { label: 'Live Classes', path: '/app/class-schedule' },
       { label: 'Demo Sessions', path: '/app/demo-sessions' },
       { label: 'Premium Membership', path: '/app/premium-status' },
+      { label: 'Question Bank', path: '/app/question-bank' },
       { label: 'Discounts & Offers', path: '/app/offers' },
       { label: 'Universal AI', path: '/app/assistant' },
       { label: 'Career Mentor', path: '/app/career-chatbot' },
@@ -255,6 +256,7 @@ const Layout = () => {
       { label: 'Deleted Accounts', path: '/app/admin/deleted-accounts' },
       { label: 'Startup Ideas', path: '/app/admin/startup-ideas' },
       { label: 'Startup Collaborations', path: '/app/admin/startup-collaborations' },
+      { label: 'Add Questions', path: '/app/admin/question-bank' },
     ];
 
     const instructorTargets = [
