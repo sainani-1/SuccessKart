@@ -115,7 +115,7 @@ const AIInterviewPrep = () => {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/ai-grok-chat', {
+      const res = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -169,7 +169,7 @@ const AIInterviewPrep = () => {
         });
       }
 
-      const res = await fetch('/api/ai-grok-chat', {
+      const res = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: profile?.id, messages: apiMessages }),

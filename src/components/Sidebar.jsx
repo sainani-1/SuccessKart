@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { useNotifications } from '../context/NotificationContext';
@@ -1089,6 +1089,18 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/admin/lwai-limit-settings" className={navItemClass} title="LWAI Limit Settings">
               <Brain size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">LWAI Limit Settings</span>}
+            </NavLink>
+            <NavLink to="/app/admin/ai-settings-extended" className={navItemClass} title="Multi AI Settings">
+              <Sliders size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Multi AI Settings</span>}
+            </NavLink>
+            <NavLink to="/app/admin/test-ai" className={navItemClass} title="Test AI E K">
+              <FlaskConical size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Test AI E K</span>}
+            </NavLink>
+            <NavLink to="/app/admin/misuse-ai" className={navItemClass} title="Missuse AI">
+              <ShieldOff size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Missuse AI</span>}
             </NavLink>
             <NavLink to="/app/admin/notes-library" className={navItemClass} title="Notes Library Admin">
               <FileText size={28} />

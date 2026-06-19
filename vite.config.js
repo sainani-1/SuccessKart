@@ -30,6 +30,6 @@ export default defineConfig(({ mode }) => {
   Object.assign(process.env, env);
 
   return {
-    plugins: [react(), createApiPlugin('/api/login-otp', './api/login-otp.js'), createApiPlugin('/api/ai-grok-chat', './api/ai-grok-chat.js'), createApiPlugin('/api/ai-resume-review', './api/ai-resume-review.js')],
+    plugins: [react(), createApiPlugin('/api/login-otp', './api/login-otp.js'), createApiPlugin('/api/ai-grok-chat', './api/ai-grok-chat.js'), createApiPlugin('/api/ai-resume-review', './api/ai-resume-review.js'), createApiPlugin('/api/ai-chat', './api/ai-chat.js')],
   };
 })

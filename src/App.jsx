@@ -162,6 +162,9 @@ const AdminVMISettings = lazy(() => import('./pages/AdminVMISettings'));
 const AdminVMILimits = lazy(() => import('./pages/AdminVMILimits'));
 const AdminVMILimitSettings = lazy(() => import('./pages/AdminVMILimitSettings'));
 const AdminLWAILimitSettings = lazy(() => import('./pages/AdminLWAILimitSettings'));
+const AdminMultiAISettings = lazy(() => import('./pages/AdminMultiAISettings'));
+const AdminTestAI = lazy(() => import('./pages/AdminTestAI'));
+const AdminMisuseAI = lazy(() => import('./pages/AdminMisuseAI'));
 const AchievementTimeline = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AchievementTimeline })));
 const AdminAtRiskStudents = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AdminAtRiskStudents })));
 const AdminSecurityReview = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AdminSecurityReview })));
@@ -571,6 +574,9 @@ function App() {
           <Route path="admin/addon-payments" element={<AdminRoute><AdminAddonPayments /></AdminRoute>} />
           <Route path="admin/ai-basic-limit" element={<AdminRoute><AdminAIBasicLimit /></AdminRoute>} />
           <Route path="admin/ai-limit-increaser" element={<AdminRoute><AdminAILimitIncreaser /></AdminRoute>} />
+          <Route path="admin/ai-settings-extended" element={<AdminRoute><AdminMultiAISettings /></AdminRoute>} />
+          <Route path="admin/test-ai" element={<AdminRoute><AdminTestAI /></AdminRoute>} />
+          <Route path="admin/misuse-ai" element={<AdminRoute><AdminMisuseAI /></AdminRoute>} />
         </Route>
 
         {/* Exam is outside layout for fullscreen enforcement */}

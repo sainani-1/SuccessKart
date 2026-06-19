@@ -303,7 +303,7 @@ const LearnWithAI = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/ai-grok-chat', {
+      const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -333,6 +333,11 @@ const LearnWithAI = () => {
         }
         const errMsg = data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Something went wrong. Please try again.');
         setMessages((prev) => [...prev, { role: 'assistant', content: errMsg, timestamp: new Date().toISOString(), isError: true }]);
+        return;
+      }
+
+      if (data.isMisuse) {
+        setMessages((prev) => [...prev, { role: 'assistant', content: data.reply, timestamp: new Date().toISOString(), isError: true }]);
         return;
       }
 
