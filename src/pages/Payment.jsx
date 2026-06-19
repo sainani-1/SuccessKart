@@ -1020,7 +1020,7 @@ const Payment = () => {
       setScreenshotPreview('');
       setShowManualForm(false);
       setShowUpiAppPicker(false);
-      fetchProfile();
+      fetchProfile(profile.id, { background: true });
     } catch (error) {
       setAlertModal({
         show: true, title: 'Submission Failed',

@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
@@ -185,6 +185,13 @@ const ProtectedRoute = ({ children }) => {
   const { user, profile, realProfile, isImpersonating, loading, profileChecked } = auth || {};
   const location = useLocation();
   const [supportContactEmail, setSupportContactEmail] = useState('');
+  const wasCompleteRef = useRef(false);
+
+  useEffect(() => {
+    if (profile && isProfileComplete(profile)) {
+      wasCompleteRef.current = true;
+    }
+  }, [profile]);
 
   const handleBlockedAccountLogout = async () => {
     await supabase.auth.signOut();
@@ -216,6 +223,7 @@ const ProtectedRoute = ({ children }) => {
   if (!user) return <Navigate to="/login" />;
   if (!isImpersonating && !profile) {
     if (!profileChecked) return <LoadingSpinner message="Loading..." />;
+    if (wasCompleteRef.current) return <LoadingSpinner message="Loading..." />;
     if (user?.user_metadata?.role === 'admin') return <Navigate to="/app" replace />;
     return <Navigate to="/complete-profile" replace />;
   }

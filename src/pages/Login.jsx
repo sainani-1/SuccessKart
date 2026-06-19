@@ -643,7 +643,7 @@ const Login = () => {
       // Fetch user profile
       let { data: userProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, role, is_disabled, is_locked, locked_until, lock_reason, disabled_reason, deleted_at, deleted_reason, email, full_name, phone, avatar_url, education_level, study_stream, diploma_certificate, core_subject, session_violation_count')
+        .select('id, role, is_disabled, is_locked, locked_until, lock_reason, disabled_reason, deleted_at, deleted_reason, email, full_name, phone, avatar_url, education_level, study_stream, diploma_certificate, core_subject, session_violation_count, auth_provider, google_profile_completed, terms_accepted')
         .eq('id', signInData.user.id)
         .single();
 
@@ -816,6 +816,18 @@ const Login = () => {
         navigate('/admin-auth-choice', {
           state: { next: '/admin-auth-choice' }
         });
+        return;
+      }
+
+      // Check profile completeness before allowing dashboard access
+      if (!isProfileComplete(userProfile)) {
+        setLoggingIn(false);
+        setToast({
+          show: true,
+          message: 'Please complete your profile to continue.',
+          type: 'success'
+        });
+        navigate('/complete-profile', { replace: true });
         return;
       }
 
