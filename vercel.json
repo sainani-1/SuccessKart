@@ -32,6 +32,10 @@
       "handle": "filesystem"
     },
     {
+      "src": "/api/v1/meet(/.*)?",
+      "dest": "/api/meet"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
