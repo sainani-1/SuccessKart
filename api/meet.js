@@ -393,6 +393,19 @@ export default async function handler(req, res) {
     });
   }
 
+  const env = validateEnv();
+  if (!env.ok) {
+    return json(res, 500, { error: `Server configuration error: missing ${env.missing.join(', ')}` });
+  }
+
+  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+
+  // Public endpoint: /api/v1/meet/rooms/{name}/token (no API key required)
+  if (resource === 'rooms' && req.method === 'POST' && resourceId && subResource === 'token') {
+    return await handleCreateToken(req, res, supabase, null, resourceId, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
+  }
+
+  // All other endpoints require API key authentication
   const authHeader = req.headers['authorization'] || '';
   const apiKey = authHeader.replace(/^Bearer\s+/i, '').trim();
 
@@ -400,12 +413,6 @@ export default async function handler(req, res) {
     return json(res, 401, { error: 'Missing Authorization header. Use: Bearer YOUR_API_KEY' });
   }
 
-  const env = validateEnv();
-  if (!env.ok) {
-    return json(res, 500, { error: `Server configuration error: missing ${env.missing.join(', ')}` });
-  }
-
-  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
   const authResult = await authenticate(supabase, apiKey);
   if (!authResult.ok) {
     return json(res, authResult.status, { error: authResult.error });
@@ -423,10 +430,6 @@ export default async function handler(req, res) {
         return await handleStartSchedule(req, res, supabase, authResult.keyData, resourceId, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
       }
       return json(res, 405, { error: 'Method not allowed for schedule.' });
-    }
-
-    if (req.method === 'POST' && resourceId && subResource === 'token') {
-      return await handleCreateToken(req, res, supabase, null, resourceId, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
     }
 
     if (req.method === 'POST' && !resourceId) {
