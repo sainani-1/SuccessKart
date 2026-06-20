@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { RoomServiceClient, AccessToken } from 'livekit-server-sdk';
+import crypto from 'crypto';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -105,10 +106,11 @@ async function handleCreateRoom(req, res, supabase, keyData, lkUrl, lkApiKey, lk
     return json(res, 502, { error: 'Failed to create room in LiveKit.', details: err.message });
   }
 
+  const participantId = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
   const token = new AccessToken(lkApiKey, lkApiSecret, {
-    identity: `meet-api:${keyData.user_id}:${roomName}`,
+    identity: `meet:${participantId}`,
     ttl: '2h',
-    name: `Meet API User`,
+    name: `Guest ${participantId.slice(0, 6)}`,
   });
 
   token.addGrant({
@@ -183,6 +185,50 @@ async function handleDeleteRoom(req, res, supabase, keyData, roomName, lkUrl, lk
   return json(res, 200, { status: 'deleted', room_name: roomName });
 }
 
+async function handleCreateToken(req, res, supabase, keyData, roomName, lkUrl, lkApiKey, lkApiSecret) {
+  if (!roomName) {
+    return json(res, 400, { error: 'Room name is required.' });
+  }
+
+  const livekitRoomName = `sucesskart-meet-${roomName}`;
+  const client = new RoomServiceClient(lkUrl, lkApiKey, lkApiSecret);
+
+  let roomExists = false;
+  try {
+    const existing = await client.listRooms();
+    roomExists = existing.some(r => r.name === livekitRoomName);
+  } catch { /* ignore */ }
+
+  if (!roomExists) {
+    return json(res, 404, { error: `Room "${roomName}" not found. Create it first via POST /api/v1/meet/rooms.` });
+  }
+
+  const participantId = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+  const token = new AccessToken(lkApiKey, lkApiSecret, {
+    identity: `meet:${participantId}`,
+    ttl: '2h',
+    name: `Guest ${participantId.slice(0, 6)}`,
+  });
+
+  token.addGrant({
+    room: livekitRoomName,
+    roomJoin: true,
+    canPublish: true,
+    canSubscribe: true,
+  });
+
+  const jwt = await token.toJwt();
+
+  const APP_URL = (process.env.VITE_PUBLIC_APP_URL || 'http://localhost:5173').replace(/\/+$/, '');
+
+  return json(res, 201, {
+    room_name: roomName,
+    token: jwt,
+    server_url: lkUrl,
+    join_url: `${APP_URL}/meet/rooms/${roomName}?token=${jwt}&serverUrl=${encodeURIComponent(lkUrl)}`,
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.statusCode = 204;
@@ -195,6 +241,7 @@ export default async function handler(req, res) {
   const pathParts = url.pathname.replace(/^\/api\/v1\/meet\/?/, '').split('/').filter(Boolean);
   const resource = pathParts[0];
   const resourceId = pathParts[1];
+  const subResource = pathParts[2];
 
   if (resource && resource !== 'rooms') {
     return json(res, 404, { error: 'Not found. Use POST/GET /api/v1/meet/rooms or DELETE /api/v1/meet/rooms/{name}' });
@@ -207,6 +254,7 @@ export default async function handler(req, res) {
         'POST /api/v1/meet/rooms': 'Create a meeting room',
         'GET /api/v1/meet/rooms': 'List your meeting rooms',
         'DELETE /api/v1/meet/rooms/{name}': 'Delete a meeting room',
+        'POST /api/v1/meet/rooms/{name}/token': 'Generate a participant token for an existing room',
       },
       docs: '/sucesskart-meet-documentation',
       auth: 'Authorization: Bearer YOUR_API_KEY',
@@ -232,11 +280,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (req.method === 'POST' && resourceId && subResource === 'token') {
+      return await handleCreateToken(req, res, supabase, null, resourceId, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
+    }
+
     if (req.method === 'POST' && !resourceId) {
       return await handleCreateRoom(req, res, supabase, auth.keyData, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
     } else if (req.method === 'GET') {
       return await handleListRooms(req, res, supabase, auth.keyData, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
-    } else if (req.method === 'DELETE' && resourceId) {
+    } else if (req.method === 'DELETE' && resourceId && !subResource) {
       return await handleDeleteRoom(req, res, supabase, auth.keyData, resourceId, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
     }
 
