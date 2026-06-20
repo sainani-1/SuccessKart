@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Video, Key, CreditCard, ExternalLink, Code, Terminal, Globe } from 'lucide-react';
+import { Video, Key, CreditCard, ExternalLink, Code, Terminal, Globe, MousePointerClick } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const APP_URL = import.meta.env.VITE_PUBLIC_APP_URL?.replace(/\/+$/, '') || 'http://localhost:5173';
@@ -17,9 +17,16 @@ const Section = ({ icon: Icon, title, children }) => (
 );
 
 const CodeBlock = ({ children }) => (
-  <pre className="bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-sm font-mono leading-relaxed">
+  <pre className="bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-sm font-mono leading-relaxed whitespace-pre-wrap">
     {children}
   </pre>
+);
+
+const Step = ({ num, children }) => (
+  <div className="flex items-start gap-3">
+    <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">{num}</div>
+    <div className="flex-1">{children}</div>
+  </div>
 );
 
 const SucesskartMeetDocs = () => {
@@ -45,154 +52,105 @@ const SucesskartMeetDocs = () => {
         <Video size={48} className="text-blue-600 mx-auto" />
         <h1 className="text-3xl font-bold text-slate-900">SucessKart Meet API Documentation</h1>
         <p className="text-slate-500 max-w-2xl mx-auto">
-          Integrate video meeting capabilities into your application using the SucessKart Meet API.
-          Follow the steps below to get started.
+          Create video meeting rooms instantly via API. Your users can join with one click — no login needed.
         </p>
       </div>
 
       <Section icon={Key} title="1. Get Your API Key">
-        <p className="text-slate-600">
-          Visit the <a href="/sucesskart-meet-apikeys" className="text-blue-600 font-semibold hover:underline">SucessKart Meet API Keys</a> page.
-          Complete the payment and you will receive your unique API key. Keep this key secure — it is used to authenticate all API requests.
-        </p>
+        <ol className="list-decimal list-inside space-y-2 text-slate-600">
+          <li>Go to <a href="/sucesskart-meet-apikeys" className="text-blue-600 font-semibold hover:underline">SucessKart Meet API Keys</a></li>
+          <li>Pay <strong>₹499</strong> via UPI &mdash; admin will credit <strong>90 minutes</strong> to your account</li>
+          <li>Copy your API key from the page (it looks like <code className="bg-slate-100 px-1 rounded text-xs font-mono">884960d2-...</code>)</li>
+        </ol>
       </Section>
 
-      <Section icon={CreditCard} title="2. Payment">
-        <p className="text-slate-600">
-          Access to SucessKart Meet API requires a payment of <strong>₹499 for 90 minutes</strong> of usage.
-          Payment is via manual UPI transfer — once the admin confirms your payment, 90 minutes will be credited to your account.
-          When your minutes run out, you can recharge with another ₹499 for another 90 minutes.
-        </p>
-      </Section>
-
-      <Section icon={Terminal} title="3. Base URL">
-        <p className="text-slate-600">All API requests should be made to:</p>
+      <Section icon={Terminal} title="2. Base URL & Authentication">
+        <p className="text-slate-600">All requests go to:</p>
         <CodeBlock>{`${APP_URL}/api/v1/meet`}</CodeBlock>
-      </Section>
-
-      <Section icon={Globe} title="4. Authentication">
-        <p className="text-slate-600">
-          Include your API key in the <code className="bg-slate-100 px-2 py-0.5 rounded text-sm font-mono">Authorization</code> header of every request:
-        </p>
+        <p className="text-slate-600">Add these headers to every request:</p>
         <CodeBlock>{`Authorization: Bearer YOUR_API_KEY
 Content-Type: application/json`}</CodeBlock>
       </Section>
 
-      <Section icon={Code} title="5. Create a Meeting Room">
-        <p className="text-slate-600 font-semibold">Endpoint:</p>
-        <CodeBlock>{`POST /v1/meet/rooms`}</CodeBlock>
-        <p className="text-slate-600 font-semibold mt-3">Request Body:</p>
-        <CodeBlock>{`{
-  "room_name": "my-meeting-room",
-  "empty_timeout": 300,
-  "max_participants": 10
+      <Section icon={Code} title="3. Create a Meeting Room">
+        <Step num={1}>
+          <p className="text-slate-600 font-semibold">Send a POST request:</p>
+        </Step>
+        <CodeBlock>{`POST /api/v1/meet/rooms
+Body:
+{
+  "room_name": "my-meeting",     // required - letters, numbers, hyphens, underscores
+  "empty_timeout": 300,           // optional - auto-close after N sec empty (default 300, min 60, max 86400)
+  "max_participants": 10          // optional - max people in room (default 10, max 100)
 }`}</CodeBlock>
-        <table className="w-full text-sm text-slate-600 border border-slate-200 rounded-xl overflow-hidden">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="text-left px-4 py-2 font-semibold border-b">Field</th>
-              <th className="text-left px-4 py-2 font-semibold border-b">Type</th>
-              <th className="text-left px-4 py-2 font-semibold border-b">Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-b">
-              <td className="px-4 py-2 font-mono text-xs">room_name</td>
-              <td className="px-4 py-2">string</td>
-              <td className="px-4 py-2">Unique name for your meeting room</td>
-            </tr>
-            <tr className="border-b">
-              <td className="px-4 py-2 font-mono text-xs">empty_timeout</td>
-              <td className="px-4 py-2">number</td>
-              <td className="px-4 py-2">Auto-close room after N seconds of being empty (optional, default 300)</td>
-            </tr>
-            <tr>
-              <td className="px-4 py-2 font-mono text-xs">max_participants</td>
-              <td className="px-4 py-2">number</td>
-              <td className="px-4 py-2">Maximum number of participants (optional, default 10)</td>
-            </tr>
-          </tbody>
-        </table>
-        <p className="text-slate-600 font-semibold mt-4">Response:</p>
+
+        <Step num={2}>
+          <p className="text-slate-600 font-semibold">You get back:</p>
+        </Step>
         <CodeBlock>{`{
-  "room_name": "my-meeting-room",
-  "room_sid": "RM_abc123",
-  "join_url": "${APP_URL}/meet/rooms/my-meeting-room?token=xxx",
-  "token": "eyJhbGciOiJIUzI1NiIs..."
+  "room_name": "my-meeting",
+  "room_sid": "sucesskart-meet-my-meeting",
+  "join_url": "${APP_URL}/meet/rooms/my-meeting?token=xxx&serverUrl=wss://...",
+  "minutes_deducted": 5,
+  "minutes_remaining": 85
 }`}</CodeBlock>
-        <p className="text-slate-500 text-sm mt-2">
-          The <code className="bg-slate-100 px-1 rounded text-xs">join_url</code> can be opened directly in a browser.
-          The <code className="bg-slate-100 px-1 rounded text-xs">token</code> is a short-lived participant token for embedding via the SDK.
-        </p>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2 text-sm text-blue-800">
+          <p><strong>join_url</strong> — paste this in a browser to join the meeting instantly</p>
+          <p><strong>minutes_deducted</strong> — minutes consumed (based on empty_timeout, min 1)</p>
+          <p><strong>minutes_remaining</strong> — how many minutes you have left</p>
+        </div>
       </Section>
 
-      <Section icon={Code} title="6. List Your Rooms">
+      <Section icon={MousePointerClick} title="4. Join the Meeting">
+        <p className="text-slate-600">Simply open the <code className="bg-slate-100 px-1 rounded text-xs font-mono">join_url</code> in any browser:</p>
+        <CodeBlock>{`${APP_URL}/meet/rooms/my-meeting?token=eyJhbGci...&serverUrl=wss://...`}</CodeBlock>
+        <p className="text-slate-600">No login required. The token in the URL authenticates you automatically.</p>
+      </Section>
+
+      <Section icon={Code} title="5. List Your Rooms">
         <p className="text-slate-600 font-semibold">Endpoint:</p>
-        <CodeBlock>{`GET /v1/meet/rooms`}</CodeBlock>
+        <CodeBlock>{`GET /api/v1/meet/rooms`}</CodeBlock>
         <p className="text-slate-600 font-semibold mt-3">Response:</p>
         <CodeBlock>{`{
   "rooms": [
     {
-      "room_name": "my-meeting-room",
-      "room_sid": "RM_abc123",
-      "participant_count": 0,
-      "created_at": "2026-06-19T12:00:00Z"
+      "room_name": "my-meeting",
+      "room_sid": "sucesskart-meet-my-meeting",
+      "participant_count": 2,
+      "created_at": "2026-06-20T12:00:00Z"
     }
   ]
 }`}</CodeBlock>
       </Section>
 
-      <Section icon={Code} title="7. Delete a Room">
+      <Section icon={Code} title="6. Delete a Room">
         <p className="text-slate-600 font-semibold">Endpoint:</p>
-        <CodeBlock>{`DELETE /v1/meet/rooms/{room_name}`}</CodeBlock>
+        <CodeBlock>{`DELETE /api/v1/meet/rooms/my-meeting`}</CodeBlock>
         <p className="text-slate-600 font-semibold mt-3">Response:</p>
         <CodeBlock>{`{
-  "status": "deleted"
+  "status": "deleted",
+  "room_name": "my-meeting"
 }`}</CodeBlock>
       </Section>
 
-      <Section icon={Terminal} title="8. Example: Create a Room with cURL">
-        <CodeBlock>{`curl -X POST ${APP_URL}/api/v1/meet/rooms \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "room_name": "team-sync",
-    "empty_timeout": 600,
-    "max_participants": 20
-  }'`}</CodeBlock>
+      <Section icon={Terminal} title="7. Quick Start — Copy & Paste Examples">
+        <p className="text-slate-600 font-semibold">Step 1: Create a room (Windows PowerShell)</p>
+        <CodeBlock>{'curl -X POST ' + APP_URL + '/api/v1/meet/rooms\n  -H "Authorization: Bearer YOUR_API_KEY"\n  -H "Content-Type: application/json"\n  -d \'{"room_name":"my-meeting"}\''}</CodeBlock>
+
+        <p className="text-slate-600 font-semibold mt-4">Step 2: Open the <code className="bg-slate-100 px-1 rounded text-xs font-mono">join_url</code> from the response in your browser</p>
+        <p className="text-slate-600 font-semibold mt-4">Step 3: Delete the room when done</p>
+        <CodeBlock>{'curl -X DELETE ' + APP_URL + '/api/v1/meet/rooms/my-meeting\n  -H "Authorization: Bearer YOUR_API_KEY"'}</CodeBlock>
       </Section>
 
-      <Section icon={Terminal} title="9. Example: JavaScript SDK Integration">
-        <p className="text-slate-600">Install the SucessKart Meet client SDK:</p>
-        <CodeBlock>{`npm install @sucesskart/meet-client`}</CodeBlock>
-        <p className="text-slate-600 mt-3">Use it in your app:</p>
-        <CodeBlock>{`import { createRoom, joinRoom } from '@sucesskart/meet-client';
-
-const apiKey = 'YOUR_API_KEY';
-
-// Create a room
-const room = await createRoom(apiKey, {
-  room_name: 'meeting-' + Date.now(),
-  max_participants: 10
-});
-
-// Join the room
-joinRoom(room.token, {
-  container: document.getElementById('meet-container'),
-  displayName: 'John Doe'
-});`}</CodeBlock>
-      </Section>
-
-      <Section icon={Globe} title="10. Rate Limits">
+      <Section icon={Globe} title="8. Rate Limits">
         <p className="text-slate-600">
-          API requests are rate-limited to <strong>100 requests per minute</strong> per API key.
-          If you exceed this limit, you will receive a <code className="bg-slate-100 px-2 py-0.5 rounded text-sm font-mono">429 Too Many Requests</code> response.
+          <strong>100 requests per minute</strong> per API key. If exceeded, you get a <code className="bg-slate-100 px-2 py-0.5 rounded text-sm font-mono">429 Too Many Requests</code> response.
         </p>
       </Section>
 
-      <Section icon={Key} title="11. Need Help?">
+      <Section icon={Key} title="9. Need Help?">
         <p className="text-slate-600">
-          Contact us at <a href={`mailto:${supportEmail}`} className="text-blue-600 font-semibold hover:underline">{supportEmail}</a> for any questions or support.
+          Contact <a href={`mailto:${supportEmail}`} className="text-blue-600 font-semibold hover:underline">{supportEmail}</a> for support.
         </p>
       </Section>
 
