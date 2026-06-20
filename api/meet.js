@@ -106,11 +106,11 @@ async function handleCreateRoom(req, res, supabase, keyData, lkUrl, lkApiKey, lk
     return json(res, 502, { error: 'Failed to create room in LiveKit.', details: err.message });
   }
 
-  const participantId = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+  const hostId = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
   const token = new AccessToken(lkApiKey, lkApiSecret, {
-    identity: `meet:${participantId}`,
-    ttl: '2h',
-    name: `Guest ${participantId.slice(0, 6)}`,
+    identity: `meet:host:${hostId}`,
+    ttl: '4h',
+    name: 'Host',
   });
 
   token.addGrant({
@@ -118,6 +118,7 @@ async function handleCreateRoom(req, res, supabase, keyData, lkUrl, lkApiKey, lk
     roomJoin: true,
     canPublish: true,
     canSubscribe: true,
+    canPublishData: true,
   });
 
   const jwt = await token.toJwt();
@@ -203,11 +204,11 @@ async function handleCreateToken(req, res, supabase, keyData, roomName, lkUrl, l
     return json(res, 404, { error: `Room "${roomName}" not found. Create it first via POST /api/v1/meet/rooms.` });
   }
 
-  const participantId = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+  const guestId = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
   const token = new AccessToken(lkApiKey, lkApiSecret, {
-    identity: `meet:${participantId}`,
-    ttl: '2h',
-    name: `Guest ${participantId.slice(0, 6)}`,
+    identity: `meet:guest:${guestId}`,
+    ttl: '4h',
+    name: `Guest ${guestId.slice(0, 6)}`,
   });
 
   token.addGrant({
@@ -215,6 +216,7 @@ async function handleCreateToken(req, res, supabase, keyData, roomName, lkUrl, l
     roomJoin: true,
     canPublish: true,
     canSubscribe: true,
+    canPublishData: true,
   });
 
   const jwt = await token.toJwt();
@@ -226,6 +228,132 @@ async function handleCreateToken(req, res, supabase, keyData, roomName, lkUrl, l
     token: jwt,
     server_url: lkUrl,
     join_url: `${APP_URL}/meet/rooms/${roomName}?token=${jwt}&serverUrl=${encodeURIComponent(lkUrl)}`,
+  });
+}
+
+async function handleCreateSchedule(req, res, supabase, keyData) {
+  const body = await readBody(req);
+  const title = (body.title || '').trim();
+  const scheduledAt = body.scheduled_at;
+
+  if (!title) {
+    return json(res, 400, { error: 'title is required for scheduling.' });
+  }
+  if (!scheduledAt) {
+    return json(res, 400, { error: 'scheduled_at is required (ISO 8601 date).' });
+  }
+
+  const date = new Date(scheduledAt);
+  if (isNaN(date.getTime())) {
+    return json(res, 400, { error: 'Invalid scheduled_at date.' });
+  }
+
+  const roomName = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+
+  const { data, error } = await supabase
+    .from('sucesskart_meet_scheduled')
+    .insert({
+      user_id: keyData.user_id,
+      api_key_id: keyData.id,
+      room_name: roomName,
+      title,
+      scheduled_at: date.toISOString(),
+      status: 'scheduled',
+    })
+    .select('id, room_name, title, scheduled_at, status, created_at')
+    .maybeSingle();
+
+  if (error) {
+    return json(res, 500, { error: 'Failed to schedule meeting.', details: error.message });
+  }
+
+  return json(res, 201, data);
+}
+
+async function handleListSchedules(req, res, supabase, keyData) {
+  const { data, error } = await supabase
+    .from('sucesskart_meet_scheduled')
+    .select('id, room_name, title, scheduled_at, status, room_sid, created_at')
+    .eq('user_id', keyData.user_id)
+    .order('scheduled_at', { ascending: false });
+
+  if (error) {
+    return json(res, 500, { error: 'Failed to list schedules.', details: error.message });
+  }
+
+  return json(res, 200, { schedules: data || [] });
+}
+
+async function handleDeleteSchedule(req, res, supabase, keyData, id) {
+  const { data, error } = await supabase
+    .from('sucesskart_meet_scheduled')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', keyData.user_id)
+    .select('id')
+    .maybeSingle();
+
+  if (error || !data) {
+    return json(res, 404, { error: 'Scheduled meeting not found.' });
+  }
+
+  return json(res, 200, { status: 'cancelled', id });
+}
+
+async function handleStartSchedule(req, res, supabase, keyData, id, lkUrl, lkApiKey, lkApiSecret) {
+  const { data: schedule, error: fetchError } = await supabase
+    .from('sucesskart_meet_scheduled')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', keyData.user_id)
+    .maybeSingle();
+
+  if (fetchError || !schedule) {
+    return json(res, 404, { error: 'Scheduled meeting not found.' });
+  }
+
+  if (schedule.status !== 'scheduled') {
+    return json(res, 400, { error: `Cannot start meeting with status "${schedule.status}".` });
+  }
+
+  const livekitRoomName = `sucesskart-meet-${schedule.room_name}`;
+  const client = new RoomServiceClient(lkUrl, lkApiKey, lkApiSecret);
+
+  try {
+    await client.createRoom({
+      name: livekitRoomName,
+      emptyTimeout: 300,
+      maxParticipants: 10,
+    });
+  } catch (err) {
+    return json(res, 502, { error: 'Failed to create room.', details: err.message });
+  }
+
+  const hostId = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+  const token = new AccessToken(lkApiKey, lkApiSecret, {
+    identity: `meet:host:${hostId}`,
+    ttl: '4h',
+    name: 'Host',
+  });
+  token.addGrant({ room: livekitRoomName, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true });
+  const jwt = await token.toJwt();
+
+  const APP_URL = (process.env.VITE_PUBLIC_APP_URL || 'http://localhost:5173').replace(/\/+$/, '');
+
+  const { error: updateError } = await supabase
+    .from('sucesskart_meet_scheduled')
+    .update({ status: 'active', room_sid: livekitRoomName })
+    .eq('id', id);
+
+  if (updateError) {
+    console.error('Failed to update schedule status:', updateError);
+  }
+
+  return json(res, 201, {
+    room_name: schedule.room_name,
+    room_sid: livekitRoomName,
+    title: schedule.title,
+    join_url: `${APP_URL}/meet/rooms/${schedule.room_name}?token=${jwt}&serverUrl=${encodeURIComponent(lkUrl)}`,
   });
 }
 
@@ -243,8 +371,8 @@ export default async function handler(req, res) {
   const resourceId = pathParts[1];
   const subResource = pathParts[2];
 
-  if (resource && resource !== 'rooms') {
-    return json(res, 404, { error: 'Not found. Use POST/GET /api/v1/meet/rooms or DELETE /api/v1/meet/rooms/{name}' });
+  if (resource && resource !== 'rooms' && resource !== 'schedule') {
+    return json(res, 404, { error: 'Not found. Use /api/v1/meet/rooms or /api/v1/meet/schedule' });
   }
 
   if (!resource) {
@@ -255,6 +383,10 @@ export default async function handler(req, res) {
         'GET /api/v1/meet/rooms': 'List your meeting rooms',
         'DELETE /api/v1/meet/rooms/{name}': 'Delete a meeting room',
         'POST /api/v1/meet/rooms/{name}/token': 'Generate a participant token for an existing room',
+        'POST /api/v1/meet/schedule': 'Schedule a meeting for a future time',
+        'GET /api/v1/meet/schedule': 'List your scheduled meetings',
+        'DELETE /api/v1/meet/schedule/{id}': 'Cancel a scheduled meeting',
+        'POST /api/v1/meet/schedule/{id}/start': 'Start a scheduled meeting now',
       },
       docs: '/sucesskart-meet-documentation',
       auth: 'Authorization: Bearer YOUR_API_KEY',
@@ -274,22 +406,35 @@ export default async function handler(req, res) {
   }
 
   const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
-  const auth = await authenticate(supabase, apiKey);
-  if (!auth.ok) {
-    return json(res, auth.status, { error: auth.error });
+  const authResult = await authenticate(supabase, apiKey);
+  if (!authResult.ok) {
+    return json(res, authResult.status, { error: authResult.error });
   }
 
   try {
+    if (resource === 'schedule') {
+      if (req.method === 'POST' && !resourceId) {
+        return await handleCreateSchedule(req, res, supabase, authResult.keyData);
+      } else if (req.method === 'GET') {
+        return await handleListSchedules(req, res, supabase, authResult.keyData);
+      } else if (req.method === 'DELETE' && resourceId && !subResource) {
+        return await handleDeleteSchedule(req, res, supabase, authResult.keyData, resourceId);
+      } else if (req.method === 'POST' && resourceId && subResource === 'start') {
+        return await handleStartSchedule(req, res, supabase, authResult.keyData, resourceId, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
+      }
+      return json(res, 405, { error: 'Method not allowed for schedule.' });
+    }
+
     if (req.method === 'POST' && resourceId && subResource === 'token') {
       return await handleCreateToken(req, res, supabase, null, resourceId, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
     }
 
     if (req.method === 'POST' && !resourceId) {
-      return await handleCreateRoom(req, res, supabase, auth.keyData, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
+      return await handleCreateRoom(req, res, supabase, authResult.keyData, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
     } else if (req.method === 'GET') {
-      return await handleListRooms(req, res, supabase, auth.keyData, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
+      return await handleListRooms(req, res, supabase, authResult.keyData, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
     } else if (req.method === 'DELETE' && resourceId && !subResource) {
-      return await handleDeleteRoom(req, res, supabase, auth.keyData, resourceId, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
+      return await handleDeleteRoom(req, res, supabase, authResult.keyData, resourceId, env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
     }
 
     return json(res, 405, { error: 'Method not allowed.' });

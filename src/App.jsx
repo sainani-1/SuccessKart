@@ -168,6 +168,7 @@ const AdminMisuseAI = lazy(() => import('./pages/AdminMisuseAI'));
 const AdminSucesskartMeetSettings = lazy(() => import('./pages/AdminSucesskartMeetSettings'));
 const SucesskartMeetDocs = lazy(() => import('./pages/SucesskartMeetDocs'));
 const SucesskartMeetApiKeys = lazy(() => import('./pages/SucesskartMeetApiKeys'));
+const ScheduleMeet = lazy(() => import('./pages/ScheduleMeet'));
 const MeetRoom = lazy(() => import('./pages/MeetRoom'));
 const AdminSucesskartMeetPayments = lazy(() => import('./pages/AdminSucesskartMeetPayments'));
 const AchievementTimeline = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AchievementTimeline })));
@@ -605,6 +606,7 @@ function App() {
         <Route path="/admin-mfa-verify" element={<AdminMFAVerify />} />
         <Route path="/sucesskart-meet-documentation" element={<SucesskartMeetDocs />} />
         <Route path="/sucesskart-meet-apikeys" element={<SucesskartMeetApiKeys />} />
+        <Route path="/sucesskart-meet-schedule" element={<ScheduleMeet />} />
         <Route path="/meet/rooms/:roomName" element={<MeetRoom />} />
       </Routes>
       </Suspense>
