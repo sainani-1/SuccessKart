@@ -313,42 +313,44 @@ const MeetRoom = () => {
           <span className="font-semibold">{roomName}</span>
         </div>
       </div>
-      <div className="flex-1 relative flex overflow-hidden">
-        {showParticipants && (
-          <div className="h-full overflow-y-auto p-2 shrink-0">
-            <ParticipantList />
-          </div>
-        )}
-        <div className="flex-1 relative min-w-0">
-          <RoomErrorBoundary>
-            <LiveKitRoom
-              token={token}
-              serverUrl={serverUrl}
-              connect
-              audio
-              video
-              className="h-full w-full"
-              onDisconnected={() => setDisconnected(true)}
-            >
-              <RoomAudioRenderer />
-              <VideoGrid />
-            </LiveKitRoom>
-          </RoomErrorBoundary>
-        </div>
-        {showChat && (
-          <div className="h-full overflow-y-auto p-2 shrink-0">
-            <ChatPanel />
-          </div>
-        )}
+      <div className="flex-1 flex flex-col min-h-0">
+        <RoomErrorBoundary>
+          <LiveKitRoom
+            token={token}
+            serverUrl={serverUrl}
+            connect
+            audio
+            video
+            className="flex-1 flex flex-col min-h-0"
+            onDisconnected={() => setDisconnected(true)}
+          >
+            <RoomAudioRenderer />
+            <div className="flex-1 flex overflow-hidden">
+              {showParticipants && (
+                <div className="h-full overflow-y-auto p-2 shrink-0">
+                  <ParticipantList />
+                </div>
+              )}
+              <div className="flex-1 relative min-w-0">
+                <VideoGrid />
+              </div>
+              {showChat && (
+                <div className="h-full overflow-y-auto p-2 shrink-0">
+                  <ChatPanel />
+                </div>
+              )}
+            </div>
+            <ControlBar
+              roomName={roomName}
+              onLeave={handleLeave}
+              onToggleParticipants={() => setShowParticipants(p => !p)}
+              onToggleChat={() => setShowChat(c => !c)}
+              showParticipants={showParticipants}
+              showChat={showChat}
+            />
+          </LiveKitRoom>
+        </RoomErrorBoundary>
       </div>
-      <ControlBar
-        roomName={roomName}
-        onLeave={handleLeave}
-        onToggleParticipants={() => setShowParticipants(p => !p)}
-        onToggleChat={() => setShowChat(c => !c)}
-        showParticipants={showParticipants}
-        showChat={showChat}
-      />
     </div>
   );
 };
