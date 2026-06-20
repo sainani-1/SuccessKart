@@ -130,13 +130,12 @@ async function handleCreateRoom(req, res, supabase, keyData, lkUrl, lkApiKey, lk
   }
 
   const APP_URL = (process.env.VITE_PUBLIC_APP_URL || 'http://localhost:5173').replace(/\/+$/, '');
+  const encodedUrl = encodeURIComponent(lkUrl);
 
   return json(res, 201, {
     room_name: roomName,
     room_sid: livekitRoomName,
-    join_url: `${APP_URL}/meet/rooms/${roomName}?token=${jwt}`,
-    token: jwt,
-    url: lkUrl,
+    join_url: `${APP_URL}/meet/rooms/${roomName}?token=${jwt}&serverUrl=${encodedUrl}`,
     minutes_deducted: minutesToDeduct,
     minutes_remaining: keyData.minutes_remaining - minutesToDeduct,
   });
