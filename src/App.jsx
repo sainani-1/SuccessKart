@@ -165,6 +165,10 @@ const AdminLWAILimitSettings = lazy(() => import('./pages/AdminLWAILimitSettings
 const AdminMultiAISettings = lazy(() => import('./pages/AdminMultiAISettings'));
 const AdminTestAI = lazy(() => import('./pages/AdminTestAI'));
 const AdminMisuseAI = lazy(() => import('./pages/AdminMisuseAI'));
+const AdminSucesskartMeetSettings = lazy(() => import('./pages/AdminSucesskartMeetSettings'));
+const SucesskartMeetDocs = lazy(() => import('./pages/SucesskartMeetDocs'));
+const SucesskartMeetApiKeys = lazy(() => import('./pages/SucesskartMeetApiKeys'));
+const AdminSucesskartMeetPayments = lazy(() => import('./pages/AdminSucesskartMeetPayments'));
 const AchievementTimeline = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AchievementTimeline })));
 const AdminAtRiskStudents = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AdminAtRiskStudents })));
 const AdminSecurityReview = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.AdminSecurityReview })));
@@ -585,6 +589,8 @@ function App() {
           <Route path="admin/ai-settings-extended" element={<AdminRoute><AdminMultiAISettings /></AdminRoute>} />
           <Route path="admin/test-ai" element={<AdminRoute><AdminTestAI /></AdminRoute>} />
           <Route path="admin/misuse-ai" element={<AdminRoute><AdminMisuseAI /></AdminRoute>} />
+          <Route path="admin/sucesskart-meet-settings" element={<AdminRoute><AdminSucesskartMeetSettings /></AdminRoute>} />
+          <Route path="admin/sucesskart-meet-payments" element={<AdminRoute><AdminSucesskartMeetPayments /></AdminRoute>} />
         </Route>
 
         {/* Exam is outside layout for fullscreen enforcement */}
@@ -596,6 +602,8 @@ function App() {
         <Route path="/live-class/:sessionId" element={<ProtectedRoute><LiveClass /></ProtectedRoute>} />
         <Route path="/admin-mfa-setup" element={<AdminMFASetup />} />
         <Route path="/admin-mfa-verify" element={<AdminMFAVerify />} />
+        <Route path="/sucesskart-meet-documentation" element={<SucesskartMeetDocs />} />
+        <Route path="/sucesskart-meet-apikeys" element={<SucesskartMeetApiKeys />} />
       </Routes>
       </Suspense>
     </BrowserRouter>

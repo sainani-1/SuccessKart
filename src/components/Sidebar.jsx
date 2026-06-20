@@ -1241,6 +1241,14 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <ListChecks size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Payment Responses</span>}
             </NavLink>
+            <NavLink to="/app/admin/sucesskart-meet-settings" className={navItemClass} title="SucessKart Meet API">
+              <Video size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Meet API</span>}
+            </NavLink>
+            <NavLink to="/app/admin/sucesskart-meet-payments" className={navItemClass} title="SucessKart Meet Payments">
+              <ListChecks size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Meet Payments</span>}
+            </NavLink>
             <NavLink to="/app/admin/send-email" className={navItemClass} title="Send Email">
               <Mail size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Send Email</span>}
