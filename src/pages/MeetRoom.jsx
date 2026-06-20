@@ -1,15 +1,40 @@
 import React from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { LiveKitRoom, RoomAudioRenderer, useTracks, ParticipantTile } from '@livekit/components-react';
+import { LiveKitRoom, RoomAudioRenderer, useTracks, ParticipantTile, TrackRefContext } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { Video, XCircle } from 'lucide-react';
+
+class RoomErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex items-center justify-center h-full text-white">
+          <div className="text-center space-y-2">
+            <p className="text-red-400 text-lg font-semibold">Something went wrong</p>
+            <p className="text-slate-400 text-sm">Please try reconnecting or create a new meeting.</p>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function VideoGrid() {
   const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare], { onlySubscribed: false });
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 h-full">
       {tracks.map(track => (
-        <ParticipantTile key={track.participant.identity + track.source} participant={track.participant} />
+        <TrackRefContext.Provider key={track.participant.identity + track.source} value={track}>
+          <ParticipantTile participant={track.participant} />
+        </TrackRefContext.Provider>
       ))}
     </div>
   );
@@ -55,18 +80,20 @@ const MeetRoom = () => {
         </div>
       </div>
       <div className="flex-1 relative">
-        <LiveKitRoom
-          token={token}
-          serverUrl={serverUrl}
-          connect
-          audio
-          video
-          className="h-full w-full"
-          onDisconnected={() => setDisconnected(true)}
-        >
-          <RoomAudioRenderer />
-          <VideoGrid />
-        </LiveKitRoom>
+        <RoomErrorBoundary>
+          <LiveKitRoom
+            token={token}
+            serverUrl={serverUrl}
+            connect
+            audio
+            video
+            className="h-full w-full"
+            onDisconnected={() => setDisconnected(true)}
+          >
+            <RoomAudioRenderer />
+            <VideoGrid />
+          </LiveKitRoom>
+        </RoomErrorBoundary>
       </div>
     </div>
   );

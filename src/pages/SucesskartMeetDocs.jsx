@@ -133,13 +133,30 @@ Body:
 }`}</CodeBlock>
       </Section>
 
-      <Section icon={Terminal} title="7. Quick Start — Copy & Paste Examples">
-        <p className="text-slate-600 font-semibold">Step 1: Create a room (Windows PowerShell)</p>
-        <CodeBlock>{'curl -X POST ' + APP_URL + '/api/v1/meet/rooms\n  -H "Authorization: Bearer YOUR_API_KEY"\n  -H "Content-Type: application/json"\n  -d \'{"room_name":"my-meeting"}\''}</CodeBlock>
+      <Section icon={Terminal} title="7. Quick Start — Create a Room (All Platforms)">
+        <p className="text-slate-600 font-semibold">Windows — Command Prompt (cmd.exe)</p>
+        <CodeBlock>{'curl -X POST ' + APP_URL + '/api/v1/meet/rooms ^\n  -H "Authorization: Bearer YOUR_API_KEY" ^\n  -H "Content-Type: application/json" ^\n  -d "{\\"room_name\\":\\"my-meeting\\"}"'}</CodeBlock>
 
-        <p className="text-slate-600 font-semibold mt-4">Step 2: Open the <code className="bg-slate-100 px-1 rounded text-xs font-mono">join_url</code> from the response in your browser</p>
-        <p className="text-slate-600 font-semibold mt-4">Step 3: Delete the room when done</p>
-        <CodeBlock>{'curl -X DELETE ' + APP_URL + '/api/v1/meet/rooms/my-meeting\n  -H "Authorization: Bearer YOUR_API_KEY"'}</CodeBlock>
+        <p className="text-slate-600 font-semibold mt-4">Windows — PowerShell</p>
+        <CodeBlock>{'curl -X POST ' + APP_URL + '/api/v1/meet/rooms `\n  -H "Authorization: Bearer YOUR_API_KEY" `\n  -H "Content-Type: application/json" `\n  -d \'{"room_name":"my-meeting"}\''}</CodeBlock>
+
+        <p className="text-slate-600 font-semibold mt-4">macOS / Linux (bash/zsh)</p>
+        <CodeBlock>{'curl -X POST ' + APP_URL + '/api/v1/meet/rooms \\\n  -H "Authorization: Bearer YOUR_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"room_name":"my-meeting"}\''}</CodeBlock>
+
+        <p className="text-slate-600 font-semibold mt-6">Delete a Room</p>
+        <p className="text-slate-500 text-sm">Replace <code className="bg-slate-100 px-1 rounded text-xs font-mono">my-meeting</code> with your room name.</p>
+
+        <p className="text-slate-600 font-semibold mt-3">Windows cmd.exe</p>
+        <CodeBlock>{'curl -X DELETE ' + APP_URL + '/api/v1/meet/rooms/my-meeting ^\n  -H "Authorization: Bearer YOUR_API_KEY"'}</CodeBlock>
+
+        <p className="text-slate-600 font-semibold mt-3">PowerShell</p>
+        <CodeBlock>{'curl -X DELETE ' + APP_URL + '/api/v1/meet/rooms/my-meeting `\n  -H "Authorization: Bearer YOUR_API_KEY"'}</CodeBlock>
+
+        <p className="text-slate-600 font-semibold mt-3">macOS / Linux</p>
+        <CodeBlock>{'curl -X DELETE ' + APP_URL + '/api/v1/meet/rooms/my-meeting \\\n  -H "Authorization: Bearer YOUR_API_KEY"'}</CodeBlock>
+
+        <p className="text-slate-600 font-semibold mt-6">List Rooms (same on all platforms)</p>
+        <CodeBlock>{'curl ' + APP_URL + '/api/v1/meet/rooms\n  -H "Authorization: Bearer YOUR_API_KEY"'}</CodeBlock>
       </Section>
 
       <Section icon={Globe} title="8. Rate Limits">
