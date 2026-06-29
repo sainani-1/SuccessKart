@@ -82,6 +82,8 @@ const AdminTeacherRequests = lazy(() => import('./pages/AdminTeacherRequests'));
 const CertificateBlocks = lazy(() => import('./pages/CertificateBlocks'));
 const AdminResetPassword = lazy(() => import('./pages/AdminResetPassword'));
 const AdminUserPasswordResetPage = lazy(() => import('./pages/AdminUserPasswordResetPage'));
+const KnowYourLevel = lazy(() => import('./pages/KnowYourLevel'));
+const SkillUp = lazy(() => import('./pages/SkillUp'));
 const StartupIdeas = lazy(() => import('./pages/StartupIdeas'));
 const AdminStartupIdeas = lazy(() => import('./pages/AdminStartupIdeas'));
 const StartupCollaborations = lazy(() => import('./pages/StartupCollaborations'));
@@ -158,6 +160,7 @@ const AdminAISettings = lazy(() => import('./pages/AdminAISettings'));
 const AdminResumeLimits = lazy(() => import('./pages/AdminResumeLimits'));
 const AdminQuestionBank = lazy(() => import('./pages/AdminQuestionBank'));
 const StudentQuestionBank = lazy(() => import('./pages/StudentQuestionBank'));
+const LearnByPlaying = lazy(() => import('./pages/LearnByPlaying'));
 const AdminVMISettings = lazy(() => import('./pages/AdminVMISettings'));
 const AdminVMILimits = lazy(() => import('./pages/AdminVMILimits'));
 const AdminVMILimitSettings = lazy(() => import('./pages/AdminVMILimitSettings'));
@@ -428,6 +431,9 @@ function App() {
                     <Route path="logic-building-leaderboard" element={<LogicBuildingLeaderboard />} />
           <Route path="admin/exam-settings" element={<AdminRoute><AdminExamSettings /></AdminRoute>} />
           <Route index element={<Dashboard />} />
+          <Route path="learn-by-playing" element={<LearnByPlaying />} />
+          <Route path="know-your-level" element={<KnowYourLevel />} />
+          <Route path="skill-up" element={<SkillUp />} />
           <Route path="courses" element={<CourseList />} />
           <Route path="daily-planner" element={<StudentDailyPlanner />} />
           <Route path="course-checklist" element={<CourseCompletionChecklist />} />
@@ -561,6 +567,7 @@ function App() {
           <Route path="admin/send-email" element={<AdminRoute><AdminSendEmail /></AdminRoute>} />
           <Route path="admin/issue-reports" element={<AdminRoute><AdminIssueReports /></AdminRoute>} />
           <Route path="admin/reset-password" element={<AdminRoute><AdminResetPassword /></AdminRoute>} />
+          <Route path="admin/reset-pass" element={<AdminRoute><RequireSensitiveAdminMFA><AdminUserPasswordResetPage /></RequireSensitiveAdminMFA></AdminRoute>} />
           <Route path="admin/mfa-management" element={<AdminRoute><AdminMFAManagement /></AdminRoute>} />
           <Route path="admin/login-otp" element={<AdminRoute><AdminLoginOtpSettings /></AdminRoute>} />
           <Route path="admin/tried-to-register" element={<AdminRoute><AdminTriedToRegister /></AdminRoute>} />

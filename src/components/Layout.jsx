@@ -115,6 +115,7 @@ const Layout = () => {
   const getPanelTargets = (role) => {
     const common = [
       { label: 'Dashboard', path: '/app' },
+      { label: 'Learn by Playing', path: '/app/learn-by-playing' },
       { label: 'Logic Building', path: '/app/logic-building-contest' },
       { label: 'Logic Building Leaderboard', path: '/app/logic-building-leaderboard' },
       { label: 'Leaderboard', path: '/app/logic-building-leaderboard' },

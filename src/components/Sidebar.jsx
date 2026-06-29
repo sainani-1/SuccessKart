@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { useNotifications } from '../context/NotificationContext';
@@ -561,6 +561,12 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <LayoutDashboard size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Dashboard</span>}
             </NavLink>
+            {role !== 'student' && (
+              <NavLink to="/app/learn-by-playing" className={navItemClass} title="Learn by Playing">
+                <Gamepad2 size={28} />
+                {shouldShowText && <span className="truncate text-sm font-medium">Learn by Playing</span>}
+              </NavLink>
+            )}
             <NavLink to="/app/logic-building-contest" className={navItemClass} title="Logic Building Contest">
               <Sparkles size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Logic Building</span>}
@@ -704,6 +710,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Brain size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Learn with AI</span>}
             </NavLink>
+            <NavLink to="/app/know-your-level" className={navItemClass} title="Know Your Level">
+              <Brain size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Know Your Level</span>}
+            </NavLink>
             {vmiAccess?.ai_prep_enabled && (
               <NavLink to="/app/ai-prep" className={navItemClass} title="AI Prep">
                 <Sparkles size={28} />
@@ -755,6 +765,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/personal-roadmap" className={navItemClass} title="Personal Roadmap">
               <Sparkles size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Personal Roadmap</span>}
+            </NavLink>
+            <NavLink to="/app/skill-up" className={navItemClass} title="SkillUp Yourself">
+              <Trophy size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">SkillUp Yourself</span>}
             </NavLink>
             {premiumPlusActive && (
               <>
@@ -1261,9 +1275,13 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Wrench size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Issue Reports</span>}
             </NavLink>
-            <NavLink to="/app/admin/reset-password" className={navItemClass} title="Reset Password">
+            <NavLink to="/app/admin/reset-password" className={navItemClass} title="Reset Password Settings">
               <Lock size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Reset Password</span>}
+            </NavLink>
+            <NavLink to="/app/admin/reset-pass" className={navItemClass} title="Reset User Password">
+              <KeyRound size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Reset User Pass</span>}
             </NavLink>
             <NavLink to="/app/admin/mfa-management" className={navItemClass} title="MFA Management">
               <ShieldCheck size={28} />
