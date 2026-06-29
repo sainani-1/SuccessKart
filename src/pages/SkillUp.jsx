@@ -7,6 +7,7 @@ import SkillUpDashboard from '../components/coding/SkillUpDashboard';
 import { getLevelFromXp, generateHeatmapData, calculateStreak } from '../data/skillUpUtils';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
+import PremiumPlusUpgradeGate from '../components/PremiumPlusUpgradeGate';
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -15,8 +16,20 @@ const TABS = [
 ];
 
 const SkillUp = () => {
-  const { profile, user } = useAuth();
+  const { profile, user, isPremiumPlus } = useAuth();
   const actorId = profile?.id || user?.id || null;
+  const hasAccess = isPremiumPlus(profile);
+
+  if (!hasAccess) {
+    return (
+      <PremiumPlusUpgradeGate
+        profile={profile}
+        title="Premium Plus Required"
+        message="SkillUp coding challenges with 50,000+ problems is a Premium Plus feature. Upgrade to unlock the full coding practice platform."
+        inline={true}
+      />
+    );
+  }
   const [activeTab, setActiveTab] = useState('problems');
   const [selectedProblem, setSelectedProblem] = useState(null);
   const [userProgress, setUserProgress] = useState({

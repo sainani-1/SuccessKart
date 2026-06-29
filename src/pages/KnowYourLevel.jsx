@@ -3,6 +3,8 @@ import { Brain, Code2, ArrowRight, ChevronLeft, Clock, BarChart3 } from 'lucide-
 import { QUIZ_QUESTIONS } from '../data/quizQuestions';
 import QuizEngine from '../components/quiz/QuizEngine';
 import QuizResult from '../components/quiz/QuizResult';
+import { useAuth } from '../context/AuthContext';
+import PremiumPlusUpgradeGate from '../components/PremiumPlusUpgradeGate';
 
 const LANGUAGES = [
   { key: 'python', label: 'Python', color: 'from-blue-500 to-blue-700' },
@@ -51,10 +53,23 @@ const LEVELS = [
 ];
 
 const KnowYourLevel = () => {
+  const { profile, isPremiumPlus } = useAuth();
+  const hasAccess = isPremiumPlus(profile);
   const [selectedLang, setSelectedLang] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState(null);
   const [quizState, setQuizState] = useState('select');
   const [quizResult, setQuizResult] = useState(null);
+
+  if (!hasAccess) {
+    return (
+      <PremiumPlusUpgradeGate
+        profile={profile}
+        title="Premium Plus Required"
+        message="Know Your Level assessment is a Premium Plus feature. Upgrade to unlock skill assessments across 16 programming languages."
+        inline={true}
+      />
+    );
+  }
 
   if (quizState === 'playing') {
     return (

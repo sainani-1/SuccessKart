@@ -4,13 +4,13 @@ import { Award, X } from 'lucide-react';
 import { buildPlanCheckoutPath } from '../utils/planCheckout';
 import { getPremiumPlanType } from '../utils/premium';
 
-const PremiumPlusUpgradeGate = ({ profile, title = 'Premium Plus Required', message, onClose = null }) => {
+const PremiumPlusUpgradeGate = ({ profile, title = 'Premium Plus Required', message, onClose = null, inline = false }) => {
   const planType = getPremiumPlanType(profile);
   const isPremium = planType === 'premium';
   const ctaLabel = isPremium ? 'Upgrade to Premium Plus' : 'Buy Premium Plus';
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4">
+    <div className={inline ? 'w-full py-12 flex items-center justify-center' : 'fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4'}>
       <div className="relative w-full max-w-md rounded-lg bg-white p-6 text-center shadow-2xl">
         {onClose ? (
           <button
