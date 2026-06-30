@@ -79,104 +79,120 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards Row */}
+      <div className="relative overflow-hidden rounded-[2rem] border border-amber-200 bg-gradient-to-br from-white via-sky-50 to-amber-50 p-5 md:p-6 shadow-[0_18px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        <div className="absolute inset-0 opacity-100" style={{ backgroundImage: 'radial-gradient(circle at top right, rgba(251,191,36,0.18), transparent 24%), radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 28%)' }} />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">
+              <Route size={12} />
+              Performance Snapshot
+            </div>
+            <h2 className="mt-4 text-2xl md:text-3xl font-black text-slate-900">Your progress at a glance</h2>
+            <p className="mt-2 max-w-2xl text-sm md:text-base text-slate-600">
+              The dashboard is now designed to read like a clean scorecard, with the most important numbers first and supporting insights tucked below.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-[11px] text-slate-500">
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm">Solved updates instantly</span>
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm">Recent activity stays visible</span>
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm">Weak and strong topics</span>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-blue-500/10">
+            <div className="rounded-xl bg-blue-500/10 p-2.5">
               <Code2 size={18} className="text-blue-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-400">Solved</p>
-              <p className="text-xl font-bold text-white">{stats.problemsSolved}</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Solved</p>
+              <p className="text-2xl font-bold text-slate-900">{stats.problemsSolved}</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-orange-500/10">
+            <div className="rounded-xl bg-orange-500/10 p-2.5">
               <Flame size={18} className="text-orange-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-400">Streak</p>
-              <p className="text-xl font-bold text-white">{stats.currentStreak}d</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Streak</p>
+              <p className="text-2xl font-bold text-slate-900">{stats.currentStreak}d</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/10">
+            <div className="rounded-xl bg-amber-500/10 p-2.5">
               <Zap size={18} className="text-amber-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-400">XP</p>
-              <p className="text-xl font-bold text-white">{stats.xp.toLocaleString()}</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">XP</p>
+              <p className="text-2xl font-bold text-slate-900">{stats.xp.toLocaleString()}</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-purple-500/10">
+            <div className="rounded-xl bg-purple-500/10 p-2.5">
               <Trophy size={18} className="text-purple-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-400">Level</p>
-              <p className="text-xl font-bold text-white">{level}</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Level</p>
+              <p className="text-2xl font-bold text-slate-900">{level}</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-500/10">
+            <div className="rounded-xl bg-emerald-500/10 p-2.5">
               <Medal size={18} className="text-emerald-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-400">Rank</p>
-              <p className="text-xl font-bold text-white">{rank}</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Rank</p>
+              <p className="text-2xl font-bold text-slate-900">{rank}</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-sky-500/10">
+            <div className="rounded-xl bg-sky-500/10 p-2.5">
               <Globe size={18} className="text-sky-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-400">Global</p>
-              <p className="text-xl font-bold text-white">#{stats.globalRank}</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Global</p>
+              <p className="text-2xl font-bold text-slate-900">#{stats.globalRank}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* XP Progress Bar */}
-      <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-2">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm backdrop-blur-xl">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Zap size={16} className="text-amber-400" />
-            <span className="text-sm text-slate-300">Level {level} Progress</span>
+            <span className="text-sm font-medium text-slate-800">Level {level} Progress</span>
           </div>
-          <span className="text-xs text-slate-400">{xp % 500} / 500 XP ({Math.round(levelProgress)}%)</span>
+          <span className="text-xs text-slate-500">{xp % 500} / 500 XP ({Math.round(levelProgress)}%)</span>
         </div>
-        <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+        <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-emerald-400 transition-all duration-500"
             style={{ width: `${levelProgress}%` }}
           />
         </div>
-        <p className="text-xs text-slate-500 mt-2">{xpForNext} XP needed for Level {level + 1}</p>
+        <p className="mt-2 text-xs text-slate-500">{xpForNext} XP needed for Level {level + 1}</p>
       </div>
 
-      {/* Two column layout */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left + Middle */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Heatmap */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm backdrop-blur-xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <BarChart3 size={16} className="text-slate-400" />
-                <h3 className="text-sm font-semibold text-slate-300">Contribution Heatmap</h3>
+                <h3 className="text-sm font-semibold text-slate-800">Contribution Heatmap</h3>
               </div>
               <span className="text-xs text-slate-500">Last 365 days</span>
             </div>
@@ -203,27 +219,26 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-1 mt-3 justify-end">
-              <span className="text-[10px] text-slate-600">Less</span>
-              <div className="w-3 h-3 rounded-sm bg-slate-800/60" />
-              <div className="w-3 h-3 rounded-sm bg-emerald-900/40" />
-              <div className="w-3 h-3 rounded-sm bg-emerald-700/60" />
-              <div className="w-3 h-3 rounded-sm bg-emerald-500/70" />
+            <div className="mt-3 flex items-center gap-1 justify-end">
+              <span className="text-[10px] text-slate-500">Less</span>
+              <div className="w-3 h-3 rounded-sm bg-slate-100" />
+              <div className="w-3 h-3 rounded-sm bg-emerald-100" />
+              <div className="w-3 h-3 rounded-sm bg-emerald-300/70" />
               <div className="w-3 h-3 rounded-sm bg-emerald-400/80" />
+              <div className="w-3 h-3 rounded-sm bg-emerald-500/90" />
               <span className="text-[10px] text-slate-600">More</span>
             </div>
           </div>
 
-          {/* Weekly Chart */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm backdrop-blur-xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <TrendingUp size={16} className="text-slate-400" />
-                <h3 className="text-sm font-semibold text-slate-300">This Week</h3>
+                <TrendingUp size={16} className="text-slate-500" />
+                <h3 className="text-sm font-semibold text-slate-900">This Week</h3>
               </div>
               <span className="text-xs text-slate-500">{weeklyData.reduce((s, d) => s + d.count, 0)} submissions</span>
             </div>
-            <div className="flex items-end gap-2 h-24">
+            <div className="flex items-end gap-2 h-28">
               {weeklyData.map((day, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
                   <span className="text-[10px] text-slate-500">{day.count}</span>
@@ -231,30 +246,29 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
                     className="w-full rounded-md bg-gradient-to-t from-amber-500 to-orange-400 transition-all duration-300"
                     style={{ height: `${(day.count / maxWeekly) * 100}%`, minHeight: day.count > 0 ? '4px' : '2px', opacity: day.count > 0 ? 1 : 0.2 }}
                   />
-                  <span className="text-[10px] text-slate-600">{day.label}</span>
+                  <span className="text-[10px] text-slate-500">{day.label}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Recent Submissions */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm backdrop-blur-xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Clock size={16} className="text-slate-400" />
-                <h3 className="text-sm font-semibold text-slate-300">Recent Submissions</h3>
+                <Clock size={16} className="text-slate-500" />
+                <h3 className="text-sm font-semibold text-slate-900">Recent Submissions</h3>
               </div>
               <span className="text-xs text-slate-500">Last 10</span>
             </div>
             <div className="space-y-2">
               {recentSubs.length === 0 && (
-                <p className="text-sm text-slate-500 text-center py-4">No submissions yet. Start solving!</p>
+                <p className="text-sm text-slate-500 text-center py-5">No submissions yet. Start solving!</p>
               )}
               {recentSubs.map((sub, i) => {
                 const problem = sub.problem_id ? allProblems.find(p => p.id === sub.problem_id) : null;
                 return (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/30">
-                    <div>
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                    <div className="flex-shrink-0">
                       {sub.status === 'Accepted' ? (
                         <CheckCircle size={16} className="text-emerald-400" />
                       ) : (
@@ -262,7 +276,7 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-300 truncate font-medium">
+                      <p className="text-sm text-slate-900 truncate font-medium">
                         {problem?.title || sub.title || `Problem #${sub.problemId || sub.problem_id || '?'}`}
                       </p>
                       <p className="text-xs text-slate-500">
@@ -275,11 +289,11 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
                         <span>{formatDate(sub.created_at)}</span>
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {sub.status === 'Accepted' ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium">Accepted</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 font-medium">Accepted</span>
                       ) : (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">{sub.status || 'Failed'}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/20">{sub.status || 'Failed'}</span>
                       )}
                       {sub.xp_earned > 0 && (
                         <span className="text-xs text-amber-400 flex items-center gap-0.5">
@@ -294,14 +308,15 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
           </div>
         </div>
 
-        {/* Right Column */}
         <div className="space-y-6">
-          {/* Accuracy + Stats */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5 text-center">
-            <h3 className="text-sm font-semibold text-slate-300 mb-4">Accuracy</h3>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm backdrop-blur-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-slate-900">Acceptance</h3>
+              <span className="text-xs text-slate-500">{acceptedCount} / {stats.totalSubmissions}</span>
+            </div>
             <div className="relative w-32 h-32 mx-auto">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 128 128">
-                <circle cx="64" cy="64" r="54" fill="none" stroke="rgba(148,163,184,0.1)" strokeWidth="10" />
+                <circle cx="64" cy="64" r="54" fill="none" stroke="rgba(148,163,184,0.18)" strokeWidth="10" />
                 <circle
                   cx="64" cy="64" r="54" fill="none" stroke="url(#accuracyGradient)"
                   strokeWidth="10" strokeLinecap="round"
@@ -317,83 +332,77 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-white">{accuracyPct}%</p>
-                  <p className="text-xs text-slate-500">Acceptance</p>
+                  <p className="text-3xl font-black text-slate-900">{accuracyPct}%</p>
+                  <p className="text-[11px] text-slate-500 uppercase tracking-[0.2em]">Acceptance</p>
                 </div>
               </div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-center">
-              <div className="bg-slate-800/40 rounded-xl p-2">
-                <p className="text-lg font-bold text-white">{stats.totalSubmissions}</p>
-                <p className="text-[10px] text-slate-500">Submissions</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-lg font-bold text-slate-900">{stats.totalSubmissions}</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-[0.18em]">Submissions</p>
               </div>
-              <div className="bg-slate-800/40 rounded-xl p-2">
-                <p className="text-lg font-bold text-white">{stats.problemsSolved}</p>
-                <p className="text-[10px] text-slate-500">Accepted</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-lg font-bold text-slate-900">{stats.problemsSolved}</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-[0.18em]">Accepted</p>
               </div>
-            </div>
-            <div className="mt-3 text-[10px] text-slate-500">
-              {acceptedCount} accepted / {stats.totalSubmissions} total submissions
             </div>
           </div>
 
-          {/* Coding Hours & Stats Mini */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm backdrop-blur-xl">
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-800/40 rounded-xl p-3 text-center">
-                <Clock size={16} className="mx-auto text-slate-400 mb-1" />
-                <p className="text-lg font-bold text-white">{stats.totalCodingHours}h</p>
-                <p className="text-[10px] text-slate-500">Coding Hours</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+                <Clock size={16} className="mx-auto text-slate-500 mb-1" />
+                <p className="text-lg font-bold text-slate-900">{stats.totalCodingHours}h</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-[0.18em]">Coding Hours</p>
               </div>
-              <div className="bg-slate-800/40 rounded-xl p-3 text-center">
-                <Layers size={16} className="mx-auto text-slate-400 mb-1" />
-                <p className="text-lg font-bold text-white">{level}</p>
-                <p className="text-[10px] text-slate-500">Current Level</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+                <Layers size={16} className="mx-auto text-slate-500 mb-1" />
+                <p className="text-lg font-bold text-slate-900">{level}</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-[0.18em]">Current Level</p>
               </div>
             </div>
           </div>
 
-          {/* Strong Areas */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm backdrop-blur-xl">
             <div className="flex items-center gap-2 mb-4">
               <Star size={16} className="text-amber-400" />
-              <h3 className="text-sm font-semibold text-slate-300">Strong Areas</h3>
+              <h3 className="text-sm font-semibold text-slate-900">Strong Areas</h3>
             </div>
             {strong.length === 0 ? (
               <p className="text-xs text-slate-500">Solve more problems to identify your strengths.</p>
             ) : (
               <div className="space-y-2">
                 {strong.slice(0, 5).map((topic, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                  <div key={i} className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
                     <div className="flex items-center gap-2">
                       <BadgeCheck size={14} className="text-emerald-400" />
-                      <span className="text-sm text-slate-300">{topic.name}</span>
+                      <span className="text-sm text-slate-800">{topic.name}</span>
                     </div>
-                    <span className="text-xs text-emerald-400">{topic.solved} solved</span>
+                    <span className="text-xs text-emerald-600">{topic.solved} solved</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Needs Work */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm backdrop-blur-xl">
             <div className="flex items-center gap-2 mb-4">
               <Target size={16} className="text-red-400" />
-              <h3 className="text-sm font-semibold text-slate-300">Needs Work</h3>
+              <h3 className="text-sm font-semibold text-slate-900">Needs Work</h3>
             </div>
             {weak.length === 0 ? (
               <p className="text-xs text-slate-500">Keep solving to discover areas for improvement.</p>
             ) : (
               <div className="space-y-2">
                 {weak.slice(0, 5).map((topic, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-red-500/5 border border-red-500/10">
+                  <div key={i} className="flex items-center justify-between rounded-xl border border-red-100 bg-red-50 px-3 py-2">
                     <div className="flex items-center gap-2">
                       <AlertTriangle size={14} className="text-red-400" />
-                      <span className="text-sm text-slate-300">{topic.name}</span>
+                      <span className="text-sm text-slate-800">{topic.name}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs text-red-400">{topic.solved}/{topic.total}</span>
+                      <span className="text-xs text-red-600">{topic.solved}/{topic.total}</span>
                       <span className="text-[10px] text-slate-500 ml-1">
                         ({Math.round((topic.accuracy || 0) * 100)}%)
                       </span>
@@ -404,43 +413,41 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
             )}
           </div>
 
-          {/* Badges & Achievements */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm backdrop-blur-xl">
             <div className="flex items-center gap-2 mb-4">
               <Award size={16} className="text-purple-400" />
-              <h3 className="text-sm font-semibold text-slate-300">Badges & Achievements</h3>
+              <h3 className="text-sm font-semibold text-slate-900">Badges & Achievements</h3>
             </div>
             {badges.length === 0 ? (
               <p className="text-xs text-slate-500">Earn badges by completing challenges and streaks.</p>
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {badges.map((badge, i) => (
-                  <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 transition-colors group">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-lg shadow-lg group-hover:scale-110 transition-transform">
+                  <div key={i} className="flex flex-col items-center gap-1 rounded-2xl border border-amber-100 bg-amber-50 p-3 text-center transition-colors hover:bg-amber-100/70">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-lg shadow-lg">
                       {badge.icon || '🏆'}
                     </div>
-                    <span className="text-[10px] text-slate-400 text-center leading-tight group-hover:text-slate-300 transition-colors">{badge.name}</span>
+                    <span className="text-[10px] leading-tight text-slate-500">{badge.name}</span>
                   </div>
                 ))}
               </div>
             )}
             {badges.length > 0 && (
-              <p className="text-[10px] text-slate-500 mt-3 text-center">{badges.length} badge{badges.length !== 1 ? 's' : ''} unlocked</p>
+              <p className="mt-3 text-center text-[10px] text-slate-500">{badges.length} badge{badges.length !== 1 ? 's' : ''} unlocked</p>
             )}
           </div>
 
-          {/* Coins Earned Today */}
-          <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl p-5">
+          <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-5 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500">
+              <div className="rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 p-3">
                 <Gem size={20} className="text-white" />
               </div>
               <div>
-                <p className="text-xs text-amber-400/80">Coins Earned Today</p>
-                <p className="text-2xl font-bold text-white">{stats.coinsToday}</p>
+                <p className="text-xs text-amber-700 uppercase tracking-[0.18em]">Coins Earned Today</p>
+                <p className="text-2xl font-bold text-slate-900">{stats.coinsToday}</p>
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-2 text-xs text-amber-400/60">
+            <div className="mt-3 flex items-center gap-2 text-xs text-amber-700/80">
               <Sparkles size={12} />
               Complete problems to earn more coins
             </div>

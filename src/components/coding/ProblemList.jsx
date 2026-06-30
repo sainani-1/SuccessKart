@@ -155,7 +155,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search problems..."
-            className="w-full pl-9 pr-9 py-2.5 bg-slate-800/60 border border-slate-600/50 rounded-xl text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+            className="w-full pl-9 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 shadow-sm"
           />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
@@ -163,11 +163,11 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
             </button>
           )}
         </div>
-        <div className="text-sm text-slate-400 mb-2">Search results ({results.length})</div>
+        <div className="text-sm text-slate-500 mb-2">Search results ({results.length})</div>
         {results.length === 0 ? (
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-12 text-center">
-            <Brain size={48} className="mx-auto text-slate-600 mb-4" />
-            <p className="text-slate-400">No problems match your search.</p>
+          <div className="bg-white backdrop-blur-xl border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+            <Brain size={48} className="mx-auto text-slate-400 mb-4" />
+            <p className="text-slate-500">No problems match your search.</p>
           </div>
         ) : (
           <div className="grid gap-2">
@@ -180,8 +180,8 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
                   key={problem.id}
                   onClick={() => unlocked && onSelectProblem?.(problem.id)}
                   disabled={!unlocked}
-                  className={`w-full text-left bg-slate-900/80 backdrop-blur-xl border rounded-xl p-3 transition-all duration-200 ${
-                    unlocked ? 'border-slate-700/50 hover:border-amber-500/30 hover:shadow-lg cursor-pointer' : 'border-slate-800/50 opacity-50 cursor-not-allowed'
+                className={`w-full text-left bg-white backdrop-blur-xl border rounded-xl p-3 transition-all duration-200 shadow-sm ${
+                    unlocked ? 'border-slate-200 hover:border-amber-300 hover:shadow-md cursor-pointer' : 'border-slate-200 opacity-50 cursor-not-allowed'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -191,7 +191,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
                        <Circle size={16} className="text-slate-600" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className={`text-sm font-medium ${unlocked ? 'text-white' : 'text-slate-500'}`}>{problem.id}. {cleanTitle(problem.title)}</span>
+                      <span className={`text-sm font-medium ${unlocked ? 'text-slate-900' : 'text-slate-500'}`}>{problem.id}. {cleanTitle(problem.title)}</span>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${diffColor}`}>{problem.difficulty}</span>
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -211,44 +211,52 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 border border-amber-500/20 rounded-[2rem] p-5 md:p-6 shadow-2xl shadow-black/20">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="relative overflow-hidden rounded-[2rem] border border-amber-200 bg-gradient-to-br from-white via-sky-50 to-amber-50 p-5 md:p-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+        <div className="absolute inset-0 opacity-100" style={{ backgroundImage: 'radial-gradient(circle at top left, rgba(16,185,129,0.14), transparent 28%), radial-gradient(circle at top right, rgba(251,191,36,0.18), transparent 24%), radial-gradient(circle at 30% 80%, rgba(59,130,246,0.10), transparent 26%)' }} />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">
               <Route size={12} />
               50K+ Question Explorer
             </div>
-            <h2 className="mt-3 text-2xl md:text-3xl font-black text-white">
-              Basic to Expert, all in one learning path
+            <h2 className="mt-4 text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+              A clear path from basics to expert mastery
             </h2>
-            <p className="mt-2 text-sm md:text-base text-slate-300 max-w-xl">
-              Practice structured problems, track what you have solved, and move from absolute basics to competitive programming with a clean roadmap.
+            <p className="mt-3 max-w-2xl text-sm md:text-base leading-7 text-slate-600">
+              Search, open, solve, and track progress in one calm workspace. The roadmap below keeps beginner problems visible, unlocks new difficulty bands in order, and marks solved problems instantly.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:min-w-[340px]">
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Total</p>
-              <p className="mt-1 text-2xl font-bold text-white">{problemStats.total.toLocaleString()}</p>
+          <div className="grid grid-cols-2 gap-3 sm:min-w-[360px]">
+            <div className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Total</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{problemStats.total.toLocaleString()}</p>
             </div>
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Solved</p>
-              <p className="mt-1 text-2xl font-bold text-emerald-300">{problemStats.solved.toLocaleString()}</p>
+            <div className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Solved</p>
+              <p className="mt-1 text-2xl font-bold text-emerald-600">{problemStats.solved.toLocaleString()}</p>
             </div>
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Unlocked</p>
-              <p className="mt-1 text-2xl font-bold text-amber-300">{problemStats.unlocked.toLocaleString()}</p>
+            <div className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Unlocked</p>
+              <p className="mt-1 text-2xl font-bold text-amber-600">{problemStats.unlocked.toLocaleString()}</p>
             </div>
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Progress</p>
-              <p className="mt-1 text-2xl font-bold text-white">{problemStats.completion}%</p>
+            <div className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Progress</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{problemStats.completion}%</p>
             </div>
           </div>
         </div>
-        <div className="mt-4 h-2 rounded-full bg-white/10 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-orange-500 transition-all duration-700"
-            style={{ width: `${problemStats.completion}%` }}
-          />
+        <div className="relative mt-5">
+          <div className="h-2 rounded-full bg-white overflow-hidden shadow-inner">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-orange-500 transition-all duration-700"
+              style={{ width: `${problemStats.completion}%` }}
+            />
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 shadow-sm">Beginner stays visible</span>
+            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 shadow-sm">Solved problems stay checked</span>
+            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 shadow-sm">Unlocks follow your level</span>
+          </div>
         </div>
       </div>
 
@@ -256,7 +264,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
           <Route size={20} className="text-amber-400" />
-          <h2 className="text-lg font-bold text-white">Learning Roadmap</h2>
+          <h2 className="text-lg font-bold text-slate-900">Learning Roadmap</h2>
           <span className="text-xs text-slate-500">Tap a section to expand</span>
         </div>
         <div className="flex items-center gap-2">
@@ -267,7 +275,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search problems..."
-              className="pl-8 pr-3 py-1.5 bg-slate-800/60 border border-slate-600/50 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 w-48"
+              className="pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 w-56 shadow-sm"
             />
           </div>
         </div>
@@ -280,11 +288,17 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
           const stats = curriculumStats[sectionId] || { solved: 0, total: 0 };
           const colors = sectionColors[sectionId];
           return (
-            <div key={sectionId} className={`bg-gradient-to-br ${colors.bg} rounded-2xl p-3 border ${colors.border}`}>
-              <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{section?.label || sectionId}</p>
-              <p className="text-xl font-bold text-white mt-1">{stats.solved}<span className="text-sm font-normal opacity-60">/{stats.total}</span></p>
-              <div className="w-full h-1.5 bg-white/10 rounded-full mt-2 overflow-hidden">
-                <div className="h-full bg-white/40 rounded-full transition-all duration-500" style={{ width: stats.total > 0 ? `${(stats.solved / stats.total) * 100}%` : '0%' }} />
+            <div key={sectionId} className="relative overflow-hidden rounded-2xl p-4 border border-slate-200 bg-white shadow-sm">
+              <div className="absolute inset-0 bg-white/5 opacity-40" />
+              <div className="relative">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] opacity-80">{section?.label || sectionId}</p>
+                  <span className="text-[10px] rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{Math.round(stats.total > 0 ? (stats.solved / stats.total) * 100 : 0)}%</span>
+                </div>
+                <p className="text-xl font-bold text-slate-900 mt-1">{stats.solved}<span className="text-sm font-normal text-slate-500">/{stats.total}</span></p>
+                <div className="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-emerald-400 via-amber-400 to-orange-500" style={{ width: stats.total > 0 ? `${(stats.solved / stats.total) * 100}%` : '0%' }} />
+                </div>
               </div>
             </div>
           );
@@ -306,64 +320,63 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
           const sectionProbs = sectionProblemsMap[sectionId] || [];
 
           return (
-            <div key={sectionId} className={`bg-slate-900/80 backdrop-blur-xl border ${colors.border} rounded-2xl overflow-hidden transition-all duration-300 ${!isUnlocked ? 'opacity-60' : ''}`}>
+            <div key={sectionId} className={`overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition-all duration-300 ${!isUnlocked ? 'opacity-60' : ''}`}>
               {/* Section Header */}
               <button
                 onClick={() => isUnlocked && toggleSection(sectionId)}
                 disabled={!isUnlocked}
-                className={`w-full flex items-center gap-4 p-4 transition-colors ${isUnlocked ? 'hover:bg-slate-800/40 cursor-pointer' : 'cursor-not-allowed'}`}
+                className={`w-full flex items-center gap-4 p-4 md:p-5 transition-colors ${isUnlocked ? 'hover:bg-slate-50 cursor-pointer' : 'cursor-not-allowed'}`}
               >
-                <div className={`flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br ${colors.bg} flex items-center justify-center text-lg`}>
+                <div className={`flex-shrink-0 w-11 h-11 rounded-2xl bg-gradient-to-br ${colors.bg} flex items-center justify-center text-lg shadow-lg`}>
                   {sectionIcons[sectionId]}
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-white">{section.label}</h3>
-                    {!isUnlocked && <Lock size={14} className="text-slate-500" />}
+                    <h3 className="text-base md:text-lg font-bold text-slate-900">{section.label}</h3>
+                    {!isUnlocked && <Lock size={14} className="text-slate-400" />}
                   </div>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
                     <span className={`text-xs font-medium ${colors.text}`}>{stats.solved}/{stats.total} solved</span>
-                    <div className="flex-1 max-w-[200px] h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r ${colors.bg}`}
-                        style={{ width: stats.total > 0 ? `${(stats.solved / stats.total) * 100}%` : '0%' }} />
+                    <div className="flex-1 min-w-[120px] max-w-[260px] h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r ${colors.bg}`} style={{ width: stats.total > 0 ? `${(stats.solved / stats.total) * 100}%` : '0%' }} />
                     </div>
                     <span className="text-xs text-slate-500">{Math.round(stats.total > 0 ? (stats.solved / stats.total) * 100 : 0)}%</span>
                   </div>
                 </div>
                 <div className="flex-shrink-0">
-                  {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
+                  {isExpanded ? <ChevronDown size={18} className="text-slate-500" /> : <ChevronRight size={18} className="text-slate-500" />}
                 </div>
               </button>
 
               {/* Section Content */}
               {isExpanded && isUnlocked && (
-                <div className="border-t border-slate-700/30">
+                <div className="border-t border-slate-100">
                   {sectionId === 'beginner' ? (
                     /* Beginner: flat list with ⭕/✅ */
-                    <div className="p-4 space-y-1">
+                    <div className="p-4 md:p-5 space-y-1">
                       {sectionProbs.slice(0, 20).map((problem, idx) => {
                         const solved = solvedIds.has(problem.id);
                         return (
                           <button
                             key={problem.id}
                             onClick={() => onSelectProblem?.(problem.id)}
-                            className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${
-                              solved ? 'bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10' : 'hover:bg-slate-700/40'
+                            className={`w-full text-left flex items-center gap-3 px-3 md:px-4 py-3 rounded-2xl transition-all group ${
+                              solved ? 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200' : 'hover:bg-slate-50 border border-transparent'
                             }`}
                           >
                             <span className="flex-shrink-0">
                               {solved ? <CheckCircle size={18} className="text-emerald-400" /> : <Circle size={18} className="text-slate-500" />}
                             </span>
                             <span className="text-sm text-slate-400 w-6 flex-shrink-0">{idx + 1}.</span>
-                            <span className={`text-sm flex-1 min-w-0 ${solved ? 'text-emerald-300 font-medium' : 'text-slate-300 group-hover:text-white'}`}>
+                            <span className={`text-sm md:text-[15px] flex-1 min-w-0 ${solved ? 'text-emerald-700 font-medium' : 'text-slate-700 group-hover:text-slate-900'}`}>
                               {problem.title}
                             </span>
                             {solved && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-medium">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 font-medium">
                                 Solved
                               </span>
                             )}
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] bg-amber-100 text-amber-700 border border-amber-200">
                               <Zap size={8} />{problem.xpReward} XP
                             </span>
                           </button>
@@ -372,7 +385,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
                     </div>
                   ) : (
                     /* Easy/Medium/Hard/Expert: sub-section layout */
-                    <div className="p-4 space-y-3">
+                    <div className="p-4 md:p-5 space-y-3">
                       {subSections.map((sub, subIdx) => {
                         const topicKey = `${sectionId}-${subIdx}`;
                         const isTopicExpanded = expandedTopics.has(topicKey);
@@ -380,14 +393,14 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
                         const subSolved = subProblems.filter(p => solvedIds.has(p.id)).length;
                         if (subProblems.length === 0) return null;
                         return (
-                          <div key={subIdx} className="bg-slate-800/40 rounded-xl overflow-hidden border border-slate-700/30">
+                          <div key={subIdx} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                             <button
                               onClick={() => toggleTopic(topicKey)}
-                              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-700/30 transition-colors"
+                              className="w-full flex items-center justify-between px-4 py-3 hover:bg-white transition-colors"
                             >
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-slate-300">{sub.topic}</span>
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${subSolved === subProblems.length ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700/50 text-slate-400'}`}>
+                                <span className="text-sm md:text-[15px] font-medium text-slate-800">{sub.topic}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${subSolved === subProblems.length ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                                   {subSolved}/{subProblems.length}
                                 </span>
                               </div>
@@ -404,16 +417,16 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
                                       key={problem.id}
                                       onClick={() => unlocked && onSelectProblem?.(problem.id)}
                                       disabled={!unlocked}
-                                      className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-                                        unlocked ? 'hover:bg-slate-700/40 cursor-pointer' : 'opacity-50 cursor-not-allowed'
+                                      className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                                        unlocked ? 'hover:bg-white cursor-pointer' : 'opacity-50 cursor-not-allowed'
                                       }`}
                                     >
                                       <span className="flex-shrink-0 text-sm">
                                         {!unlocked ? <Lock size={14} className="text-slate-600" /> :
-                                         solved ? <CheckCircle size={14} className="text-emerald-400" /> :
-                                         <Circle size={14} className="text-slate-600" />}
+                                         solved ? <CheckCircle size={14} className="text-emerald-500" /> :
+                                         <Circle size={14} className="text-slate-400" />}
                                       </span>
-                                      <span className={`text-sm flex-1 min-w-0 truncate ${solved ? 'text-emerald-300' : unlocked ? 'text-slate-300' : 'text-slate-600'}`}>
+                                      <span className={`text-sm flex-1 min-w-0 truncate ${solved ? 'text-emerald-700' : unlocked ? 'text-slate-700' : 'text-slate-500'}`}>
                                         {cleanTitle(problem.title)}
                                       </span>
                                       <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${diffColor} flex-shrink-0`}>
