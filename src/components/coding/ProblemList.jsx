@@ -5,14 +5,6 @@ import { getDifficultyBadgeColor, getLevelFromXp, isDifficultyUnlocked } from '.
 
 const CURRICULUM_ORDER = ['beginner', 'easy', 'medium', 'hard', 'expert'];
 
-const DIFFICULTY_SECTION_MAP = {
-  beginner: ['Very Easy'],
-  easy: ['Easy', 'Basic', 'Beginner'],
-  medium: ['Intermediate'],
-  hard: ['Advanced', 'Hard', 'Very Hard'],
-  expert: ['Expert', 'Competitive Programming'],
-};
-
 function cleanTitle(title) {
   return title
     .replace(/\s+\d+$/, '')
@@ -28,7 +20,7 @@ function cleanTitle(title) {
     .trim();
 }
 
-const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
+const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems = [] }) => {
   const [search, setSearch] = useState('');
   const [expandedSections, setExpandedSections] = useState(new Set(CURRICULUM_ORDER));
   const [expandedTopics, setExpandedTopics] = useState(new Set());
@@ -37,40 +29,35 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
   const solvedIds = new Set(userProgress?.solvedIds || []);
   const level = getLevelFromXp(totalXp);
 
-  const problemMap = useMemo(() => {
-    const map = {};
-    problems.forEach(p => { map[p.id] = p; });
-    return map;
-  }, [problems]);
-
+  // Use pre-populated CURRICULUM data instead of filtering 50k problems
   const curriculumStats = useMemo(() => {
     const stats = {};
     for (const sectionId of CURRICULUM_ORDER) {
-      let sectionProblems;
-      if (sectionId === 'beginner') {
-        sectionProblems = problems.filter(p => p.id >= 1 && p.id <= 20);
-      } else {
-        const difficulties = DIFFICULTY_SECTION_MAP[sectionId] || [];
-        sectionProblems = problems.filter(p => p.id > 20 && difficulties.includes(p.difficulty));
-      }
-      const solved = sectionProblems.filter(p => solvedIds.has(p.id)).length;
-      stats[sectionId] = { solved, total: sectionProblems.length, xpGained: 0 };
+      const section = CURRICULUM.find(s => s.id === sectionId);
+      if (!section) continue;
+      const ids = section.problemIds || [];
+      const solved = ids.filter(id => solvedIds.has(id)).length;
+      stats[sectionId] = { solved, total: ids.length, xpGained: 0 };
     }
     return stats;
-  }, [problems, solvedIds]);
+  }, [solvedIds]);
+
+  const problemByIdMap = useMemo(() => {
+    const map = new Map();
+    allProblems.forEach(p => map.set(p.id, p));
+    return map;
+  }, [allProblems]);
 
   const sectionProblemsMap = useMemo(() => {
     const map = {};
     for (const sectionId of CURRICULUM_ORDER) {
-      if (sectionId === 'beginner') {
-        map[sectionId] = problems.filter(p => p.id >= 1 && p.id <= 20).sort((a, b) => a.id - b.id);
-      } else {
-        const difficulties = DIFFICULTY_SECTION_MAP[sectionId] || [];
-        map[sectionId] = problems.filter(p => p.id > 20 && difficulties.includes(p.difficulty));
-      }
+      const section = CURRICULUM.find(s => s.id === sectionId);
+      if (!section) continue;
+      const ids = section.problemIds || [];
+      map[sectionId] = ids.map(id => problemByIdMap.get(id)).filter(Boolean);
     }
     return map;
-  }, [problems]);
+  }, [problemByIdMap]);
 
   const problemStats = useMemo(() => {
     const total = problems.length;
@@ -88,24 +75,14 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
     const map = {};
     CURRICULUM.forEach(section => {
       if (section.subSections && section.id !== 'beginner') {
-        const sectionProblems = sectionProblemsMap[section.id] || [];
         section.subSections.forEach(ss => {
-          const tagLower = ss.topic.toLowerCase();
-          const matching = sectionProblems.filter(p => {
-            const pTags = (p.tags || []).map(t => t.toLowerCase());
-            return pTags.some(t => {
-              if (t === tagLower || t.includes(tagLower) || tagLower.includes(t)) return true;
-              const normalizedTag = tagLower.replace(/[\s-]/g, '').toLowerCase();
-              const normalizedT = t.replace(/[\s-]/g, '').toLowerCase();
-              return normalizedT.includes(normalizedTag) || normalizedTag.includes(normalizedT);
-            });
-          });
-          map[`${section.id}-${ss.topic}`] = matching;
+          const ids = ss.problems || [];
+          map[`${section.id}-${ss.topic}`] = ids.map(id => problemByIdMap.get(id)).filter(Boolean);
         });
       }
     });
     return map;
-  }, [sectionProblemsMap]);
+  }, [problemByIdMap]);
 
   const toggleSection = (id) => {
     setExpandedSections(prev => {

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Zap, ChevronDown, ChevronUp, Play, CheckCircle, XCircle, RotateCcw, Maximize2, Minimize2, Lightbulb, MessageSquare, Send, AlertTriangle, Clock, Copy, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { ArrowLeft, ArrowRight, Zap, ChevronDown, ChevronUp, Play, CheckCircle, XCircle, RotateCcw, Maximize2, Minimize2, Lightbulb, MessageSquare, Send, AlertTriangle, Clock, Copy, Check, SkipBack, SkipForward, Forward, Flag } from 'lucide-react';
 import MonacoCdnEditor from '../MonacoCdnEditor';
 import { runCode } from '../../logicBuilding/codeRunner';
 import { getDifficultyBadgeColor, TEMPLATES, LANGUAGES } from '../../data/skillUpUtils';
 
-const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId }) => {
+const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, allProblems = [], onSelectProblem }) => {
   const isSolved = (userProgress?.solvedIds || []).includes(problem.id);
   const savedLang = typeof window !== 'undefined' ? localStorage.getItem('skillup_last_language') || 'python' : 'python';
   const [language, setLanguage] = useState(savedLang);
@@ -28,6 +28,50 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId })
   const [copied, setCopied] = useState(false);
   const editorContainerRef = useRef(null);
   const contentRef = useRef(null);
+
+  // Pre-compute problem lookup map and sorted IDs for O(1) navigation
+  const problemById = useMemo(() => {
+    const map = new Map();
+    allProblems.forEach(p => map.set(p.id, p));
+    return map;
+  }, [allProblems]);
+
+  const sortedIds = useMemo(() => {
+    return [...new Set(allProblems.map(p => p.id))].sort((a, b) => a - b);
+  }, [allProblems]);
+
+  // Navigation: simple ID-based ordering (problems are sequential by ID)
+  const { prevProblem, nextProblem, nextUnsolvedProblem } = useMemo(() => {
+    const currentIndex = sortedIds.indexOf(problem.id);
+    if (currentIndex === -1) return { prevProblem: null, nextProblem: null, nextUnsolvedProblem: null };
+
+    const solvedIdsSet = new Set(userProgress?.solvedIds || []);
+
+    const prevProblem = currentIndex > 0 ? problemById.get(sortedIds[currentIndex - 1]) : null;
+    const nextProblem = currentIndex < sortedIds.length - 1 ? problemById.get(sortedIds[currentIndex + 1]) : null;
+
+    // Find next unsolved problem
+    let nextUnsolvedProblem = null;
+    for (let i = currentIndex + 1; i < sortedIds.length; i++) {
+      if (!solvedIdsSet.has(sortedIds[i])) {
+        nextUnsolvedProblem = problemById.get(sortedIds[i]);
+        break;
+      }
+    }
+
+    return { prevProblem, nextProblem, nextUnsolvedProblem };
+  }, [problem.id, sortedIds, problemById, userProgress?.solvedIds]);
+
+  const handleNavigate = (targetProblem) => {
+    if (targetProblem && onSelectProblem) {
+      onSelectProblem(targetProblem.id);
+    }
+  };
+  const handleNavigateToProblem = (problemId) => {
+    if (onSelectProblem) {
+      onSelectProblem(problemId);
+    }
+  };
   const completionVisible = isSolved || results?.accepted;
 
   // Time tracking
@@ -194,6 +238,23 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId })
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Navigation buttons */}
+          <button
+            onClick={() => handleNavigate(prevProblem)}
+            disabled={!prevProblem}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-sm text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title="Previous Problem"
+          >
+            <SkipBack size={14} />
+          </button>
+          <button
+            onClick={() => handleNavigate(nextProblem)}
+            disabled={!nextProblem}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-sm text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title="Next Problem"
+          >
+            <SkipForward size={14} />
+          </button>
           <button
             onClick={handleReset}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-sm text-slate-400 hover:text-white transition-colors"
@@ -533,6 +594,21 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId })
                   </div>
                 </div>
               ))}
+              {/* Solve Next Unsolved Problem button */}
+              {results?.accepted && nextUnsolvedProblem && (
+                <div className="pt-2 border-t border-slate-700/30">
+                  <button
+                    onClick={() => handleNavigateToProblem(nextUnsolvedProblem.id)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/25"
+                  >
+                    <ArrowRight size={18} />
+                    <span>Solve Next Unsolved Problem</span>
+                    <span className="px-2 py-0.5 rounded bg-white/20 text-xs font-mono">
+                      #{nextUnsolvedProblem.id}. {nextUnsolvedProblem.title}
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

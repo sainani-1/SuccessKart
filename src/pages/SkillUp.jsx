@@ -451,6 +451,8 @@ const SkillUp = () => {
         onSubmit={handleSubmitProblem}
         userProgress={displayProgress}
         userId={actorId}
+        allProblems={CODING_PROBLEMS}
+        onSelectProblem={handleSelectProblem}
       />
     );
   }
@@ -587,6 +589,7 @@ const SkillUp = () => {
           problems={CODING_PROBLEMS}
           onSelectProblem={handleSelectProblem}
           userProgress={displayProgress}
+          allProblems={CODING_PROBLEMS}
         />
       )}
 
