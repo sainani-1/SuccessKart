@@ -1,160 +1,161 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronDown, X, Lock, CheckCircle, Circle, Clock, Zap, Trophy, BookOpen, Brain, Filter, ArrowUpDown } from 'lucide-react';
-import { DIFFICULTY_LEVELS } from '../../data/codingProblems';
-import { getUnlockedDifficulties, isDifficultyUnlocked, getDifficultyBadgeColor } from '../../data/skillUpUtils';
+import { ChevronDown, ChevronRight, Lock, Zap, BookOpen, Trophy, Star, Target, CheckCircle, Circle, Search, X, Brain, Code2, Route } from 'lucide-react';
+import { CURRICULUM } from '../../data/codingProblems';
+import { getDifficultyBadgeColor, getLevelFromXp, isDifficultyUnlocked } from '../../data/skillUpUtils';
 
-const PROBLEMS_PER_PAGE = 20;
+const CURRICULUM_ORDER = ['beginner', 'easy', 'medium', 'hard', 'expert'];
 
-const SORT_OPTIONS = [
-  { id: 'difficulty-asc', label: 'Difficulty ↑' },
-  { id: 'difficulty-desc', label: 'Difficulty ↓' },
-  { id: 'xp-asc', label: 'XP ↑' },
-  { id: 'xp-desc', label: 'XP ↓' },
-  { id: 'title-asc', label: 'Title A-Z' },
-  { id: 'title-desc', label: 'Title Z-A' },
-];
+const DIFFICULTY_SECTION_MAP = {
+  beginner: ['Very Easy'],
+  easy: ['Easy', 'Basic', 'Beginner'],
+  medium: ['Intermediate'],
+  hard: ['Advanced', 'Hard', 'Very Hard'],
+  expert: ['Expert', 'Competitive Programming'],
+};
+
+function cleanTitle(title) {
+  return title
+    .replace(/\s+\d+$/, '')
+    .replace(/- Variant \d+$/, '')
+    .replace(/Challenge \d+$/, '')
+    .replace(/\[Practice \d+\]$/, '')
+    .replace(/\(Level \d+\)$/, '')
+    .replace(/#\d+$/, '')
+    .replace(/Exercise \d+$/, '')
+    .replace(/^Solve /, '')
+    .replace(/^Problem: /, '')
+    .replace(/^Task: /, '')
+    .trim();
+}
 
 const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
   const [search, setSearch] = useState('');
-  const [selectedDifficulties, setSelectedDifficulties] = useState([]);
-  const [selectedTags, setSelectedTags] = useState([]);
-  const [sortBy, setSortBy] = useState('difficulty-asc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showDifficultyDropdown, setShowDifficultyDropdown] = useState(false);
-  const [showTagDropdown, setShowTagDropdown] = useState(false);
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [expandedSections, setExpandedSections] = useState(new Set(CURRICULUM_ORDER));
+  const [expandedTopics, setExpandedTopics] = useState(new Set());
 
   const totalXp = userProgress?.xp || 0;
   const solvedIds = new Set(userProgress?.solvedIds || []);
-  const unlocked = getUnlockedDifficulties(totalXp);
-  const unlockedNames = new Set(unlocked.map((d) => d.name));
+  const level = getLevelFromXp(totalXp);
 
-  const allTags = useMemo(() => {
-    const tagSet = new Set();
-    for (let i = 0; i < Math.min(200, problems.length); i++) {
-      const p = problems[i];
-      (p.tags || []).forEach((t) => tagSet.add(t));
-    }
-    return [...tagSet].sort();
+  const problemMap = useMemo(() => {
+    const map = {};
+    problems.forEach(p => { map[p.id] = p; });
+    return map;
   }, [problems]);
 
-  const filtered = useMemo(() => {
-    let result = problems;
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter((p) => p.title.toLowerCase().includes(q));
+  const curriculumStats = useMemo(() => {
+    const stats = {};
+    for (const sectionId of CURRICULUM_ORDER) {
+      let sectionProblems;
+      if (sectionId === 'beginner') {
+        sectionProblems = problems.filter(p => p.id >= 1 && p.id <= 20);
+      } else {
+        const difficulties = DIFFICULTY_SECTION_MAP[sectionId] || [];
+        sectionProblems = problems.filter(p => p.id > 20 && difficulties.includes(p.difficulty));
+      }
+      const solved = sectionProblems.filter(p => solvedIds.has(p.id)).length;
+      stats[sectionId] = { solved, total: sectionProblems.length, xpGained: 0 };
     }
-
-    if (selectedDifficulties.length > 0) {
-      result = result.filter((p) => selectedDifficulties.includes(p.difficulty));
-    }
-
-    if (selectedTags.length > 0) {
-      result = result.filter((p) => (p.tags || []).some((t) => selectedTags.includes(t)));
-    }
-
-    const [field, dir] = sortBy.split('-');
-    result.sort((a, b) => {
-      let cmp = 0;
-      if (field === 'difficulty') cmp = (a.difficultyLevel || 0) - (b.difficultyLevel || 0);
-      else if (field === 'xp') cmp = (a.xpReward || 0) - (b.xpReward || 0);
-      else if (field === 'title') cmp = (a.title || '').localeCompare(b.title || '');
-      if (cmp === 0) cmp = a.id - b.id;
-      return dir === 'desc' ? -cmp : cmp;
-    });
-
-    return result;
-  }, [problems, search, selectedDifficulties, selectedTags, sortBy]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PROBLEMS_PER_PAGE));
-  const safePage = Math.min(currentPage, totalPages);
-  const pageProblems = filtered.slice((safePage - 1) * PROBLEMS_PER_PAGE, safePage * PROBLEMS_PER_PAGE);
-
-  const toggleDifficulty = (name) => {
-    setSelectedDifficulties((prev) =>
-      prev.includes(name) ? prev.filter((d) => d !== name) : [...prev, name]
-    );
-    setCurrentPage(1);
-  };
-
-  const toggleTag = (tag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-    setCurrentPage(1);
-  };
-
-  const stats = useMemo(() => {
-    const total = problems.length;
-    const solvedCount = problems.filter((p) => solvedIds.has(p.id)).length;
-    const xpEarned = problems
-      .filter((p) => solvedIds.has(p.id))
-      .reduce((sum, p) => sum + (p.xpReward || 0), 0);
-    return { total, solvedCount, xpEarned };
+    return stats;
   }, [problems, solvedIds]);
 
-  return (
-    <div className="space-y-6">
-      {/* Stats Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-blue-500/10">
-              <BookOpen size={18} className="text-blue-400" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400">Total Problems</p>
-              <p className="text-xl font-bold text-white">{stats.total}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-500/10">
-              <CheckCircle size={18} className="text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400">Solved</p>
-              <p className="text-xl font-bold text-white">{stats.solvedCount}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-amber-500/10">
-              <Zap size={18} className="text-amber-400" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400">XP Earned</p>
-              <p className="text-xl font-bold text-white">{stats.xpEarned}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-purple-500/10">
-              <Trophy size={18} className="text-purple-400" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400">Current Streak</p>
-              <p className="text-xl font-bold text-white">{userProgress?.currentStreak || 0} days</p>
-            </div>
-          </div>
-        </div>
-      </div>
+  const sectionProblemsMap = useMemo(() => {
+    const map = {};
+    for (const sectionId of CURRICULUM_ORDER) {
+      if (sectionId === 'beginner') {
+        map[sectionId] = problems.filter(p => p.id >= 1 && p.id <= 20).sort((a, b) => a.id - b.id);
+      } else {
+        const difficulties = DIFFICULTY_SECTION_MAP[sectionId] || [];
+        map[sectionId] = problems.filter(p => p.id > 20 && difficulties.includes(p.difficulty));
+      }
+    }
+    return map;
+  }, [problems]);
 
-      {/* Filters */}
-      <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4 space-y-4">
-        {/* Search */}
+  const problemStats = useMemo(() => {
+    const total = problems.length;
+    const solved = solvedIds.size;
+    const unlocked = problems.filter((problem) => isDifficultyUnlocked(problem.difficulty, totalXp)).length;
+    return {
+      total,
+      solved,
+      unlocked,
+      completion: total > 0 ? Math.round((solved / total) * 100) : 0,
+    };
+  }, [problems, solvedIds, totalXp]);
+
+  const subSectionProblemsMap = useMemo(() => {
+    const map = {};
+    CURRICULUM.forEach(section => {
+      if (section.subSections && section.id !== 'beginner') {
+        const sectionProblems = sectionProblemsMap[section.id] || [];
+        section.subSections.forEach(ss => {
+          const tagLower = ss.topic.toLowerCase();
+          const matching = sectionProblems.filter(p => {
+            const pTags = (p.tags || []).map(t => t.toLowerCase());
+            return pTags.some(t => {
+              if (t === tagLower || t.includes(tagLower) || tagLower.includes(t)) return true;
+              const normalizedTag = tagLower.replace(/[\s-]/g, '').toLowerCase();
+              const normalizedT = t.replace(/[\s-]/g, '').toLowerCase();
+              return normalizedT.includes(normalizedTag) || normalizedTag.includes(normalizedT);
+            });
+          });
+          map[`${section.id}-${ss.topic}`] = matching;
+        });
+      }
+    });
+    return map;
+  }, [sectionProblemsMap]);
+
+  const toggleSection = (id) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleTopic = (key) => {
+    setExpandedTopics(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
+
+  const sectionIcons = {
+    beginner: '🌱', easy: '📘', medium: '📗', hard: '📕', expert: '🏅',
+  };
+
+  const sectionColors = {
+    beginner: { bg: 'from-emerald-600 to-teal-700', border: 'border-emerald-500/30', text: 'text-emerald-300', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+    easy: { bg: 'from-green-600 to-emerald-700', border: 'border-green-500/30', text: 'text-green-300', badge: 'bg-green-500/20 text-green-300 border-green-500/30' },
+    medium: { bg: 'from-amber-600 to-orange-700', border: 'border-amber-500/30', text: 'text-amber-300', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+    hard: { bg: 'from-red-600 to-rose-700', border: 'border-red-500/30', text: 'text-red-300', badge: 'bg-red-500/20 text-red-300 border-red-500/30' },
+    expert: { bg: 'from-purple-600 to-fuchsia-700', border: 'border-purple-500/30', text: 'text-purple-300', badge: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+  };
+
+  const filteredProblems = useMemo(() => {
+    if (!search.trim()) return null;
+    const q = search.toLowerCase();
+    return problems.filter(p => {
+      const clean = cleanTitle(p.title).toLowerCase();
+      return clean.includes(q) || p.title.toLowerCase().includes(q);
+    });
+  }, [problems, search]);
+
+  if (search.trim()) {
+    const results = filteredProblems || [];
+    return (
+      <div className="space-y-4">
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-            placeholder="Search problems by title..."
-            className="w-full pl-9 pr-3 py-2.5 bg-slate-800/60 border border-slate-600/50 rounded-xl text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search problems..."
+            className="w-full pl-9 pr-9 py-2.5 bg-slate-800/60 border border-slate-600/50 rounded-xl text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
           />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
@@ -162,269 +163,285 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {} }) => {
             </button>
           )}
         </div>
-
-        <div className="flex flex-wrap gap-3">
-          {/* Difficulty Filter */}
-          <div className="relative">
-            <button
-              onClick={() => setShowDifficultyDropdown(!showDifficultyDropdown)}
-              className="flex items-center gap-2 px-3 py-2 bg-slate-800/60 border border-slate-600/50 rounded-xl text-sm text-slate-300 hover:text-white transition-colors"
-            >
-              <Filter size={14} />
-              Difficulty {selectedDifficulties.length > 0 && `(${selectedDifficulties.length})`}
-              <ChevronDown size={14} />
-            </button>
-            {showDifficultyDropdown && (
-              <>
-                <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setShowDifficultyDropdown(false)} />
-                <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-200">Select Difficulty</span>
-                    <button onClick={() => setShowDifficultyDropdown(false)} className="text-slate-500 hover:text-white text-lg leading-none">&times;</button>
-                  </div>
-                  <div className="p-2 max-h-80 overflow-y-auto">
-                    {DIFFICULTY_LEVELS.map((d) => {
-                      const unlocked = unlockedNames.has(d.name);
-                      return (
-                        <label
-                          key={d.id}
-                          className={`flex items-center gap-2 px-3 py-2.5 text-sm cursor-pointer rounded-xl transition-colors ${
-                            unlocked ? 'hover:bg-slate-800 text-slate-300' : 'text-slate-600 cursor-not-allowed'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedDifficulties.includes(d.name)}
-                            onChange={() => unlocked && toggleDifficulty(d.name)}
-                            disabled={!unlocked}
-                            className="rounded border-slate-600 text-amber-500 focus:ring-amber-500/50"
-                          />
-                          <span className="flex-1">{d.name}</span>
-                          {!unlocked && <Lock size={12} className="text-slate-600" />}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
+        <div className="text-sm text-slate-400 mb-2">Search results ({results.length})</div>
+        {results.length === 0 ? (
+          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-12 text-center">
+            <Brain size={48} className="mx-auto text-slate-600 mb-4" />
+            <p className="text-slate-400">No problems match your search.</p>
           </div>
-
-          {/* Tags Filter */}
-          <div className="relative">
-            <button
-              onClick={() => setShowTagDropdown(!showTagDropdown)}
-              className="flex items-center gap-2 px-3 py-2 bg-slate-800/60 border border-slate-600/50 rounded-xl text-sm text-slate-300 hover:text-white transition-colors"
-            >
-              <Brain size={14} />
-              Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
-              <ChevronDown size={14} />
-            </button>
-            {showTagDropdown && (
-              <>
-                <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setShowTagDropdown(false)} />
-                <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 max-h-80 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-200">Select Tags</span>
-                    <button onClick={() => setShowTagDropdown(false)} className="text-slate-500 hover:text-white text-lg leading-none">&times;</button>
+        ) : (
+          <div className="grid gap-2">
+            {results.slice(0, 50).map(problem => {
+              const solved = solvedIds.has(problem.id);
+              const unlocked = isDifficultyUnlocked(problem.difficulty, totalXp);
+              const diffColor = getDifficultyBadgeColor(problem.difficulty);
+              return (
+                <button
+                  key={problem.id}
+                  onClick={() => unlocked && onSelectProblem?.(problem.id)}
+                  disabled={!unlocked}
+                  className={`w-full text-left bg-slate-900/80 backdrop-blur-xl border rounded-xl p-3 transition-all duration-200 ${
+                    unlocked ? 'border-slate-700/50 hover:border-amber-500/30 hover:shadow-lg cursor-pointer' : 'border-slate-800/50 opacity-50 cursor-not-allowed'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0">
+                      {!unlocked ? <Lock size={16} className="text-slate-600" /> :
+                       solved ? <CheckCircle size={16} className="text-emerald-400" /> :
+                       <Circle size={16} className="text-slate-600" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-sm font-medium ${unlocked ? 'text-white' : 'text-slate-500'}`}>{problem.id}. {cleanTitle(problem.title)}</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${diffColor}`}>{problem.difficulty}</span>
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <Zap size={8} />{problem.xpReward} XP
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="p-2 max-h-64 overflow-y-auto">
-                    {allTags.map((tag) => (
-                      <label
-                        key={tag}
-                        className="flex items-center gap-2 px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 cursor-pointer rounded-xl transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedTags.includes(tag)}
-                          onChange={() => toggleTag(tag)}
-                          className="rounded border-slate-600 text-amber-500 focus:ring-amber-500/50"
-                        />
-                        {tag}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+                </button>
+              );
+            })}
           </div>
+        )}
+      </div>
+    );
+  }
 
-          {/* Sort */}
-          <div className="relative">
-            <button
-              onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="flex items-center gap-2 px-3 py-2 bg-slate-800/60 border border-slate-600/50 rounded-xl text-sm text-slate-300 hover:text-white transition-colors"
-            >
-              <ArrowUpDown size={14} />
-              {SORT_OPTIONS.find((o) => o.id === sortBy)?.label || 'Sort'}
-              <ChevronDown size={14} />
-            </button>
-            {showSortDropdown && (
-              <>
-                <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setShowSortDropdown(false)} />
-                <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-200">Sort By</span>
-                    <button onClick={() => setShowSortDropdown(false)} className="text-slate-500 hover:text-white text-lg leading-none">&times;</button>
-                  </div>
-                  <div className="p-2">
-                    {SORT_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.id}
-                        onClick={() => { setSortBy(opt.id); setShowSortDropdown(false); }}
-                        className={`w-full text-left px-3 py-2.5 text-sm rounded-xl transition-colors ${
-                          sortBy === opt.id ? 'text-amber-400 bg-slate-800' : 'text-slate-300 hover:bg-slate-800'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+  return (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 border border-amber-500/20 rounded-[2rem] p-5 md:p-6 shadow-2xl shadow-black/20">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
+              <Route size={12} />
+              50K+ Question Explorer
+            </div>
+            <h2 className="mt-3 text-2xl md:text-3xl font-black text-white">
+              Basic to Expert, all in one learning path
+            </h2>
+            <p className="mt-2 text-sm md:text-base text-slate-300 max-w-xl">
+              Practice structured problems, track what you have solved, and move from absolute basics to competitive programming with a clean roadmap.
+            </p>
           </div>
-
-          {/* Active filters display */}
-          {(selectedDifficulties.length > 0 || selectedTags.length > 0 || search) && (
-            <button
-              onClick={() => { setSelectedDifficulties([]); setSelectedTags([]); setSearch(''); setCurrentPage(1); }}
-              className="flex items-center gap-1 px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
-            >
-              <X size={14} />
-              Clear all
-            </button>
-          )}
+          <div className="grid grid-cols-2 gap-3 md:min-w-[340px]">
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Total</p>
+              <p className="mt-1 text-2xl font-bold text-white">{problemStats.total.toLocaleString()}</p>
+            </div>
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Solved</p>
+              <p className="mt-1 text-2xl font-bold text-emerald-300">{problemStats.solved.toLocaleString()}</p>
+            </div>
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Unlocked</p>
+              <p className="mt-1 text-2xl font-bold text-amber-300">{problemStats.unlocked.toLocaleString()}</p>
+            </div>
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Progress</p>
+              <p className="mt-1 text-2xl font-bold text-white">{problemStats.completion}%</p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 h-2 rounded-full bg-white/10 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-orange-500 transition-all duration-700"
+            style={{ width: `${problemStats.completion}%` }}
+          />
         </div>
       </div>
 
-      {/* Problem Cards */}
-      {pageProblems.length === 0 ? (
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-12 text-center">
-          <Brain size={48} className="mx-auto text-slate-600 mb-4" />
-          <p className="text-slate-400">No problems match your filters. Try adjusting them.</p>
+      {/* Header */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2">
+          <Route size={20} className="text-amber-400" />
+          <h2 className="text-lg font-bold text-white">Learning Roadmap</h2>
+          <span className="text-xs text-slate-500">Tap a section to expand</span>
         </div>
-      ) : (
-        <div className="grid gap-3">
-          {pageProblems.map((problem) => {
-            const solved = solvedIds.has(problem.id);
-            const unlocked = isDifficultyUnlocked(problem.difficulty, totalXp);
-            const diffColor = getDifficultyBadgeColor(problem.difficulty);
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search problems..."
+              className="pl-8 pr-3 py-1.5 bg-slate-800/60 border border-slate-600/50 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 w-48"
+            />
+          </div>
+        </div>
+      </div>
 
-            return (
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {CURRICULUM_ORDER.map(sectionId => {
+          const section = CURRICULUM.find(s => s.id === sectionId);
+          const stats = curriculumStats[sectionId] || { solved: 0, total: 0 };
+          const colors = sectionColors[sectionId];
+          return (
+            <div key={sectionId} className={`bg-gradient-to-br ${colors.bg} rounded-2xl p-3 border ${colors.border}`}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{section?.label || sectionId}</p>
+              <p className="text-xl font-bold text-white mt-1">{stats.solved}<span className="text-sm font-normal opacity-60">/{stats.total}</span></p>
+              <div className="w-full h-1.5 bg-white/10 rounded-full mt-2 overflow-hidden">
+                <div className="h-full bg-white/40 rounded-full transition-all duration-500" style={{ width: stats.total > 0 ? `${(stats.solved / stats.total) * 100}%` : '0%' }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Curriculum Roadmap */}
+      <div className="space-y-4">
+        {CURRICULUM_ORDER.map((sectionId, sectionIndex) => {
+          const section = CURRICULUM.find(s => s.id === sectionId);
+          if (!section) return null;
+          const colors = sectionColors[sectionId];
+          const stats = curriculumStats[sectionId] || { solved: 0, total: 0 };
+          const isExpanded = expandedSections.has(sectionId);
+          const prevSolved = sectionIndex > 0 ? (curriculumStats[CURRICULUM_ORDER[sectionIndex - 1]]?.solved || 0) : 1;
+          const isUnlocked = sectionIndex === 0 || prevSolved >= 1;
+
+          const subSections = section.subSections || [];
+          const sectionProbs = sectionProblemsMap[sectionId] || [];
+
+          return (
+            <div key={sectionId} className={`bg-slate-900/80 backdrop-blur-xl border ${colors.border} rounded-2xl overflow-hidden transition-all duration-300 ${!isUnlocked ? 'opacity-60' : ''}`}>
+              {/* Section Header */}
               <button
-                key={problem.id}
-                onClick={() => unlocked && onSelectProblem?.(problem.id)}
-                disabled={!unlocked}
-                className={`w-full text-left bg-slate-900/80 backdrop-blur-xl border rounded-2xl p-4 transition-all duration-200 ${
-                  unlocked
-                    ? 'border-slate-700/50 hover:border-amber-500/30 hover:shadow-lg hover:shadow-amber-500/5 cursor-pointer'
-                    : 'border-slate-800/50 opacity-50 cursor-not-allowed'
-                }`}
+                onClick={() => isUnlocked && toggleSection(sectionId)}
+                disabled={!isUnlocked}
+                className={`w-full flex items-center gap-4 p-4 transition-colors ${isUnlocked ? 'hover:bg-slate-800/40 cursor-pointer' : 'cursor-not-allowed'}`}
               >
-                <div className="flex items-start gap-4">
-                  {/* Status Icon */}
-                  <div className="mt-0.5">
-                    {!unlocked ? (
-                      <Lock size={18} className="text-slate-600" />
-                    ) : solved ? (
-                      <CheckCircle size={18} className="text-emerald-400" />
-                    ) : (
-                      <Circle size={18} className="text-slate-600" />
-                    )}
+                <div className={`flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br ${colors.bg} flex items-center justify-center text-lg`}>
+                  {sectionIcons[sectionId]}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white">{section.label}</h3>
+                    {!isUnlocked && <Lock size={14} className="text-slate-500" />}
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className={`text-base font-semibold ${unlocked ? 'text-white' : 'text-slate-500'}`}>
-                        {problem.id}. {problem.title}
-                      </h3>
-                      {solved && unlocked && (
-                        <span className="text-xs text-emerald-400 font-medium">Solved</span>
-                      )}
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className={`text-xs font-medium ${colors.text}`}>{stats.solved}/{stats.total} solved</span>
+                    <div className="flex-1 max-w-[200px] h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r ${colors.bg}`}
+                        style={{ width: stats.total > 0 ? `${(stats.solved / stats.total) * 100}%` : '0%' }} />
                     </div>
-
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${diffColor}`}>
-                        {problem.difficulty}
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        <Zap size={10} />
-                        {problem.xpReward} XP
-                      </span>
-                      {(problem.tags || []).slice(0, 3).map((tag) => (
-                        <span
-                          key={tag}
-                          className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-slate-800 text-slate-400 border border-slate-700/50"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                      {(problem.tags || []).length > 3 && (
-                        <span className="text-xs text-slate-500">+{problem.tags.length - 3} more</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="text-right text-xs text-slate-500 hidden sm:block">
-                    <div>#{problem.id}</div>
+                    <span className="text-xs text-slate-500">{Math.round(stats.total > 0 ? (stats.solved / stats.total) * 100 : 0)}%</span>
                   </div>
                 </div>
+                <div className="flex-shrink-0">
+                  {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
+                </div>
               </button>
-            );
-          })}
-        </div>
-      )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={safePage <= 1}
-            className="px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-sm text-slate-300 disabled:opacity-40 hover:bg-slate-700/60 transition-colors"
-          >
-            Previous
-          </button>
-          {(() => {
-            const pages = [];
-            const start = Math.max(1, safePage - 2);
-            const end = Math.min(totalPages, safePage + 2);
-            if (start > 1) pages.push(1, '...');
-            for (let i = start; i <= end; i++) pages.push(i);
-            if (end < totalPages) pages.push('...', totalPages);
-            return pages.map((page, idx) =>
-              typeof page === 'number' ? (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-9 h-9 rounded-xl text-sm font-medium transition-colors ${
-                    safePage === page
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      : 'bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:bg-slate-700/60'
-                  }`}
-                >
-                  {page}
-                </button>
-              ) : (
-                <span key={idx} className="text-slate-600 px-1">...</span>
-              )
-            );
-          })()}
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={safePage >= totalPages}
-            className="px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-sm text-slate-300 disabled:opacity-40 hover:bg-slate-700/60 transition-colors"
-          >
-            Next
-          </button>
-        </div>
-      )}
+              {/* Section Content */}
+              {isExpanded && isUnlocked && (
+                <div className="border-t border-slate-700/30">
+                  {sectionId === 'beginner' ? (
+                    /* Beginner: flat list with ⭕/✅ */
+                    <div className="p-4 space-y-1">
+                      {sectionProbs.slice(0, 20).map((problem, idx) => {
+                        const solved = solvedIds.has(problem.id);
+                        return (
+                          <button
+                            key={problem.id}
+                            onClick={() => onSelectProblem?.(problem.id)}
+                            className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${
+                              solved ? 'bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10' : 'hover:bg-slate-700/40'
+                            }`}
+                          >
+                            <span className="flex-shrink-0">
+                              {solved ? <CheckCircle size={18} className="text-emerald-400" /> : <Circle size={18} className="text-slate-500" />}
+                            </span>
+                            <span className="text-sm text-slate-400 w-6 flex-shrink-0">{idx + 1}.</span>
+                            <span className={`text-sm flex-1 min-w-0 ${solved ? 'text-emerald-300 font-medium' : 'text-slate-300 group-hover:text-white'}`}>
+                              {problem.title}
+                            </span>
+                            {solved && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-medium">
+                                Solved
+                              </span>
+                            )}
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              <Zap size={8} />{problem.xpReward} XP
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* Easy/Medium/Hard/Expert: sub-section layout */
+                    <div className="p-4 space-y-3">
+                      {subSections.map((sub, subIdx) => {
+                        const topicKey = `${sectionId}-${subIdx}`;
+                        const isTopicExpanded = expandedTopics.has(topicKey);
+                        const subProblems = subSectionProblemsMap[`${section.id}-${sub.topic}`] || [];
+                        const subSolved = subProblems.filter(p => solvedIds.has(p.id)).length;
+                        if (subProblems.length === 0) return null;
+                        return (
+                          <div key={subIdx} className="bg-slate-800/40 rounded-xl overflow-hidden border border-slate-700/30">
+                            <button
+                              onClick={() => toggleTopic(topicKey)}
+                              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-700/30 transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-slate-300">{sub.topic}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${subSolved === subProblems.length ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700/50 text-slate-400'}`}>
+                                  {subSolved}/{subProblems.length}
+                                </span>
+                              </div>
+                              {isTopicExpanded ? <ChevronDown size={14} className="text-slate-500" /> : <ChevronRight size={14} className="text-slate-500" />}
+                            </button>
+                            {isTopicExpanded && (
+                              <div className="px-2 pb-2 space-y-1">
+                                {subProblems.map(problem => {
+                                  const solved = solvedIds.has(problem.id);
+                                  const unlocked = isDifficultyUnlocked(problem.difficulty, totalXp);
+                                  const diffColor = getDifficultyBadgeColor(problem.difficulty);
+                                  return (
+                                    <button
+                                      key={problem.id}
+                                      onClick={() => unlocked && onSelectProblem?.(problem.id)}
+                                      disabled={!unlocked}
+                                      className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                                        unlocked ? 'hover:bg-slate-700/40 cursor-pointer' : 'opacity-50 cursor-not-allowed'
+                                      }`}
+                                    >
+                                      <span className="flex-shrink-0 text-sm">
+                                        {!unlocked ? <Lock size={14} className="text-slate-600" /> :
+                                         solved ? <CheckCircle size={14} className="text-emerald-400" /> :
+                                         <Circle size={14} className="text-slate-600" />}
+                                      </span>
+                                      <span className={`text-sm flex-1 min-w-0 truncate ${solved ? 'text-emerald-300' : unlocked ? 'text-slate-300' : 'text-slate-600'}`}>
+                                        {cleanTitle(problem.title)}
+                                      </span>
+                                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${diffColor} flex-shrink-0`}>
+                                        {problem.difficulty}
+                                      </span>
+                                      <span className="text-xs text-amber-400/80 flex items-center gap-0.5 flex-shrink-0">
+                                        <Zap size={8} />{problem.xpReward}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
-      {/* Results count */}
-      <div className="text-center text-xs text-slate-500">
-        Showing {pageProblems.length} of {filtered.length} problems
-        {filtered.length !== problems.length && ` (filtered from ${problems.length})`}
+      <div className="text-center text-xs text-slate-500 pt-2">
+        <Code2 size={14} className="inline mr-1 mb-0.5" />
+        Follow the roadmap from top to bottom. Complete each section to unlock the next.
       </div>
     </div>
   );

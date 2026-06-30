@@ -1,22 +1,27 @@
 import React, { useMemo } from 'react';
-import { Trophy, Zap, Flame, Target, TrendingUp, Award, Code2, Clock, Brain, Star, CheckCircle, XCircle, BookOpen, Medal, Sparkles, Gem, BarChart3, Users, Globe } from 'lucide-react';
-import { getLevelFromXp, getLevelProgress, getXpForNextLevel, getRankFromXp, generateHeatmapData, getHeatmapColor, calculateStreak } from '../../data/skillUpUtils';
+import { Trophy, Zap, Flame, Target, TrendingUp, Award, Code2, Clock, Brain, Star, CheckCircle, XCircle, BookOpen, Medal, Sparkles, Gem, BarChart3, Users, Globe, Route, BadgeCheck, AlertTriangle, Layers, Percent, Activity } from 'lucide-react';
+import { getLevelFromXp, getLevelProgress, getXpForNextLevel, getRankFromXp, generateHeatmapData, getHeatmapColor, calculateStreak, checkBadges, analyzeTopics } from '../../data/skillUpUtils';
+import { CODING_PROBLEMS } from '../../data/codingProblems';
 
 const WEEKDAYS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
 const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData: externalHeatmapData }) => {
+  const allProblems = useMemo(() => CODING_PROBLEMS || [], []);
+
   const stats = useMemo(() => ({
     problemsSolved: userProgress?.problemsSolved || 0,
     currentStreak: userProgress?.currentStreak || 0,
     longestStreak: userProgress?.longestStreak || 0,
     xp: userProgress?.xp || 0,
     coins: userProgress?.coins || 0,
+    coinsToday: userProgress?.coinsToday || 0,
     level: userProgress?.level || getLevelFromXp(userProgress?.xp || 0),
     globalRank: userProgress?.globalRank || 'N/A',
     collegeRank: userProgress?.collegeRank || 'N/A',
     totalSubmissions: userProgress?.totalSubmissions || 0,
     totalCodingHours: userProgress?.totalCodingHours || 0,
     accuracy: userProgress?.accuracy || 0,
+    acceptanceRate: userProgress?.acceptanceRate || 0,
   }), [userProgress]);
 
   const level = stats.level;
@@ -24,7 +29,8 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
   const levelProgress = getLevelProgress(xp);
   const xpForNext = getXpForNextLevel(xp);
   const rank = getRankFromXp(xp);
-  const accuracyPct = Math.min(100, Math.round(stats.accuracy * 100));
+  const acceptedCount = stats.problemsSolved;
+  const accuracyPct = Math.min(100, Math.round(stats.acceptanceRate || (stats.totalSubmissions > 0 ? (acceptedCount / stats.totalSubmissions) * 100 : 0)));
 
   const heatmapData = useMemo(() => {
     return externalHeatmapData || generateHeatmapData(recentActivity);
@@ -39,23 +45,6 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
     }
     return w;
   }, [heatmapData]);
-
-  const monthLabels = useMemo(() => {
-    const labels = [];
-    let lastMonth = '';
-    weeks.forEach((week, wi) => {
-      const first = week[0];
-      if (first) {
-        const date = new Date(first.date);
-        const month = date.toLocaleString('default', { month: 'short' });
-        if (month !== lastMonth) {
-          labels.push({ index: wi, label: month });
-          lastMonth = month;
-        }
-      }
-    });
-    return labels;
-  }, [weeks]);
 
   const weeklyData = useMemo(() => {
     const today = new Date();
@@ -72,17 +61,26 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
 
   const maxWeekly = Math.max(1, ...weeklyData.map((d) => d.count));
 
-  const favoriteTopics = userProgress?.favoriteTopics || [];
-  const weakTopics = userProgress?.weakTopics || [];
-  const achievements = userProgress?.achievements || [];
-  const badges = userProgress?.badges || [];
+  const { strong, weak } = useMemo(() => {
+    return analyzeTopics(userProgress, allProblems);
+  }, [userProgress, allProblems]);
+
+  const badges = useMemo(() => {
+    return checkBadges(userProgress, allProblems);
+  }, [userProgress, allProblems]);
 
   const recentSubs = useMemo(() => (recentActivity || []).slice(0, 10), [recentActivity]);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
     <div className="space-y-6">
       {/* Stats Cards Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-blue-500/10">
@@ -171,7 +169,7 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
 
       {/* Two column layout */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left + Middle: Heatmap + Weekly Chart */}
+        {/* Left + Middle */}
         <div className="lg:col-span-2 space-y-6">
           {/* Heatmap */}
           <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
@@ -252,47 +250,61 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
               {recentSubs.length === 0 && (
                 <p className="text-sm text-slate-500 text-center py-4">No submissions yet. Start solving!</p>
               )}
-              {recentSubs.map((sub, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/30">
-                  <div>
-                    {sub.passed ? (
-                      <CheckCircle size={16} className="text-emerald-400" />
-                    ) : (
-                      <XCircle size={16} className="text-red-400" />
-                    )}
+              {recentSubs.map((sub, i) => {
+                const problem = sub.problem_id ? allProblems.find(p => p.id === sub.problem_id) : null;
+                return (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/30">
+                    <div>
+                      {sub.status === 'Accepted' ? (
+                        <CheckCircle size={16} className="text-emerald-400" />
+                      ) : (
+                        <XCircle size={16} className="text-red-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-300 truncate font-medium">
+                        {problem?.title || sub.title || `Problem #${sub.problemId || sub.problem_id || '?'}`}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {sub.language && (
+                          <span className="inline-flex items-center gap-1 mr-2">
+                            <Code2 size={10} />
+                            {sub.language}
+                          </span>
+                        )}
+                        <span>{formatDate(sub.created_at)}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {sub.status === 'Accepted' ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium">Accepted</span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">{sub.status || 'Failed'}</span>
+                      )}
+                      {sub.xp_earned > 0 && (
+                        <span className="text-xs text-amber-400 flex items-center gap-0.5">
+                          <Zap size={10} />+{sub.xp_earned}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-300 truncate">{sub.title || `Problem #${sub.problemId || '?'}`}</p>
-                    <p className="text-xs text-slate-500">
-                      {sub.language && `${sub.language} · `}
-                      {sub.created_at ? new Date(sub.created_at).toLocaleDateString() : ''}
-                    </p>
-                  </div>
-                  {sub.xpEarned > 0 && (
-                    <span className="text-xs text-amber-400">+{sub.xpEarned} XP</span>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
 
         {/* Right Column */}
         <div className="space-y-6">
-          {/* Accuracy Ring */}
+          {/* Accuracy + Stats */}
           <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5 text-center">
             <h3 className="text-sm font-semibold text-slate-300 mb-4">Accuracy</h3>
             <div className="relative w-32 h-32 mx-auto">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 128 128">
                 <circle cx="64" cy="64" r="54" fill="none" stroke="rgba(148,163,184,0.1)" strokeWidth="10" />
                 <circle
-                  cx="64"
-                  cy="64"
-                  r="54"
-                  fill="none"
-                  stroke="url(#accuracyGradient)"
-                  strokeWidth="10"
-                  strokeLinecap="round"
+                  cx="64" cy="64" r="54" fill="none" stroke="url(#accuracyGradient)"
+                  strokeWidth="10" strokeLinecap="round"
                   strokeDasharray={`${accuracyPct * 3.39} 339`}
                   className="transition-all duration-1000"
                 />
@@ -316,83 +328,104 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
                 <p className="text-[10px] text-slate-500">Submissions</p>
               </div>
               <div className="bg-slate-800/40 rounded-xl p-2">
+                <p className="text-lg font-bold text-white">{stats.problemsSolved}</p>
+                <p className="text-[10px] text-slate-500">Accepted</p>
+              </div>
+            </div>
+            <div className="mt-3 text-[10px] text-slate-500">
+              {acceptedCount} accepted / {stats.totalSubmissions} total submissions
+            </div>
+          </div>
+
+          {/* Coding Hours & Stats Mini */}
+          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-slate-800/40 rounded-xl p-3 text-center">
+                <Clock size={16} className="mx-auto text-slate-400 mb-1" />
                 <p className="text-lg font-bold text-white">{stats.totalCodingHours}h</p>
                 <p className="text-[10px] text-slate-500">Coding Hours</p>
+              </div>
+              <div className="bg-slate-800/40 rounded-xl p-3 text-center">
+                <Layers size={16} className="mx-auto text-slate-400 mb-1" />
+                <p className="text-lg font-bold text-white">{level}</p>
+                <p className="text-[10px] text-slate-500">Current Level</p>
               </div>
             </div>
           </div>
 
-          {/* Favorite Topics */}
+          {/* Strong Areas */}
           <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <Star size={16} className="text-amber-400" />
               <h3 className="text-sm font-semibold text-slate-300">Strong Areas</h3>
             </div>
-            {favoriteTopics.length === 0 ? (
+            {strong.length === 0 ? (
               <p className="text-xs text-slate-500">Solve more problems to identify your strengths.</p>
             ) : (
               <div className="space-y-2">
-                {favoriteTopics.slice(0, 3).map((topic, i) => (
+                {strong.slice(0, 5).map((topic, i) => (
                   <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                    <span className="text-sm text-slate-300">{topic.name || topic}</span>
-                    {topic.count !== undefined && (
-                      <span className="text-xs text-emerald-400">{topic.count}</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <BadgeCheck size={14} className="text-emerald-400" />
+                      <span className="text-sm text-slate-300">{topic.name}</span>
+                    </div>
+                    <span className="text-xs text-emerald-400">{topic.solved} solved</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Weak Topics */}
+          {/* Needs Work */}
           <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <Target size={16} className="text-red-400" />
               <h3 className="text-sm font-semibold text-slate-300">Needs Work</h3>
             </div>
-            {weakTopics.length === 0 ? (
+            {weak.length === 0 ? (
               <p className="text-xs text-slate-500">Keep solving to discover areas for improvement.</p>
             ) : (
               <div className="space-y-2">
-                {weakTopics.slice(0, 3).map((topic, i) => (
+                {weak.slice(0, 5).map((topic, i) => (
                   <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-red-500/5 border border-red-500/10">
-                    <span className="text-sm text-slate-300">{topic.name || topic}</span>
-                    {topic.accuracy !== undefined && (
-                      <span className="text-xs text-red-400">{Math.round(topic.accuracy * 100)}%</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle size={14} className="text-red-400" />
+                      <span className="text-sm text-slate-300">{topic.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs text-red-400">{topic.solved}/{topic.total}</span>
+                      <span className="text-[10px] text-slate-500 ml-1">
+                        ({Math.round((topic.accuracy || 0) * 100)}%)
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Achievements & Badges */}
+          {/* Badges & Achievements */}
           <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <Award size={16} className="text-purple-400" />
               <h3 className="text-sm font-semibold text-slate-300">Badges & Achievements</h3>
             </div>
-            {badges.length === 0 && achievements.length === 0 ? (
+            {badges.length === 0 ? (
               <p className="text-xs text-slate-500">Earn badges by completing challenges and streaks.</p>
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {badges.map((badge, i) => (
-                  <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-amber-500/5 border border-amber-500/10">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                      <Award size={16} className="text-white" />
+                  <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 transition-colors group">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-lg shadow-lg group-hover:scale-110 transition-transform">
+                      {badge.icon || '🏆'}
                     </div>
-                    <span className="text-[10px] text-slate-400 text-center leading-tight">{badge.name || badge}</span>
-                  </div>
-                ))}
-                {achievements.slice(0, 6 - badges.length).map((ach, i) => (
-                  <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-slate-800/40 border border-slate-700/30">
-                    <div className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center">
-                      <Sparkles size={16} className="text-slate-400" />
-                    </div>
-                    <span className="text-[10px] text-slate-400 text-center leading-tight">{ach.name || ach}</span>
+                    <span className="text-[10px] text-slate-400 text-center leading-tight group-hover:text-slate-300 transition-colors">{badge.name}</span>
                   </div>
                 ))}
               </div>
+            )}
+            {badges.length > 0 && (
+              <p className="text-[10px] text-slate-500 mt-3 text-center">{badges.length} badge{badges.length !== 1 ? 's' : ''} unlocked</p>
             )}
           </div>
 
@@ -404,7 +437,7 @@ const SkillUpDashboard = ({ userProgress = {}, recentActivity = [], heatmapData:
               </div>
               <div>
                 <p className="text-xs text-amber-400/80">Coins Earned Today</p>
-                <p className="text-2xl font-bold text-white">{userProgress?.coinsToday || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats.coinsToday}</p>
               </div>
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs text-amber-400/60">

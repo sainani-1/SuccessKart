@@ -11,6 +11,405 @@ export const DIFFICULTY_LEVELS = [
   { id: 10, name: 'Competitive Programming', requiredScore: 10000 },
 ];
 
+export const DIFFICULTY_XP = {
+  'Very Easy': { xp: 10, coins: 5 },
+  'Easy': { xp: 20, coins: 10 },
+  'Basic': { xp: 30, coins: 15 },
+  'Beginner': { xp: 30, coins: 15 },
+  'Intermediate': { xp: 40, coins: 20 },
+  'Advanced': { xp: 55, coins: 25 },
+  'Expert': { xp: 70, coins: 35 },
+  'Hard': { xp: 85, coins: 40 },
+  'Very Hard': { xp: 100, coins: 50 },
+  'Competitive Programming': { xp: 120, coins: 60 },
+};
+
+export const CURRICULUM_XP = {
+  beginner: { xp: 10, coins: 5, label: 'Beginner (Absolute Basics)' },
+  easy: { xp: 20, coins: 10, label: 'Easy' },
+  medium: { xp: 40, coins: 20, label: 'Medium' },
+  hard: { xp: 70, coins: 35, label: 'Hard' },
+  expert: { xp: 100, coins: 50, label: 'Expert' },
+};
+
+const BEGINNER_PROBLEMS = [
+  {
+    id: 1, title: 'Print Hello World', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Variables'], xpReward: 10,
+    description: 'Write a program to print "Hello World" to the console.',
+    constraints: 'No input required.', inputFormat: 'No input.', outputFormat: 'Print "Hello World" without quotes.',
+    examples: [{ input: '', output: 'Hello World', explanation: 'Simply print the string.' }],
+    testCases: [
+      { input: '', output: 'Hello World', hidden: false },
+      { input: '', output: 'Hello World', hidden: true },
+    ],
+    hints: ['Use print() in Python, console.log() in JS, printf() in C, cout in C++, System.out.println() in Java.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 2, title: 'Print a Number', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Variables'], xpReward: 10,
+    description: 'Read a single integer from input and print it back.',
+    constraints: '-10^9 ≤ N ≤ 10^9', inputFormat: 'A single integer.', outputFormat: 'Print the integer.',
+    examples: [{ input: '42', output: '42', explanation: 'Read 42 and print 42.' }],
+    testCases: [
+      { input: '42', output: '42', hidden: false },
+      { input: '-7', output: '-7', hidden: false },
+      { input: '999999', output: '999999', hidden: true },
+    ],
+    hints: ['Use int(input()) in Python, parseInt in JS, scanf in C, cin in C++, Scanner in Java.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 3, title: 'Print Two Numbers', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Variables'], xpReward: 10,
+    description: 'Read two integers and print them separated by a space.',
+    constraints: '-10^9 ≤ a, b ≤ 10^9', inputFormat: 'Two integers.', outputFormat: 'Print both integers separated by a space.',
+    examples: [{ input: '5 3', output: '5 3', explanation: 'Read 5 and 3, print "5 3".' }],
+    testCases: [
+      { input: '5 3', output: '5 3', hidden: false },
+      { input: '-1 4', output: '-1 4', hidden: false },
+      { input: '100 -200', output: '100 -200', hidden: true },
+    ],
+    hints: ['Read both integers and print with a space between them.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 4, title: 'Read One Integer', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Variables'], xpReward: 10,
+    description: 'Read an integer and print "You entered: X" where X is the number.',
+    constraints: '-10^9 ≤ N ≤ 10^9', inputFormat: 'A single integer.', outputFormat: '"You entered: X"',
+    examples: [{ input: '42', output: 'You entered: 42', explanation: 'Read 42 and print with message.' }],
+    testCases: [
+      { input: '42', output: 'You entered: 42', hidden: false },
+      { input: '-7', output: 'You entered: -7', hidden: false },
+      { input: '9999', output: 'You entered: 9999', hidden: true },
+    ],
+    hints: ['Use string formatting or concatenation.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 5, title: 'Read Two Integers', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Variables'], xpReward: 10,
+    description: 'Read two integers and print their sum.',
+    constraints: '-10^9 ≤ a, b ≤ 10^9', inputFormat: 'Two integers.', outputFormat: 'Sum of the two integers.',
+    examples: [{ input: '5 3', output: '8', explanation: '5 + 3 = 8' }],
+    testCases: [
+      { input: '5 3', output: '8', hidden: false },
+      { input: '-1 4', output: '3', hidden: false },
+      { input: '100 -200', output: '-100', hidden: true },
+    ],
+    hints: ['Read both numbers, add them, print the result.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 6, title: 'Sum of Two Numbers', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Operators'], xpReward: 10,
+    description: 'Read two integers and print their sum.',
+    constraints: '-10^9 ≤ a, b ≤ 10^9', inputFormat: 'Two integers.', outputFormat: 'Their sum.',
+    examples: [{ input: '10 3', output: '13', explanation: '10 + 3 = 13' }],
+    testCases: [
+      { input: '10 3', output: '13', hidden: false },
+      { input: '5 2', output: '7', hidden: false },
+      { input: '100 200', output: '300', hidden: true },
+    ],
+    hints: ['Use the + operator.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 7, title: 'Difference of Two Numbers', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Operators'], xpReward: 10,
+    description: 'Read two integers and print their difference (a - b).',
+    constraints: '-10^9 ≤ a, b ≤ 10^9', inputFormat: 'Two integers.', outputFormat: 'Their difference.',
+    examples: [{ input: '10 3', output: '7', explanation: '10 - 3 = 7' }],
+    testCases: [
+      { input: '10 3', output: '7', hidden: false },
+      { input: '5 2', output: '3', hidden: false },
+      { input: '100 200', output: '-100', hidden: true },
+    ],
+    hints: ['Use the - operator.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 8, title: 'Product of Two Numbers', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Operators'], xpReward: 10,
+    description: 'Read two integers and print their product.',
+    constraints: '-10^9 ≤ a, b ≤ 10^9', inputFormat: 'Two integers.', outputFormat: 'Their product.',
+    examples: [{ input: '10 3', output: '30', explanation: '10 * 3 = 30' }],
+    testCases: [
+      { input: '10 3', output: '30', hidden: false },
+      { input: '5 2', output: '10', hidden: false },
+      { input: '100 200', output: '20000', hidden: true },
+    ],
+    hints: ['Use the * operator.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 9, title: 'Division', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Operators'], xpReward: 10,
+    description: 'Read two integers and print their integer quotient.',
+    constraints: '1 ≤ a, b ≤ 10^6', inputFormat: 'Two integers.', outputFormat: 'Integer quotient (a / b).',
+    examples: [{ input: '10 3', output: '3', explanation: '10 / 3 = 3 (integer division)' }],
+    testCases: [
+      { input: '10 3', output: '3', hidden: false },
+      { input: '5 2', output: '2', hidden: false },
+      { input: '100 4', output: '25', hidden: true },
+    ],
+    hints: ['Use integer division (// in Python, / in C/Java for ints).'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 10, title: 'Modulo', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Operators'], xpReward: 10,
+    description: 'Read two integers and print the remainder when a is divided by b.',
+    constraints: '1 ≤ a, b ≤ 10^9', inputFormat: 'Two integers.', outputFormat: 'a % b.',
+    examples: [{ input: '17 5', output: '2', explanation: '17 % 5 = 2' }],
+    testCases: [
+      { input: '17 5', output: '2', hidden: false },
+      { input: '100 7', output: '2', hidden: false },
+      { input: '81 9', output: '0', hidden: true },
+    ],
+    hints: ['Use the % operator (modulo).'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 11, title: 'Swap Two Numbers', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Variables'], xpReward: 10,
+    description: 'Read two integers and swap their values.',
+    constraints: '-10^9 ≤ a, b ≤ 10^9', inputFormat: 'Two integers.', outputFormat: 'Two integers after swapping.',
+    examples: [{ input: '5 3', output: '3 5', explanation: 'Swap 5 and 3 to get 3 and 5.' }],
+    testCases: [
+      { input: '5 3', output: '3 5', hidden: false },
+      { input: '-1 4', output: '4 -1', hidden: false },
+      { input: '999 1', output: '1 999', hidden: true },
+    ],
+    hints: ['Use a temporary variable to swap, or use tuple unpacking in Python.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 12, title: 'Area of Rectangle', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Mathematics'], xpReward: 10,
+    description: 'Read length and width of a rectangle and print its area.',
+    constraints: '1 ≤ l, w ≤ 10^6', inputFormat: 'Two integers.', outputFormat: 'Area of rectangle.',
+    examples: [{ input: '5 3', output: '15', explanation: '5 * 3 = 15' }],
+    testCases: [
+      { input: '5 3', output: '15', hidden: false },
+      { input: '10 10', output: '100', hidden: false },
+      { input: '7 2', output: '14', hidden: true },
+    ],
+    hints: ['Area = length * width.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 13, title: 'Area of Circle', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Mathematics'], xpReward: 10,
+    description: 'Read radius of a circle and print its area. Use π = 3.14159.',
+    constraints: '1 ≤ r ≤ 10^4', inputFormat: 'A single float.', outputFormat: 'Area rounded to 2 decimal places.',
+    examples: [{ input: '5', output: '78.54', explanation: 'π * 5² = 78.54' }],
+    testCases: [
+      { input: '5', output: '78.54', hidden: false },
+      { input: '7', output: '153.94', hidden: false },
+      { input: '10', output: '314.16', hidden: true },
+    ],
+    hints: ['Area = π * r². Use 3.14159 for π. Use formatting for 2 decimal places.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 14, title: 'Celsius to Fahrenheit', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Mathematics'], xpReward: 10,
+    description: 'Read temperature in Celsius and convert to Fahrenheit.',
+    constraints: '-100 ≤ C ≤ 100', inputFormat: 'A single float.', outputFormat: 'Temperature in Fahrenheit (2 decimal places).',
+    examples: [{ input: '0', output: '32.00', explanation: '0°C = 32°F' }],
+    testCases: [
+      { input: '0', output: '32.00', hidden: false },
+      { input: '100', output: '212.00', hidden: false },
+      { input: '-40', output: '-40.00', hidden: true },
+    ],
+    hints: ['F = (C * 9/5) + 32.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 15, title: 'Even or Odd', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['If-Else'], xpReward: 10,
+    description: 'Read an integer and print "Even" if it is even, "Odd" if it is odd.',
+    constraints: '-10^9 ≤ N ≤ 10^9', inputFormat: 'A single integer.', outputFormat: '"Even" or "Odd".',
+    examples: [{ input: '4', output: 'Even', explanation: '4 is even.' }],
+    testCases: [
+      { input: '4', output: 'Even', hidden: false },
+      { input: '7', output: 'Odd', hidden: false },
+      { input: '0', output: 'Even', hidden: true },
+    ],
+    hints: ['Use the % operator to check if N % 2 == 0.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 16, title: 'Positive Negative or Zero', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['If-Else'], xpReward: 10,
+    description: 'Read an integer and print "Positive", "Negative", or "Zero".',
+    constraints: '-10^9 ≤ N ≤ 10^9', inputFormat: 'A single integer.', outputFormat: '"Positive", "Negative", or "Zero".',
+    examples: [{ input: '5', output: 'Positive', explanation: '5 > 0' }],
+    testCases: [
+      { input: '5', output: 'Positive', hidden: false },
+      { input: '-3', output: 'Negative', hidden: false },
+      { input: '0', output: 'Zero', hidden: true },
+    ],
+    hints: ['Use if-else conditions to check.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 17, title: 'Largest of Two Numbers', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['If-Else'], xpReward: 10,
+    description: 'Read two integers and print the larger one.',
+    constraints: '-10^9 ≤ a, b ≤ 10^9', inputFormat: 'Two integers.', outputFormat: 'The larger integer.',
+    examples: [{ input: '5 3', output: '5', explanation: '5 is greater than 3.' }],
+    testCases: [
+      { input: '5 3', output: '5', hidden: false },
+      { input: '10 10', output: '10', hidden: false },
+      { input: '-1 -5', output: '-1', hidden: true },
+    ],
+    hints: ['Use comparison operators.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 18, title: 'Largest of Three Numbers', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['If-Else'], xpReward: 10,
+    description: 'Read three integers and print the largest.',
+    constraints: '-10^9 ≤ a, b, c ≤ 10^9', inputFormat: 'Three integers.', outputFormat: 'The largest integer.',
+    examples: [{ input: '3 7 5', output: '7', explanation: '7 is the largest.' }],
+    testCases: [
+      { input: '3 7 5', output: '7', hidden: false },
+      { input: '10 10 10', output: '10', hidden: false },
+      { input: '-1 -5 -2', output: '-1', hidden: true },
+    ],
+    hints: ['Compare each number with the others to find the maximum.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 19, title: 'Simple Calculator', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Operators'], xpReward: 10,
+    description: 'Read two integers and an operator (+, -, *, /). Perform the operation and print the result.',
+    constraints: '1 ≤ a, b ≤ 10^6', inputFormat: 'Two integers and an operator.', outputFormat: 'Result of the operation.',
+    examples: [{ input: '10 3 +', output: '13', explanation: '10 + 3 = 13' }],
+    testCases: [
+      { input: '10 3 +', output: '13', hidden: false },
+      { input: '5 2 *', output: '10', hidden: false },
+      { input: '100 4 /', output: '25', hidden: true },
+    ],
+    hints: ['Use if-elif or switch to check the operator and perform the calculation.'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+  {
+    id: 20, title: 'Basic Type Conversion', difficulty: 'Very Easy', difficultyLevel: 1,
+    tags: ['Variables'], xpReward: 10,
+    description: 'Read a float and print its integer part and the original float.',
+    constraints: '-10^6 ≤ f ≤ 10^6', inputFormat: 'A floating point number.', outputFormat: '"Integer: X Float: Y"',
+    examples: [{ input: '3.14', output: 'Integer: 3 Float: 3.14', explanation: 'Integer part of 3.14 is 3.' }],
+    testCases: [
+      { input: '3.14', output: 'Integer: 3 Float: 3.14', hidden: false },
+      { input: '-2.5', output: 'Integer: -2 Float: -2.5', hidden: false },
+      { input: '100.99', output: 'Integer: 100 Float: 100.99', hidden: true },
+    ],
+    hints: ['Use int() to convert float to integer (truncates towards zero).'],
+    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+  },
+];
+
+const CURRICULUM = [
+  {
+    id: 'beginner',
+    label: 'Beginner (Absolute Basics)',
+    difficulty: 'Very Easy',
+    xpReward: 10,
+    coinReward: 5,
+    topic: 'Basics',
+    problemIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  },
+  {
+    id: 'easy',
+    label: 'Easy',
+    difficulty: 'Easy',
+    xpReward: 20,
+    coinReward: 10,
+    topic: 'Core Programming',
+    problemIds: [],
+    subSections: [
+      { topic: 'Variables', problems: [] },
+      { topic: 'Operators', problems: [] },
+      { topic: 'Bitwise Basics', problems: [] },
+      { topic: 'Logical Operators', problems: [] },
+      { topic: 'If-Else', problems: [] },
+      { topic: 'Nested If', problems: [] },
+      { topic: 'Loops', problems: [] },
+      { topic: 'Patterns', problems: [] },
+      { topic: 'Basic Arrays', problems: [] },
+      { topic: 'Strings Basics', problems: [] },
+    ],
+  },
+  {
+    id: 'medium',
+    label: 'Medium',
+    difficulty: 'Medium',
+    xpReward: 40,
+    coinReward: 20,
+    topic: 'Data Structures & Algorithms',
+    problemIds: [],
+    subSections: [
+      { topic: 'Functions', problems: [] },
+      { topic: 'Recursion', problems: [] },
+      { topic: 'Searching', problems: [] },
+      { topic: 'Sorting', problems: [] },
+      { topic: 'Prefix Sum', problems: [] },
+      { topic: 'Two Pointers', problems: [] },
+      { topic: 'Sliding Window', problems: [] },
+      { topic: 'Stack', problems: [] },
+      { topic: 'Queue', problems: [] },
+      { topic: 'Linked List', problems: [] },
+      { topic: 'HashMap', problems: [] },
+    ],
+  },
+  {
+    id: 'hard',
+    label: 'Hard',
+    difficulty: 'Hard',
+    xpReward: 70,
+    coinReward: 35,
+    topic: 'Advanced Concepts',
+    problemIds: [],
+    subSections: [
+      { topic: 'Trees', problems: [] },
+      { topic: 'BST', problems: [] },
+      { topic: 'Heap', problems: [] },
+      { topic: 'Graph Basics', problems: [] },
+      { topic: 'DFS', problems: [] },
+      { topic: 'BFS', problems: [] },
+      { topic: 'Dynamic Programming Basics', problems: [] },
+      { topic: 'Greedy', problems: [] },
+      { topic: 'Binary Search on Answer', problems: [] },
+    ],
+  },
+  {
+    id: 'expert',
+    label: 'Expert',
+    difficulty: 'Expert',
+    xpReward: 100,
+    coinReward: 50,
+    topic: 'Mastery',
+    problemIds: [],
+    subSections: [
+      { topic: 'Advanced DP', problems: [] },
+      { topic: 'Segment Trees', problems: [] },
+      { topic: 'Fenwick Tree', problems: [] },
+      { topic: 'Tries', problems: [] },
+      { topic: 'Union Find', problems: [] },
+      { topic: 'Shortest Path', problems: [] },
+      { topic: 'Topological Sort', problems: [] },
+      { topic: 'Backtracking', problems: [] },
+      { topic: 'Advanced Graphs', problems: [] },
+      { topic: 'Competitive Programming Challenges', problems: [] },
+    ],
+  },
+];
+
 const TOTAL_PROBLEMS = 50001;
 
 function mulberry32(a) {
@@ -233,26 +632,25 @@ const TITLE_VARIATIONS = [
   (t, id) => `${t} Exercise ${id}`,
 ];
 
-function generateProblem(globalId) {
-  const rng = seededRandom(globalId + 42);
+function generateProblem(globalId, shiftedId) {
+  const rng = seededRandom(shiftedId + 42);
   const diffLevels = DIFFICULTY_LEVELS;
   
   let diffIdx = 0;
-  if (globalId <= 5000) diffIdx = 0;
-  else if (globalId <= 10000) diffIdx = 1;
-  else if (globalId <= 15000) diffIdx = 2;
-  else if (globalId <= 20000) diffIdx = 3;
-  else if (globalId <= 25000) diffIdx = 4;
-  else if (globalId <= 30000) diffIdx = 5;
-  else if (globalId <= 35000) diffIdx = 6;
-  else if (globalId <= 40000) diffIdx = 7;
-  else if (globalId <= 45000) diffIdx = 8;
+  if (shiftedId <= 5000) diffIdx = 0;
+  else if (shiftedId <= 10000) diffIdx = 1;
+  else if (shiftedId <= 15000) diffIdx = 2;
+  else if (shiftedId <= 20000) diffIdx = 3;
+  else if (shiftedId <= 25000) diffIdx = 4;
+  else if (shiftedId <= 30000) diffIdx = 5;
+  else if (shiftedId <= 35000) diffIdx = 6;
+  else if (shiftedId <= 40000) diffIdx = 7;
+  else if (shiftedId <= 45000) diffIdx = 8;
   else diffIdx = 9;
 
   const diff = diffLevels[diffIdx];
   const topics = LEVEL_TOPIC_MAP[diff.id] || ALL_TOPICS;
-  // Interleave topics round-robin for natural progression
-  const globalOffsetInTier = (globalId - 1) - (diffIdx * 5000);
+  const globalOffsetInTier = (shiftedId - 1) - (diffIdx * 5000);
   const numTopics = topics.length;
   const topicIndex = globalOffsetInTier % numTopics;
   const topic = topics[topicIndex];
@@ -299,14 +697,46 @@ function generateProblem(globalId) {
   };
 }
 
-let problemsCache = null;
-
-const CODING_PROBLEMS = [];
-for (let i = 1; i <= TOTAL_PROBLEMS; i++) {
-  CODING_PROBLEMS.push(generateProblem(i));
+const CODING_PROBLEMS = [...BEGINNER_PROBLEMS];
+for (let i = 21; i <= TOTAL_PROBLEMS; i++) {
+  CODING_PROBLEMS.push(generateProblem(i, i - 20));
 }
 
-export { CODING_PROBLEMS, TOTAL_PROBLEMS };
+function populateCurriculum() {
+  const problemById = {};
+  CODING_PROBLEMS.forEach(p => { problemById[p.id] = p; });
+
+  const tagToSubSection = {};
+  CURRICULUM.forEach(section => {
+    if (section.subSections) {
+      section.subSections.forEach(ss => {
+        const lower = ss.topic.toLowerCase();
+        tagToSubSection[lower] = { section: section.id, subSection: ss };
+      });
+    }
+  });
+
+  CODING_PROBLEMS.forEach(p => {
+    if (p.id <= 20) return;
+    const pTags = (p.tags || []).map(t => t.toLowerCase());
+    for (const [tagKey, mapping] of Object.entries(tagToSubSection)) {
+      if (pTags.some(t => t.includes(tagKey) || tagKey.includes(t))) {
+        if (!mapping.subSection.problems.includes(p.id)) {
+          mapping.subSection.problems.push(p.id);
+        }
+        const section = CURRICULUM.find(s => s.id === mapping.section);
+        if (section && !section.problemIds.includes(p.id)) {
+          section.problemIds.push(p.id);
+        }
+        break;
+      }
+    }
+  });
+}
+
+populateCurriculum();
+
+export { CODING_PROBLEMS, TOTAL_PROBLEMS, CURRICULUM };
 
 export function getProblem(id) {
   return CODING_PROBLEMS[id - 1];

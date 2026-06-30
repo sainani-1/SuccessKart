@@ -1,4 +1,4 @@
-import { DIFFICULTY_LEVELS } from './codingProblems';
+import { DIFFICULTY_LEVELS, CURRICULUM_XP, DIFFICULTY_XP } from './codingProblems';
 
 export function getLevelFromXp(xp) {
   return Math.floor(xp / 500) + 1;
@@ -136,6 +136,120 @@ export function getDifficultyBadgeColor(difficulty) {
     'Competitive Programming': 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30',
   };
   return colors[difficulty] || 'bg-slate-500/20 text-slate-300 border-slate-500/30';
+}
+
+export function getCurriculumXp(difficulty) {
+  const d = CURRICULUM_XP[difficulty];
+  return d ? d.xp : 10;
+}
+
+export function getCurriculumCoins(difficulty) {
+  const d = CURRICULUM_XP[difficulty];
+  return d ? d.coins : 5;
+}
+
+export function getDifficultyXp(difficultyName) {
+  const d = DIFFICULTY_XP[difficultyName];
+  return d ? d.xp : 10;
+}
+
+export function getDifficultyCoins(difficultyName) {
+  const d = DIFFICULTY_XP[difficultyName];
+  return d ? d.coins : 5;
+}
+
+export function getCategoryFromProblemId(problemId, CURRICULUM) {
+  if (problemId <= 20) return 'beginner';
+  for (const section of CURRICULUM) {
+    if (section.problemIds && section.problemIds.includes(problemId)) {
+      return section.id;
+    }
+  }
+  const tags = ['Easy', 'Basic', 'Beginner'];
+  return 'easy';
+}
+
+export function checkBadges(userProgress, allProblems) {
+  const badges = [];
+  const { problemsSolved, xp, currentStreak, longestStreak, solvedIds } = userProgress;
+
+  if (problemsSolved >= 1) badges.push({ id: 'first_accepted', name: 'First Accepted Solution', icon: '🎉', unlocked: true });
+  if (problemsSolved >= 10) badges.push({ id: 'ten_solved', name: '10 Problems Solved', icon: '⭐', unlocked: true });
+  if (problemsSolved >= 50) badges.push({ id: 'fifty_solved', name: '50 Problems Solved', icon: '🏆', unlocked: true });
+  if (problemsSolved >= 100) badges.push({ id: 'hundred_solved', name: '100 Problems Solved', icon: '👑', unlocked: true });
+  if (currentStreak >= 7) badges.push({ id: 'seven_day_streak', name: '7-Day Streak', icon: '🔥', unlocked: true });
+  if (currentStreak >= 30) badges.push({ id: 'thirty_day_streak', name: '30-Day Streak', icon: '💪', unlocked: true });
+  if (xp >= 500) badges.push({ id: 'five_hundred_xp', name: '500 XP Earned', icon: '⚡', unlocked: true });
+  if (getLevelFromXp(xp) >= 2) badges.push({ id: 'level_up', name: 'Level Up!', icon: '⬆️', unlocked: true });
+
+  if (allProblems && solvedIds) {
+    const hasHard = solvedIds.some(id => {
+      const p = allProblems.find(prob => prob.id === id);
+      return p && (p.difficulty === 'Hard' || p.difficulty === 'Very Hard' || p.difficulty === 'Advanced');
+    });
+    if (hasHard) badges.push({ id: 'first_hard', name: 'First Hard Problem', icon: '💎', unlocked: true });
+
+    const hasExpert = solvedIds.some(id => {
+      const p = allProblems.find(prob => prob.id === id);
+      return p && (p.difficulty === 'Expert' || p.difficulty === 'Competitive Programming');
+    });
+    if (hasExpert) badges.push({ id: 'first_expert', name: 'First Expert Problem', icon: '🚀', unlocked: true });
+  }
+
+  return badges;
+}
+
+export function analyzeTopics(userProgress, allProblems) {
+  const solvedIds = new Set(userProgress.solvedIds || []);
+  const submissions = userProgress.submissions || [];
+  const topicStats = {};
+
+  allProblems.forEach(p => {
+    const tags = p.tags || [];
+    tags.forEach(tag => {
+      if (!topicStats[tag]) {
+        topicStats[tag] = { total: 0, solved: 0, failed: 0, attempts: 0 };
+      }
+      topicStats[tag].total++;
+      if (solvedIds.has(p.id)) {
+        topicStats[tag].solved++;
+      }
+    });
+  });
+
+  submissions.forEach(s => {
+    const problem = allProblems.find(p => p.id === s.problem_id);
+    if (problem) {
+      (problem.tags || []).forEach(tag => {
+        if (topicStats[tag]) {
+          topicStats[tag].attempts++;
+          if (s.status !== 'Accepted') {
+            topicStats[tag].failed++;
+          }
+        }
+      });
+    }
+  });
+
+  const strong = Object.entries(topicStats)
+    .filter(([, stats]) => stats.solved >= 2)
+    .sort(([, a], [, b]) => b.solved - a.solved)
+    .slice(0, 5)
+    .map(([name, stats]) => ({ name, solved: stats.solved, total: stats.total }));
+
+  const weak = Object.entries(topicStats)
+    .filter(([, stats]) => stats.total > 0 && (stats.failed > stats.solved || stats.solved === 0))
+    .sort(([, a], [, b]) => (b.failed - b.solved) - (a.failed - a.solved))
+    .slice(0, 5)
+    .map(([name, stats]) => ({
+      name,
+      solved: stats.solved,
+      total: stats.total,
+      attempts: stats.attempts,
+      accuracy: stats.attempts > 0 ? stats.solved / stats.attempts : 0,
+    }));
+
+  return { strong, weak };
 }
 
 export const TEMPLATES = {

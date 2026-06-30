@@ -6,8 +6,9 @@ import { getDifficultyBadgeColor, TEMPLATES, LANGUAGES } from '../../data/skillU
 
 const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId }) => {
   const isSolved = (userProgress?.solvedIds || []).includes(problem.id);
-  const [language, setLanguage] = useState('python');
-  const [code, setCode] = useState(TEMPLATES.python);
+  const savedLang = typeof window !== 'undefined' ? localStorage.getItem('skillup_last_language') || 'python' : 'python';
+  const [language, setLanguage] = useState(savedLang);
+  const [code, setCode] = useState(TEMPLATES[savedLang] || TEMPLATES.python);
   const [activeTab, setActiveTab] = useState('description');
   const [results, setResults] = useState(null);
   const [running, setRunning] = useState(false);
@@ -27,6 +28,7 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId })
   const [copied, setCopied] = useState(false);
   const editorContainerRef = useRef(null);
   const contentRef = useRef(null);
+  const completionVisible = isSolved || results?.accepted;
 
   // Time tracking
   useEffect(() => {
@@ -60,6 +62,7 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId })
   // Language switch
   const handleLanguageChange = (lang) => {
     setLanguage(lang);
+    localStorage.setItem('skillup_last_language', lang);
     if (!code || code === TEMPLATES[language]) {
       setCode(TEMPLATES[lang] || '');
     }
@@ -170,7 +173,7 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId })
                 <Zap size={10} />
                 {problem.xpReward} XP
               </span>
-              {isSolved && (
+              {completionVisible && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
                   <CheckCircle size={12} />
                   Completed
@@ -392,8 +395,8 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId })
           )}
         </div>
 
-        {/* Right Panel: Code Editor */}
-        <div className="space-y-4">
+        {/* Right Panel: Code Editor (fullscreen target) */}
+        <div ref={editorContainerRef} className="skillup-editor-panel space-y-4">
           {/* Language + Actions */}
           <div className="flex items-center justify-between gap-2 bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-2">
             <div className="flex items-center gap-2">
@@ -435,12 +438,12 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId })
 
           {/* Monaco Editor */}
           <div className="relative" onPaste={handlePaste}>
-            <div ref={editorContainerRef} className="rounded-2xl overflow-hidden border border-slate-700/50">
+            <div className="rounded-2xl overflow-hidden border border-slate-700/50">
               <MonacoCdnEditor
                 value={code}
                 language={language}
                 onChange={(val) => setCode(val)}
-                height={fullscreen ? 'calc(100vh - 280px)' : '480px'}
+                height={fullscreen ? 'calc(100vh - 420px)' : '480px'}
               />
             </div>
             {pasteWarning && (
@@ -469,6 +472,15 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId })
                 }`}>
                   {results.accepted ? 'Accepted' : 'Wrong Answer'}
                 </span>
+              )}
+              {fullscreen && (
+                <button
+                  onClick={toggleFullscreen}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/50 text-xs text-slate-400 hover:text-white transition-colors ml-2"
+                >
+                  <Minimize2 size={12} />
+                  Exit Fullscreen
+                </button>
               )}
             </div>
             <div className="p-4 max-h-48 overflow-y-auto space-y-2">
