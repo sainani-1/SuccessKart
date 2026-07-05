@@ -72,7 +72,15 @@ const EDUCATIONAL_KEYWORDS = [
   'sequence', 'series', 'permutation', 'combination', 'probability',
   'statistics', 'mean', 'median', 'mode', 'variance', 'standard deviation',
   'correlation', 'regression', 'hypothesis', 'distribution',
-  'sucesskart', 'sai nani', 'sainani'
+  'sucesskart', 'sai nani', 'sainani',
+  'hello', 'hi', 'hey', 'greetings', 'good morning', 'good afternoon',
+  'good evening', 'how are you', 'thanks', 'thank you', 'welcome',
+  'please', 'sorry', 'excuse', 'yes', 'no', 'ok', 'okay', 'sure',
+  'fine', 'well', 'nice', 'great', 'awesome', 'cool', 'amazing',
+  'wonderful', 'fantastic', 'excellent', 'good', 'bad', 'can you',
+  'could you', 'would you', 'will you', 'do you', 'are you',
+  'i have', 'i am', 'i want', 'i need', 'i would', 'i will',
+  'tell me', 'show me', 'give me', 'help me'
 ];
 
 const NON_EDUCATIONAL_PATTERNS = [
@@ -126,7 +134,7 @@ function detectMisuse(messages) {
     return cnt + (combined.toLowerCase().includes(kw) ? 1 : 0);
   }, 0);
 
-  if (wordCount > 5 && eduKeywordCount === 0) {
+  if (wordCount > 30 && eduKeywordCount === 0) {
     return true;
   }
 

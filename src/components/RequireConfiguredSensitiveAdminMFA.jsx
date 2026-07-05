@@ -8,7 +8,7 @@ import {
   isAdminPathProtectedBySensitiveMFA,
 } from '../utils/adminSensitiveRoutes';
 
-const SENSITIVE_MFA_TTL_MS = 10 * 60 * 1000;
+const SENSITIVE_MFA_TTL_MS = 15 * 60 * 1000;
 
 const RequireConfiguredSensitiveAdminMFA = ({ children }) => {
   const { realProfile, loading } = useAuth();
@@ -48,7 +48,7 @@ const RequireConfiguredSensitiveAdminMFA = ({ children }) => {
     return () => {
       active = false;
     };
-  }, [realProfile?.role, location.pathname]);
+  }, [realProfile?.role]);
 
   if (loading || configLoading) return children;
 
@@ -56,7 +56,6 @@ const RequireConfiguredSensitiveAdminMFA = ({ children }) => {
     return children;
   }
 
-  const currentTarget = `${location.pathname}${location.search}`;
   const requiresSensitiveMFA = isAdminPathProtectedBySensitiveMFA(location.pathname, protectedPaths);
 
   if (!requiresSensitiveMFA) {
@@ -65,11 +64,10 @@ const RequireConfiguredSensitiveAdminMFA = ({ children }) => {
 
   const verifiedAt = Number(sessionStorage.getItem('admin_sensitive_mfa_verified_at') || 0);
   const verifiedUser = sessionStorage.getItem('admin_sensitive_mfa_verified_user');
-  const verifiedTarget = sessionStorage.getItem('admin_sensitive_mfa_verified_target') || '';
   const isFresh = verifiedAt > 0 && Date.now() - verifiedAt < SENSITIVE_MFA_TTL_MS;
 
-  if (!isFresh || verifiedUser !== realProfile?.id || verifiedTarget !== currentTarget) {
-    const next = encodeURIComponent(currentTarget);
+  if (!isFresh || verifiedUser !== realProfile?.id) {
+    const next = encodeURIComponent(`${location.pathname}${location.search}`);
     return <Navigate to={`/admin-mfa-verify?scope=sensitive-passwords&next=${next}`} replace />;
   }
 

@@ -168,6 +168,10 @@ const AdminLWAILimitSettings = lazy(() => import('./pages/AdminLWAILimitSettings
 const AdminMultiAISettings = lazy(() => import('./pages/AdminMultiAISettings'));
 const AdminTestAI = lazy(() => import('./pages/AdminTestAI'));
 const AdminMisuseAI = lazy(() => import('./pages/AdminMisuseAI'));
+const AdminLoginHistory = lazy(() => import('./pages/AdminLoginHistory'));
+const AdminLastActive = lazy(() => import('./pages/AdminLastActive'));
+const AdminAHI = lazy(() => import('./pages/AdminAHI'));
+const AHIInterview = lazy(() => import('./pages/AHIInterview'));
 const AdminSucesskartMeetSettings = lazy(() => import('./pages/AdminSucesskartMeetSettings'));
 const SucesskartMeetDocs = lazy(() => import('./pages/SucesskartMeetDocs'));
 const SucesskartMeetApiKeys = lazy(() => import('./pages/SucesskartMeetApiKeys'));
@@ -598,6 +602,9 @@ function App() {
           <Route path="admin/ai-settings-extended" element={<AdminRoute><AdminMultiAISettings /></AdminRoute>} />
           <Route path="admin/test-ai" element={<AdminRoute><AdminTestAI /></AdminRoute>} />
           <Route path="admin/misuse-ai" element={<AdminRoute><AdminMisuseAI /></AdminRoute>} />
+          <Route path="admin/login-history" element={<AdminRoute><AdminLoginHistory /></AdminRoute>} />
+          <Route path="admin/last-active" element={<AdminRoute><AdminLastActive /></AdminRoute>} />
+          <Route path="admin/ahi" element={<AdminRoute><AdminAHI /></AdminRoute>} />
           <Route path="admin/sucesskart-meet-settings" element={<AdminRoute><AdminSucesskartMeetSettings /></AdminRoute>} />
           <Route path="admin/sucesskart-meet-payments" element={<AdminRoute><AdminSucesskartMeetPayments /></AdminRoute>} />
         </Route>
@@ -614,6 +621,7 @@ function App() {
         <Route path="/sucesskart-meet-documentation" element={<SucesskartMeetDocs />} />
         <Route path="/sucesskart-meet-apikeys" element={<SucesskartMeetApiKeys />} />
         <Route path="/sucesskart-meet-schedule" element={<ScheduleMeet />} />
+        <Route path="/ahi-interview" element={<AHIInterview />} />
         <Route path="/meet/rooms/:roomName" element={<MeetRoom />} />
       </Routes>
       </Suspense>

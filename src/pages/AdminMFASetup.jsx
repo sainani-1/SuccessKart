@@ -3,10 +3,12 @@ import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import usePopup from '../hooks/usePopup.jsx';
+import useSensitiveContentGuard from "../hooks/useSensitiveContentGuard";
 const LOGO_URL = import.meta.env.VITE_CERTIFICATE_LOGO || "/sucesskart-logo.svg";
 const MFA_ISSUER = "SucessKart";
 
 export default function AdminMFASetup() {
+  useSensitiveContentGuard({ enabled: true });
   const navigate = useNavigate();
   const { openPopup, popupNode } = usePopup();
   const [step, setStep] = useState("name");

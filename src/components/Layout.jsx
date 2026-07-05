@@ -35,7 +35,7 @@ const formatExamReminderTime = (value) =>
   value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'your scheduled time';
 
 const Layout = () => {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, forcedLogoutInfo, dismissForcedLogout } = useAuth();
   const { unreadNotifications, incrementUnreadNotifications } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,6 +49,7 @@ const Layout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => readBrowserState(SIDEBAR_COLLAPSED_KEY, false));
   const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
   const [examReminderPopup, setExamReminderPopup] = useState({ open: false, title: '', message: '' });
+  const [takeoverNotice, setTakeoverNotice] = useState(null);
   const seenRealtimeNotificationIdsRef = useRef(new Set());
   const seenActivityEventKeysRef = useRef(new Set());
   const isMissingTargetUserColumn = (err) => {
@@ -101,6 +102,21 @@ const Layout = () => {
     const saved = readBrowserState(LAST_OPENED_PAGE_KEY);
     if (saved?.pathname && location.pathname === '/app' && saved.pathname !== '/app') {
       navigate(saved.pathname, { replace: true });
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('sk_takeover_notice');
+      if (raw) {
+        sessionStorage.removeItem('sk_takeover_notice');
+        const parsed = JSON.parse(raw);
+        if (parsed?.message) {
+          setTakeoverNotice(parsed);
+        }
+      }
+    } catch {
+      // ignore
     }
   }, []);
 
@@ -242,6 +258,7 @@ const Layout = () => {
       { label: 'Website Protection', path: '/app/admin/website-protection' },
       { label: 'Reset Password', path: '/app/admin/reset-password' },
       { label: 'Activity Logs', path: '/app/admin/activity-logs' },
+      { label: 'Login History', path: '/app/admin/login-history' },
       { label: 'Error Logs', path: '/app/admin/error-logs' },
       { label: 'Lead Inbox', path: '/app/admin/lead-inbox' },
       { label: 'Visiting Website', path: '/app/admin/visitors' },
@@ -798,6 +815,54 @@ const Layout = () => {
            &copy; {new Date().getFullYear()} SucessKart. All rights reserved. 
         </footer>
       </div>
+
+      {/* Takeover Success Notice Modal */}
+      {takeoverNotice && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="px-7 py-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white">
+              <p className="text-xs uppercase tracking-widest font-semibold text-emerald-100">Session Transferred</p>
+              <h3 className="text-2xl font-bold mt-1">{takeoverNotice.title || 'Session Transferred'}</h3>
+            </div>
+            <div className="px-7 py-6 space-y-5">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-sm text-slate-800 whitespace-pre-wrap">{takeoverNotice.message}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTakeoverNotice(null)}
+                className="w-full px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forced Logout Modal */}
+      {forcedLogoutInfo?.show && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="px-7 py-6 bg-gradient-to-r from-red-500 to-orange-500 text-white">
+              <p className="text-xs uppercase tracking-widest font-semibold text-red-100">Session Expired</p>
+              <h3 className="text-2xl font-bold mt-1">{forcedLogoutInfo.title || 'Logged Out'}</h3>
+            </div>
+            <div className="px-7 py-6 space-y-5">
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                <p className="text-sm text-slate-800 whitespace-pre-wrap">{forcedLogoutInfo.message}</p>
+              </div>
+              <button
+                type="button"
+                onClick={dismissForcedLogout}
+                className="w-full px-4 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700"
+              >
+                OK, I understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

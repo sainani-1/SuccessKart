@@ -3,8 +3,10 @@ import { Mail, ArrowLeft, CheckCircle2, Eye, EyeOff, ShieldCheck, KeyRound } fro
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import AuthShell from '../components/AuthShell';
+import useSensitiveContentGuard from '../hooks/useSensitiveContentGuard';
 
 const ResetPassword = () => {
+  useSensitiveContentGuard({ enabled: true });
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');

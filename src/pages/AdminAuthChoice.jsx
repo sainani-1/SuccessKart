@@ -6,6 +6,7 @@ import { supabase } from '../supabaseClient';
 import Toast from '../components/Toast';
 import AlertModal from '../components/AlertModal';
 import LoadingSpinner from '../components/LoadingSpinner';
+import useSensitiveContentGuard from '../hooks/useSensitiveContentGuard';
 import {
   clearAdminVerificationState,
   createAdminPasskey,
@@ -16,6 +17,7 @@ import {
 } from '../utils/adminPasskey';
 
 const AdminAuthChoice = () => {
+  useSensitiveContentGuard({ enabled: true });
   const PASSKEY_CONFIRM_DELAY_MS = 60 * 1000;
   const navigate = useNavigate();
   const { user, profile, loading, signOut } = useAuth();

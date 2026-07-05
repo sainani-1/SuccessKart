@@ -545,7 +545,7 @@ const Home = () => {
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-900">Contact</p>
               <div className="mt-4 space-y-3 text-sm text-slate-600">
-                <p>Support email set by SucessKart team:</p>
+                <p>Contact Mail Id:</p>
                 {supportEmail ? (
                   <a href={`mailto:${supportEmail}`} className="block font-semibold text-amber-700 hover:text-amber-800">
                     {supportEmail}

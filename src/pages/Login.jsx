@@ -15,9 +15,12 @@ import { reportMultiSessionViolation } from '../utils/sessionSecurity';
 import { clearFaceMfaVerified } from '../utils/faceAuth';
 import { logError, logWarn } from '../utils/errorLogger';
 import { isProfileComplete } from '../utils/profileCompletion';
+import { logLoginEvent, logTakeoverEvent } from '../utils/loginHistory';
+import useSensitiveContentGuard from '../hooks/useSensitiveContentGuard';
 
 
 const Login = () => {
+  useSensitiveContentGuard({ enabled: true });
   const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -311,21 +314,23 @@ const Login = () => {
       if (takeover.status !== 'claimed') {
         return {
           allowed: false,
+          takeoverOccurred: false,
           message: 'Could not transfer active session. Please try again.'
         };
       }
       return {
         allowed: true,
-        message: 'Previous device was logged out. Next time your account may be disabled if the same account is used in multiple places.',
+        takeoverOccurred: true,
+        message: 'You have been logged in here. The other device has been logged out.\n\nIf this was not you, please change your password immediately to secure your account.',
       };
     }
 
     if (initial.status === 'claimed' || initial.status === 'unavailable') {
       // unavailable => DB feature not ready; allow login without blocking.
-      return { allowed: true, message: '' };
+      return { allowed: true, takeoverOccurred: false, message: '' };
     }
 
-    return { allowed: false, message: 'Could not validate active session. Please try again.' };
+    return { allowed: false, takeoverOccurred: false, message: 'Could not validate active session. Please try again.' };
   };
 
   const routeGoogleUser = async (oauthUser) => {
@@ -337,6 +342,8 @@ const Login = () => {
 
     if (!profile || (profile.role !== 'admin' && !isProfileComplete(profile))) {
       if (profile?.role === 'admin') {
+        const userInfo = { email: profile.email, full_name: profile.full_name };
+        await logLoginEvent(oauthUser.id, userInfo);
         navigate('/app', { replace: true });
         return;
       }
@@ -350,11 +357,11 @@ const Login = () => {
     try {
       sessionCheck = await withTimeout(
         ensureSingleActiveSession(oauthUser.id, profile),
-        { allowed: true, message: '' }
+        { allowed: true, takeoverOccurred: false, message: '' }
       );
     } catch {
       logWarn({ message: 'ensureSingleActiveSession threw (OAuth)', source: 'Login', details: null });
-      sessionCheck = { allowed: true, message: '' };
+      sessionCheck = { allowed: true, takeoverOccurred: false, message: '' };
     }
     if (!sessionCheck.allowed) {
       await supabase.auth.signOut();
@@ -369,6 +376,16 @@ const Login = () => {
       return;
     }
 
+    const userInfo = { email: profile.email, full_name: profile.full_name };
+    if (sessionCheck.takeoverOccurred) {
+      await logTakeoverEvent(oauthUser.id, userInfo);
+      sessionStorage.setItem('sk_takeover_notice', JSON.stringify({
+        title: 'Session Transferred',
+        message: sessionCheck.message
+      }));
+    } else {
+      await logLoginEvent(oauthUser.id, userInfo);
+    }
     navigate('/app', { replace: true });
   };
 
@@ -796,7 +813,7 @@ const Login = () => {
         sessionCheck = await ensureSingleActiveSession(signInData.user.id, userProfile);
       } catch {
         logWarn({ message: 'ensureSingleActiveSession threw', source: 'Login', details: null });
-        sessionCheck = { allowed: true, message: '' };
+        sessionCheck = { allowed: true, takeoverOccurred: false, message: '' };
       }
       if (!sessionCheck.allowed) {
         await supabase.auth.signOut();
@@ -805,12 +822,24 @@ const Login = () => {
         return;
       }
 
+      // Log login and takeover events
+      const userInfo = { email: userProfile?.email || email, full_name: userProfile?.full_name };
+      if (sessionCheck.takeoverOccurred) {
+        await logTakeoverEvent(signInData.user.id, userInfo);
+        sessionStorage.setItem('sk_takeover_notice', JSON.stringify({
+          title: 'Session Transferred',
+          message: sessionCheck.message
+        }));
+      } else {
+        await logLoginEvent(signInData.user.id, userInfo);
+      }
+
       if (userProfile.role === 'admin') {
         clearAdminVerificationState();
         setLoggingIn(false);
         setToast({
           show: true,
-          message: sessionCheck.message || 'Logged in successfully!',
+          message: sessionCheck.takeoverOccurred ? 'Other device logged out.' : 'Logged in successfully!',
           type: 'success'
         });
         navigate('/admin-auth-choice', {
@@ -835,7 +864,7 @@ const Login = () => {
       setLoggingIn(false);
       setToast({
         show: true,
-        message: sessionCheck.message || 'Logged in successfully!',
+        message: sessionCheck.takeoverOccurred ? 'Other device logged out.' : 'Logged in successfully!',
         type: 'success'
       });
       setInlineNotice('');
@@ -1186,12 +1215,14 @@ const Login = () => {
                   Logout there and login here?
                 </p>
                 <p className="text-xs text-slate-600 mt-2">
-                  If you continue, the other device will be logged out immediately. This multi-session attempt is reported to admin. Next time your account may be disabled.
+                  If you continue, the other device will be logged out immediately and you will be logged in here. This multi-session attempt has been reported to the admin.
                 </p>
               </div>
-              <p className="text-xs text-slate-500">
-                If this was not you, choose cancel and reset your password.
-              </p>
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                <p className="text-xs font-semibold text-red-700">
+                  If this was not you, please cancel and change your password immediately.
+                </p>
+              </div>
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
@@ -1212,7 +1243,6 @@ const Login = () => {
           </div>
         </div>
       )}
-
 
     </>
   );

@@ -20,6 +20,7 @@ import { refreshSessionFromHttpOnlyCookie } from '../utils/authCookieBridge';
 import { requestSessionFromOtherTabs } from '../utils/crossTabAuth';
 import { logError } from '../utils/errorLogger';
 import { clearFaceMfaVerified, clearFaceLoginData } from '../utils/faceAuth';
+import { logLogoutEvent } from '../utils/loginHistory';
 
 const AuthContext = createContext();
 
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }) => {
   const [profileChecked, setProfileChecked] = useState(false);
   const [impersonationProfile, setImpersonationProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [forcedLogoutInfo, setForcedLogoutInfo] = useState(null);
   const conflictStateRef = useRef({ strikes: 0, lastAt: 0 });
   const initialAuthRestoreRef = useRef(true);
 
@@ -124,12 +126,20 @@ export const AuthProvider = ({ children }) => {
   const handleSingleSessionConflict = async (userId) => {
     const latestSession = await fetchActiveSessionRecord(userId);
     const oldDevice = latestSession?.device_label || latestSession?.device_id || 'Another active device';
-    await forceClientLogout(userId, {
-      title: 'Session Moved To Another Device',
-      type: 'warning',
-      inlineMessage: 'This account was opened somewhere else, so this device was logged out.',
-      message: `This account is now active on another device.\n\nActive device: ${oldDevice}\nThis device: Current device\n\nYou have been logged out here automatically. Next time your account may be disabled if the same account is used in multiple places.`,
+    await logLogoutEvent(userId, { email: profile?.email, full_name: profile?.full_name });
+    setForcedLogoutInfo({
+      show: true,
+      title: 'Session Expired',
+      message: `This account was logged in on another device.\n\nActive device: ${oldDevice}\n\nYou have been logged out here. If this was not you, change your password immediately.`,
     });
+  };
+
+  const dismissForcedLogout = async () => {
+    const currentUserId = user?.id || profile?.id;
+    setForcedLogoutInfo(null);
+    if (currentUserId) {
+      await forceClientLogout(currentUserId);
+    }
   };
 
   const validateSessionOwnership = async (sessionUserId) => {
@@ -540,6 +550,9 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = async () => {
     const currentUserId = user?.id || profile?.id;
+    const userInfo = { email: profile?.email || user?.email, full_name: profile?.full_name };
+    // Best effort: log logout event
+    await logLogoutEvent(currentUserId, userInfo);
     // Best effort: release active-session lock before auth token is cleared.
     try {
       await releaseSingleSession(currentUserId);
@@ -600,6 +613,8 @@ export const AuthProvider = ({ children }) => {
         getPlanTier,
         startImpersonation,
         stopImpersonation,
+        forcedLogoutInfo,
+        dismissForcedLogout,
       }}
     >
       {children}

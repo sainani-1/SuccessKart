@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { isAdminPasskeyVerifiedForUser } from '../utils/adminPasskey';
 
-const ADMIN_MFA_TTL_MS = 10 * 60 * 1000;
+const ADMIN_MFA_TTL_MS = 15 * 60 * 1000;
 
 const RequireAdminMFA = ({ children }) => {
   const { profile, loading } = useAuth();

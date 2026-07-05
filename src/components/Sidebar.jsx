@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2 } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2, Bot } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { useNotifications } from '../context/NotificationContext';
@@ -642,6 +642,12 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
                 </span>
               )}
             </NavLink>
+            {role !== 'admin' && (
+              <NavLink to="/ahi-interview" className={navItemClass} title="AHI">
+                <Bot size={28} />
+                {shouldShowText && <span className="truncate text-sm font-medium">AHI</span>}
+              </NavLink>
+            )}
           </>
         )}
 
@@ -1234,6 +1240,18 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/admin/activity-logs" className={navItemClass} title="Activity Logs">
               <ClipboardList size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Activity Logs</span>}
+            </NavLink>
+            <NavLink to="/app/admin/last-active" className={navItemClass} title="Last Active">
+              <Activity size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Last Active</span>}
+            </NavLink>
+            <NavLink to="/app/admin/ahi" className={navItemClass} title="AHI Settings">
+              <Bot size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">AHI Settings</span>}
+            </NavLink>
+            <NavLink to="/app/admin/login-history" className={navItemClass} title="Login History">
+              <Clock size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Login History</span>}
             </NavLink>
             <NavLink to="/app/admin/error-logs" className={navItemClass} title="Error Logs">
               <AlertTriangle size={28} />

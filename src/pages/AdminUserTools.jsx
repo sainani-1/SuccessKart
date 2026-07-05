@@ -266,7 +266,7 @@ const AdminUserTools = () => {
             <label className="block text-xs font-semibold text-slate-600 mb-1">Password</label>
             <div className="relative">
               <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="text" value={addForm.password} onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
+              <input type="password" value={addForm.password} onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
                 placeholder="Min 6 chars"
                 className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-nani-light focus:border-transparent outline-none text-sm" />
             </div>

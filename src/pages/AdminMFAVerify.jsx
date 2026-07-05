@@ -7,8 +7,10 @@ import Toast from "../components/Toast";
 import { useAuth } from "../context/AuthContext";
 import { LogOut, ShieldCheck, ArrowLeft } from "lucide-react";
 import { logError } from "../utils/errorLogger";
+import useSensitiveContentGuard from "../hooks/useSensitiveContentGuard";
 
 export default function AdminMFAVerify() {
+  useSensitiveContentGuard({ enabled: true });
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
