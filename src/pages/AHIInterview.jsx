@@ -4,6 +4,19 @@ import { supabase } from '../supabaseClient';
 import { ShieldOff, Maximize2, Minimize2, Mic, MicOff, Loader2, Volume2, AlertTriangle } from 'lucide-react';
 import { getGroqApiKey, getAuthorizedUsers, callGroq, INTERVIEW_SYSTEM_PROMPT, INTERVIEW_QUESTIONS, INTERVIEW_ROUNDS } from '../utils/ahi';
 
+const lipKeyframes = `
+@keyframes lipMove {
+  0%   { height: 1.5px; width: 18px; }
+  15%  { height: 5px;   width: 22px; }
+  30%  { height: 2px;   width: 20px; }
+  45%  { height: 6px;   width: 24px; }
+  60%  { height: 3px;   width: 19px; }
+  75%  { height: 5px;   width: 22px; }
+  90%  { height: 2px;   width: 20px; }
+  100% { height: 1.5px; width: 18px; }
+}
+`;
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const AHIInterview = () => {
@@ -35,8 +48,6 @@ const AHIInterview = () => {
   const avatarRef = useRef(null);
   const fullscreenRef = useRef(null);
   const apiKeyRef = useRef(null);
-  const mouthRef = useRef(null);
-  const lipAnimRef = useRef(null);
 
   useEffect(() => {
     const init = async () => {
@@ -154,28 +165,6 @@ const AHIInterview = () => {
       speakQuestion();
     }
   }, [started, phase, onHold, currentRound, currentQ]);
-
-  // Subtle breathing animation while AI is speaking
-  useEffect(() => {
-    const el = avatarRef.current;
-    if (!el) return;
-    if (aiSpeaking) {
-      let start = performance.now();
-      const animate = (now) => {
-        const elapsed = (now - start) / 1000;
-        const breathe = 1 + Math.sin(elapsed * 2.5) * 0.015;
-        el.style.transform = `scale(${breathe})`;
-        lipAnimRef.current = requestAnimationFrame(animate);
-      };
-      lipAnimRef.current = requestAnimationFrame(animate);
-    } else {
-      if (lipAnimRef.current) cancelAnimationFrame(lipAnimRef.current);
-      if (el) el.style.transform = 'scale(1)';
-    }
-    return () => {
-      if (lipAnimRef.current) cancelAnimationFrame(lipAnimRef.current);
-    };
-  }, [aiSpeaking]);
 
   const speakText = (text) => {
     return new Promise((resolve) => {
@@ -495,7 +484,9 @@ const AHIInterview = () => {
   }
 
   return (
-    <div ref={fullscreenRef} className={`${isFullscreen ? 'fixed inset-0 z-50 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'min-h-screen bg-gray-50'}`}>
+    <>
+      <style>{lipKeyframes}</style>
+      <div ref={fullscreenRef} className={`${isFullscreen ? 'fixed inset-0 z-50 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'min-h-screen bg-gray-50'}`}>
       {!isFullscreen && phase === 'prompt' && (
         <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 max-w-md w-full text-center">
@@ -582,13 +573,19 @@ const AHIInterview = () => {
               {/* Avatar Area - person silhouette like a video call */}
               <div className="flex flex-col items-center justify-center py-8 px-4">
                 <div className="relative mb-4">
-                  {/* Nani's photo */}
-                  <div ref={avatarRef} className={`w-36 h-36 rounded-full overflow-hidden shadow-2xl transition-all duration-500 ${aiSpeaking ? 'scale-110 shadow-violet-500/60 ring-2 ring-violet-300 ring-offset-2 ring-offset-slate-800' : ''} ${listening ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-800' : ''}`}>
-                    <img
-                      src="/nani-avatar.png"
-                      alt="Nani"
-                      className="w-full h-full object-cover"
-                    />
+                  {/* Nani's photo with animated mouth */}
+                  <div ref={avatarRef} className={`w-36 h-36 rounded-full overflow-hidden shadow-2xl transition-all duration-500 ${aiSpeaking ? 'shadow-violet-500/60 ring-2 ring-violet-300 ring-offset-2 ring-offset-slate-800' : ''} ${listening ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-800' : ''}`}>
+                    <div className="relative w-full h-full">
+                      <img
+                        src="/nani-avatar.png"
+                        alt="Nani"
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Animated mouth overlay */}
+                      <div className="absolute inset-0 flex items-end justify-center pb-5">
+                        <div className={`w-6 h-1.5 rounded-full bg-white transition-all duration-75 ${aiSpeaking ? 'animate-lip' : ''}`} />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Status badges */}
@@ -683,7 +680,8 @@ const AHIInterview = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
