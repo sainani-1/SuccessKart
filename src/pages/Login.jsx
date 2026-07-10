@@ -39,6 +39,7 @@ const Login = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [takeoverModalOpen, setTakeoverModalOpen] = useState(false);
   const [inlineNotice, setInlineNotice] = useState('');
+  const [registrationsPaused, setRegistrationsPaused] = useState(false);
   const takeoverResolverRef = useRef(null);
   const otpInputRefs = useRef([]);
   const googleAuthStartedRef = useRef(false);
@@ -155,6 +156,24 @@ const Login = () => {
       window.clearTimeout(fallbackTimer);
     };
   }, [navigate]);
+
+  useEffect(() => {
+    const fetchRegistrationPause = async () => {
+      try {
+        const { data } = await supabase
+          .from('settings')
+          .select('value')
+          .eq('key', 'registrations_paused')
+          .maybeSingle();
+        if (data?.value === 'true') {
+          setRegistrationsPaused(true);
+        }
+      } catch {
+        // silently ignore
+      }
+    };
+    fetchRegistrationPause();
+  }, []);
 
   useEffect(() => {
     if (!otpStep || otpResendSeconds <= 0) return undefined;
@@ -1147,6 +1166,7 @@ const Login = () => {
             </form>
           )}
 
+          {!registrationsPaused && (
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-200" />
@@ -1155,9 +1175,11 @@ const Login = () => {
               <span className="bg-white px-3 text-slate-400">or continue with</span>
             </div>
           </div>
+          )}
 
           <div id="google-gsi-container" style={{ display: 'none' }}></div>
 
+          {!registrationsPaused && (
           <button
             type="button"
             onClick={handleGoogleLogin}
@@ -1172,6 +1194,7 @@ const Login = () => {
             </svg>
             {googleSigningIn ? 'Connecting...' : 'Continue with Google'}
           </button>
+          )}
 
         </div>
 

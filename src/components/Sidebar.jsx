@@ -1229,6 +1229,14 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Settings size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Admin Settings</span>}
             </NavLink>
+            <NavLink to="/app/admin/track-sy" className={navItemClass} title="Track SY (SkillUp)">
+              <Trophy size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Track SY</span>}
+            </NavLink>
+            <NavLink to="/app/admin/maintenance-mode" className={navItemClass} title="Maintenance Mode">
+              <Wrench size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Maintenance Mode</span>}
+            </NavLink>
             <NavLink to="/app/admin/website-protection" className={navItemClass} title="Website Protection">
               <ShieldCheck size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Website Protection</span>}

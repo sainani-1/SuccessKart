@@ -10,6 +10,7 @@ import { supabase } from './supabaseClient';
 import { isProfileComplete } from './utils/profileCompletion';
 import { getFaceAuthSettings, isFaceMfaVerified } from './utils/faceAuth';
 import { useVisitorTracking } from './hooks/useVisitorTracking';
+import MobileExamBlocker from './components/MobileExamBlocker';
 
 const AdminExamSettings = lazy(() => import('./pages/AdminExamSettings'));
 const AdminContestSetup = lazy(() => import('./logicBuilding/AdminContestSetup'));
@@ -169,6 +170,9 @@ const AdminMultiAISettings = lazy(() => import('./pages/AdminMultiAISettings'));
 const AdminTestAI = lazy(() => import('./pages/AdminTestAI'));
 const AdminMisuseAI = lazy(() => import('./pages/AdminMisuseAI'));
 const AdminLoginHistory = lazy(() => import('./pages/AdminLoginHistory'));
+const AdminSkillUpTracker = lazy(() => import('./pages/AdminSkillUpTracker'));
+const AdminMaintenanceMode = lazy(() => import('./pages/AdminMaintenanceMode'));
+const MaintenanceModePage = lazy(() => import('./pages/MaintenanceModePage'));
 const AdminLastActive = lazy(() => import('./pages/AdminLastActive'));
 const AdminAHI = lazy(() => import('./pages/AdminAHI'));
 const AHIInterview = lazy(() => import('./pages/AHIInterview'));
@@ -441,13 +445,13 @@ function App() {
           <Route path="courses" element={<CourseList />} />
           <Route path="daily-planner" element={<StudentDailyPlanner />} />
           <Route path="course-checklist" element={<CourseCompletionChecklist />} />
-          <Route path="exam-readiness" element={<ExamReadinessScore />} />
+          <Route path="exam-readiness" element={<MobileExamBlocker><ExamReadinessScore /></MobileExamBlocker>} />
           <Route path="achievement-timeline" element={<AchievementTimeline />} />
           <Route path="course-doubt-helper" element={<CourseDoubtHelper />} />
           <Route path="leaderboard" element={<MotivationLeaderboard />} />
           <Route path="notes-library" element={<NotesLibrary />} />
           <Route path="all-in-one" element={<StaffAllInOneRoute><LiveExamProctoring forcedPanel="all-in-one" /></StaffAllInOneRoute>} />
-          <Route path="write-test" element={<StudentWriteTest />} />
+          <Route path="write-test" element={<MobileExamBlocker><StudentWriteTest /></MobileExamBlocker>} />
           <Route path="course/:courseId" element={<CourseDetail />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
@@ -466,13 +470,13 @@ function App() {
           <Route path="demo-sessions" element={<AdminDemoSessions />} />
           <Route path="class-feedback" element={<ClassFeedback />} />
           <Route path="assistant" element={<UniversalAssistant />} />
-          <Route path="live-exams" element={<LiveExamProctoring />} />
-          <Route path="my-exams" element={<MyRegisteredExams />} />
-          <Route path="live-exam-slots" element={<LiveExamProctoring forcedPanel="slots" />} />
+          <Route path="live-exams" element={<MobileExamBlocker bypassRoles={['admin', 'teacher']}><LiveExamProctoring /></MobileExamBlocker>} />
+          <Route path="my-exams" element={<MobileExamBlocker><MyRegisteredExams /></MobileExamBlocker>} />
+          <Route path="live-exam-slots" element={<MobileExamBlocker bypassRoles={['admin', 'teacher']}><LiveExamProctoring forcedPanel="slots" /></MobileExamBlocker>} />
           <Route path="live-monitoring" element={<LiveExamProctoring forcedPanel="monitoring" />} />
-          <Route path="live-attendance" element={<LiveExamProctoring forcedPanel="attendance" />} />
-          <Route path="live-alerts" element={<LiveExamProctoring forcedPanel="alerts" />} />
-          <Route path="live-messages" element={<LiveExamProctoring forcedPanel="messages" />} />
+          <Route path="live-attendance" element={<MobileExamBlocker bypassRoles={['admin', 'teacher']}><LiveExamProctoring forcedPanel="attendance" /></MobileExamBlocker>} />
+          <Route path="live-alerts" element={<MobileExamBlocker bypassRoles={['admin', 'teacher']}><LiveExamProctoring forcedPanel="alerts" /></MobileExamBlocker>} />
+          <Route path="live-messages" element={<MobileExamBlocker bypassRoles={['admin', 'teacher']}><LiveExamProctoring forcedPanel="messages" /></MobileExamBlocker>} />
           <Route path="live-cancellations" element={<AdminRoute><LiveExamProctoring forcedPanel="cancellations" /></AdminRoute>} />
           <Route path="faculty-attendance" element={<AdminRoute><FacultyAttendance /></AdminRoute>} />
           <Route path="career-chatbot" element={<CareerChatbot />} />
@@ -603,6 +607,8 @@ function App() {
           <Route path="admin/test-ai" element={<AdminRoute><AdminTestAI /></AdminRoute>} />
           <Route path="admin/misuse-ai" element={<AdminRoute><AdminMisuseAI /></AdminRoute>} />
           <Route path="admin/login-history" element={<AdminRoute><AdminLoginHistory /></AdminRoute>} />
+          <Route path="admin/maintenance-mode" element={<AdminRoute><AdminMaintenanceMode /></AdminRoute>} />
+          <Route path="admin/track-sy" element={<AdminRoute><AdminSkillUpTracker /></AdminRoute>} />
           <Route path="admin/last-active" element={<AdminRoute><AdminLastActive /></AdminRoute>} />
           <Route path="admin/ahi" element={<AdminRoute><AdminAHI /></AdminRoute>} />
           <Route path="admin/sucesskart-meet-settings" element={<AdminRoute><AdminSucesskartMeetSettings /></AdminRoute>} />
@@ -610,9 +616,9 @@ function App() {
         </Route>
 
         {/* Exam is outside layout for fullscreen enforcement */}
-        <Route path="/exam/:courseId" element={<ProtectedRoute><Exam /></ProtectedRoute>} />
-        <Route path="/test-exam/:examId" element={<ProtectedRoute><TestExam /></ProtectedRoute>} />
-        <Route path="/live-test/:examId" element={<ProtectedRoute><Exam examMode="live-proctored" /></ProtectedRoute>} />
+        <Route path="/exam/:courseId" element={<ProtectedRoute><MobileExamBlocker><Exam /></MobileExamBlocker></ProtectedRoute>} />
+        <Route path="/test-exam/:examId" element={<ProtectedRoute><MobileExamBlocker><TestExam /></MobileExamBlocker></ProtectedRoute>} />
+        <Route path="/live-test/:examId" element={<ProtectedRoute><MobileExamBlocker><Exam examMode="live-proctored" /></MobileExamBlocker></ProtectedRoute>} />
 
         {/* Live Class is outside layout for fullscreen */}
         <Route path="/live-class/:sessionId" element={<ProtectedRoute><LiveClass /></ProtectedRoute>} />

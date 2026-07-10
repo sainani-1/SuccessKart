@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import AvatarImage from './AvatarImage';
 import Toast from './Toast';
+import MaintenanceToast from './MaintenanceToast';
+import MaintenanceModePage from '../pages/MaintenanceModePage';
 import { logAdminNavigation } from '../utils/adminActivityLogger';
 import { useNotifications } from '../context/NotificationContext';
 import { readBrowserState, writeBrowserState } from '../utils/browserState';
@@ -50,6 +52,12 @@ const Layout = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
   const [examReminderPopup, setExamReminderPopup] = useState({ open: false, title: '', message: '' });
   const [takeoverNotice, setTakeoverNotice] = useState(null);
+  const [maintenanceSettings, setMaintenanceSettings] = useState({
+    enabled: false,
+    message: '',
+    startDate: '',
+    endDate: '',
+  });
   const seenRealtimeNotificationIdsRef = useRef(new Set());
   const seenActivityEventKeysRef = useRef(new Set());
   const isMissingTargetUserColumn = (err) => {
@@ -127,6 +135,32 @@ const Layout = () => {
       searchedAt: new Date().toISOString(),
     });
   }, [location.pathname]);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchMaintenance = async () => {
+      try {
+        const { data } = await supabase
+          .from('settings')
+          .select('key, value')
+          .in('key', ['maintenance_mode_enabled', 'maintenance_mode_start', 'maintenance_mode_end', 'maintenance_mode_message']);
+        if (!mounted || !data) return;
+        const map = {};
+        data.forEach((r) => { map[r.key] = r.value; });
+        setMaintenanceSettings({
+          enabled: map.maintenance_mode_enabled === 'true',
+          message: map.maintenance_mode_message || '',
+          startDate: map.maintenance_mode_start || '',
+          endDate: map.maintenance_mode_end || '',
+        });
+      } catch {
+        // silently ignore
+      }
+    };
+    fetchMaintenance();
+    const interval = setInterval(fetchMaintenance, 15000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
 
   const getPanelTargets = (role) => {
     const common = [
@@ -685,6 +719,29 @@ const Layout = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen">
+      {/* Maintenance mode: show maintenance page for non-admin users */}
+      {maintenanceSettings.enabled && profile?.role !== 'admin' ? (
+        <>
+          <MaintenanceToast
+            enabled={maintenanceSettings.enabled}
+            message={maintenanceSettings.message}
+            startDate={maintenanceSettings.startDate}
+            endDate={maintenanceSettings.endDate}
+          />
+          <MaintenanceModePage
+            message={maintenanceSettings.message}
+            startDate={maintenanceSettings.startDate}
+            endDate={maintenanceSettings.endDate}
+          />
+        </>
+      ) : (
+        <>
+          <MaintenanceToast
+            enabled={maintenanceSettings.enabled}
+            message={maintenanceSettings.message}
+            startDate={maintenanceSettings.startDate}
+            endDate={maintenanceSettings.endDate}
+          />
       <Toast
         show={toast.show}
         message={toast.message}
@@ -862,6 +919,8 @@ const Layout = () => {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
