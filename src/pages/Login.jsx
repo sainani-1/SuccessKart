@@ -1054,6 +1054,7 @@ const Login = () => {
                     <p className="text-base font-extrabold text-slate-900">Check your email</p>
                     <p className="mt-1 break-words text-sm font-semibold text-emerald-800">{email}</p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">Enter the 6-digit code we sent. It expires in 5 minutes.</p>
+                    <p className="mt-2 text-xs leading-5 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">Did not receive the email? Check your <strong>Spam</strong> or <strong>Junk</strong> folder.</p>
                   </div>
                 </div>
               </div>

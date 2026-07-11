@@ -7,6 +7,7 @@ import { uploadAvatarForUser } from '../utils/avatarUpload';
 import { detectFace } from '../utils/detectFace';
 import AlertModal from '../components/AlertModal';
 import { logWarn } from '../utils/errorLogger';
+import { logLoginEvent } from '../utils/loginHistory';
 
 const STORAGE_KEY = 'google_onboarding_state';
 const steps = ['Username', 'Phone', 'Password', 'Photo'];
@@ -181,6 +182,7 @@ const GoogleOnboarding = () => {
 
       clearState();
       await fetchProfile(user.id);
+      await logLoginEvent(user.id, { email: user.email, full_name: null });
       navigate('/app', { replace: true });
     } catch (error) {
       const msg = error.message || '';

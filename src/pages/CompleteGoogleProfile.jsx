@@ -11,6 +11,7 @@ import { updateUsernameForUser } from '../utils/usernames';
 import { isProfileComplete } from '../utils/profileCompletion';
 import { countryPhoneOptions, digitsOnly, formatPhone, getCountryPhoneOption, parseStoredPhone, validatePhoneNumber } from '../utils/phoneValidation';
 import { logError } from '../utils/errorLogger';
+import { logLoginEvent } from '../utils/loginHistory';
 
 const streamOptions = {
   'B.Tech': ['Computer Science', 'Information Technology', 'Electronics', 'Mechanical', 'Civil', 'Others'],
@@ -345,6 +346,7 @@ const CompleteGoogleProfile = () => {
       }
 
       await fetchProfile(currentUser.id);
+      await logLoginEvent(currentUser.id, { email: currentUser.email, full_name: null });
       navigate('/app', { replace: true });
     } catch (error) {
       setAlertModal({

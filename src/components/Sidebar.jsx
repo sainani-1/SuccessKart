@@ -26,6 +26,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
   const [newMultiSessionAlerts, setNewMultiSessionAlerts] = useState(0);
   const [lastPathname, setLastPathname] = useState(location.pathname);
   const [vmiAccess, setVmiAccess] = useState(null);
+  const [ahiAuthorized, setAhiAuthorized] = useState(false);
   const premiumActive = isPremium(profile);
   const premiumPlusActive = isPremiumPlus(profile);
   const isMissingTargetUserColumn = (err) => {
@@ -440,6 +441,27 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
       });
   }, [profile?.id, role]);
 
+  useEffect(() => {
+    if (!profile?.id) {
+      setAhiAuthorized(false);
+      return;
+    }
+    if (profile.role === 'admin') {
+      setAhiAuthorized(true);
+      return;
+    }
+    supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'ahi_authorized_users')
+      .maybeSingle()
+      .then(({ data }) => {
+        const users = JSON.parse(data?.value || '[]');
+        setAhiAuthorized(Array.isArray(users) && users.some((u) => u.id === profile.id));
+      })
+      .catch(() => setAhiAuthorized(false));
+  }, [profile?.id, profile?.role]);
+
   const sidebarWidthClass = isCollapsed && !isHovered ? 'w-20' : 'w-64';
   const desktopSidebarClass = `${sidebarWidthClass} bg-nani-dark text-white h-screen flex flex-col fixed left-0 top-0 transition-all duration-600 z-30`;
   const mobileSidebarClass = `w-[88vw] max-w-[320px] bg-nani-dark text-white h-screen flex flex-col fixed left-0 top-0 z-50 transform transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`;
@@ -642,7 +664,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
                 </span>
               )}
             </NavLink>
-            {role !== 'admin' && (
+            {role !== 'admin' && ahiAuthorized && (
               <NavLink to="/ahi-interview" className={navItemClass} title="AHI">
                 <Bot size={28} />
                 {shouldShowText && <span className="truncate text-sm font-medium">AHI</span>}

@@ -133,11 +133,20 @@ const sendSmtpMail = async ({ to, subject, text, html }) => {
   const boundary = `SucessKart-${crypto.randomBytes(12).toString('hex')}`;
   const encodedUser = Buffer.from(SMTP_EMAIL).toString('base64');
   const encodedPassword = Buffer.from(SMTP_APP_PASSWORD).toString('base64');
+  const dateStr = new Date().toUTCString();
+  const messageId = `<${crypto.randomBytes(16).toString('hex')}.${Date.now()}@gmail.com>`;
+
   const message = [
     `From: "${fromName}" <${SMTP_EMAIL}>`,
     `To: <${to}>`,
+    `Reply-To: ${SMTP_EMAIL}`,
     `Subject: ${safeSubject}`,
+    `Date: ${dateStr}`,
+    `Message-ID: ${messageId}`,
     'MIME-Version: 1.0',
+    'X-Mailer: SucessKart',
+    'Precedence: bulk',
+    'X-Auto-Response-Suppress: All',
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
     '',
     `--${boundary}`,
@@ -184,7 +193,7 @@ const makeChallenge = ({ email, otp }) => {
   return `${encodedPayload}.${signPayload(payload)}`;
 };
 
-const buildOtpEmail = (otp) => {
+const buildOtpEmail = (otp, email) => {
   const digits = otp.split('');
   const digitHtml = digits
     .map(
@@ -199,9 +208,11 @@ const buildOtpEmail = (otp) => {
     .join('');
 
   const text = [
-    `Your ${OTP_FROM_NAME} login OTP is ${otp}.`,
+    `Your SucessKart OTP is ${otp}.`,
     'It expires in 5 minutes.',
     'If you did not try to login, reset your password.',
+    '',
+    'If you do not see this email in your inbox, please check your spam or junk folder.',
   ].join('\n');
 
   const html = `
@@ -245,7 +256,7 @@ const buildOtpEmail = (otp) => {
                           Secure Login
                         </div>
                         <h1 class="otp-title" style="margin:18px 0 0;color:#ffffff;font-size:32px;line-height:1.15;font-weight:900;letter-spacing:0;">
-                          Your ${OTP_FROM_NAME} OTP
+                          Your SucessKart OTP
                         </h1>
                         <p style="margin:10px 0 0;color:#fde68a;font-size:15px;line-height:1.6;">
                           Use this code to finish signing in.
@@ -258,7 +269,7 @@ const buildOtpEmail = (otp) => {
               <tr>
                 <td style="padding:30px 28px 10px;">
                   <p style="margin:0;color:#475569;font-size:15px;line-height:1.7;">
-                    Enter the 6-digit code below in the login page. This code expires in
+                    Use the 6-digit code below to complete your login. This code expires in
                     <strong style="color:#0f172a;">5 minutes</strong>.
                   </p>
                 </td>
@@ -278,8 +289,15 @@ const buildOtpEmail = (otp) => {
                 </td>
               </tr>
               <tr>
+                <td style="padding:0 28px 20px;">
+                  <div style="border-radius:18px;background:#fffbeb;border:1px solid #fde68a;padding:15px 16px;color:#92400e;font-size:13px;line-height:1.6;">
+                    <strong>Tip:</strong> If you do not see this email in your inbox, please check your <strong>Spam</strong> or <strong>Junk</strong> folder and mark it as "Not Spam" to receive future emails.
+                  </div>
+                </td>
+              </tr>
+              <tr>
                 <td style="padding:18px 28px;background:#f1f5f9;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.5;">
-                  Sent by ${OTP_FROM_NAME}. This is an automated security email.
+                  Sent by SucessKart. This is an automated security email.
                 </td>
               </tr>
             </table>
@@ -340,7 +358,7 @@ export default async function handler(req, res) {
     if (body.action === 'send') {
       const otp = String(crypto.randomInt(100000, 1000000));
       const challenge = makeChallenge({ email, otp });
-      const emailContent = buildOtpEmail(otp);
+      const emailContent = buildOtpEmail(otp, email);
       await sendSmtpMail({
         to: email,
         subject: 'Your SucessKart login OTP',

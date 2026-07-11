@@ -1,5 +1,5 @@
 -- Add DELETE policy for admins on visitor_logs
-CREATE POLICY "Admins can delete visitor logs"
+CREATEw POLICY "Admins can delete visitor logs"
   ON visitor_logs
   FOR DELETE
   TO authenticated
