@@ -1,4 +1,5 @@
 import os
+import traceback
 import base64
 import json
 import numpy as np
@@ -19,7 +20,10 @@ CORS(app, origins=[
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+supabase = None
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
@@ -108,95 +112,109 @@ def compare_encodings(a, b):
 
 @app.route("/api/register-face", methods=["POST"])
 def register_face():
-    data = request.json
-    email = data.get("email")
-    image_b64 = data.get("image_base64")
+    try:
+        if not supabase:
+            return jsonify({"error": "Backend not configured. Missing SUPABASE env vars."}), 500
 
-    if not email or not image_b64:
-        return jsonify({"error": "email and image_base64 are required"}), 400
+        data = request.json
+        email = data.get("email")
+        image_b64 = data.get("image_base64")
 
-    image = decode_image(image_b64)
-    if image is None:
-        return jsonify({"error": "Invalid image data"}), 400
+        if not email or not image_b64:
+            return jsonify({"error": "email and image_base64 are required"}), 400
 
-    face = detect_and_crop_face(image)
-    if face is None:
-        return jsonify({"error": "No face detected. Please face the camera and try again."}), 400
+        image = decode_image(image_b64)
+        if image is None:
+            return jsonify({"error": "Invalid image data"}), 400
 
-    encoding = compute_face_encoding(face)
+        face = detect_and_crop_face(image)
+        if face is None:
+            return jsonify({"error": "No face detected. Please face the camera and try again."}), 400
 
-    profile = supabase.table("profiles").select("id").eq("email", email).execute()
-    if not profile.data:
-        return jsonify({"error": "User not found with this email"}), 404
+        encoding = compute_face_encoding(face)
 
-    user_id = profile.data[0]["id"]
+        profile = supabase.table("profiles").select("id").eq("email", email).execute()
+        if not profile.data:
+            return jsonify({"error": "User not found with this email"}), 404
 
-    existing = supabase.table("face_embeddings").select("id").eq("user_id", user_id).execute()
-    if existing.data:
-        supabase.table("face_embeddings").update({
-            "encoding": json.dumps(encoding),
-        }).eq("user_id", user_id).execute()
-    else:
-        supabase.table("face_embeddings").insert({
-            "user_id": user_id,
-            "email": email,
-            "encoding": json.dumps(encoding),
-        }).execute()
+        user_id = profile.data[0]["id"]
 
-    import datetime
-    supabase.table("profiles").update({
-        "face_auth_enabled": True,
-        "face_registered_at": datetime.datetime.utcnow().isoformat(),
-    }).eq("id", user_id).execute()
+        existing = supabase.table("face_embeddings").select("id").eq("user_id", user_id).execute()
+        if existing.data:
+            supabase.table("face_embeddings").update({
+                "encoding": json.dumps(encoding),
+            }).eq("user_id", user_id).execute()
+        else:
+            supabase.table("face_embeddings").insert({
+                "user_id": user_id,
+                "email": email,
+                "encoding": json.dumps(encoding),
+            }).execute()
 
-    return jsonify({"success": True, "message": "Face registered successfully"})
+        import datetime
+        supabase.table("profiles").update({
+            "face_auth_enabled": True,
+            "face_registered_at": datetime.datetime.utcnow().isoformat(),
+        }).eq("id", user_id).execute()
+
+        return jsonify({"success": True, "message": "Face registered successfully"})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/recognize-face", methods=["POST"])
 def recognize_face():
-    data = request.json
-    image_b64 = data.get("image_base64")
+    try:
+        if not supabase:
+            return jsonify({"error": "Backend not configured. Missing SUPABASE env vars."}), 500
 
-    if not image_b64:
-        return jsonify({"error": "image_base64 is required"}), 400
+        data = request.json
+        image_b64 = data.get("image_base64")
 
-    image = decode_image(image_b64)
-    if image is None:
-        return jsonify({"error": "Invalid image data"}), 400
+        if not image_b64:
+            return jsonify({"error": "image_base64 is required"}), 400
 
-    face = detect_and_crop_face(image)
-    if face is None:
-        return jsonify({"error": "No face detected. Please face the camera and try again."}), 400
+        image = decode_image(image_b64)
+        if image is None:
+            return jsonify({"error": "Invalid image data"}), 400
 
-    encoding = compute_face_encoding(face)
+        face = detect_and_crop_face(image)
+        if face is None:
+            return jsonify({"error": "No face detected. Please face the camera and try again."}), 400
 
-    result = supabase.table("face_embeddings").select("email, encoding").execute()
-    if not result.data:
-        return jsonify({"error": "No registered faces found"}), 404
+        encoding = compute_face_encoding(face)
 
-    best_match_email = None
-    best_score = HIST_MATCH_THRESHOLD
+        result = supabase.table("face_embeddings").select("email, encoding").execute()
+        if not result.data:
+            return jsonify({"error": "No registered faces found"}), 404
 
-    for row in result.data:
-        stored = json.loads(row["encoding"])
-        score = compare_encodings(encoding, stored)
-        if score > best_score:
-            best_score = score
-            best_match_email = row["email"]
+        best_match_email = None
+        best_score = HIST_MATCH_THRESHOLD
 
-    if best_match_email:
-        return jsonify({
-            "success": True,
-            "email": best_match_email,
-            "confidence": round(float(best_score), 4),
-        })
+        for row in result.data:
+            stored = json.loads(row["encoding"])
+            score = compare_encodings(encoding, stored)
+            if score > best_score:
+                best_score = score
+                best_match_email = row["email"]
 
-    return jsonify({"error": "No matching face found"}), 404
+        if best_match_email:
+            return jsonify({
+                "success": True,
+                "email": best_match_email,
+                "confidence": round(float(best_score), 4),
+            })
+
+        return jsonify({"error": "No matching face found"}), 404
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "ok", "supabase_configured": supabase is not None})
 
 
 if __name__ == "__main__":
