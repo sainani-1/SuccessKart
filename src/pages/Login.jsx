@@ -13,6 +13,7 @@ import { clearAdminVerificationState } from '../utils/adminPasskey';
 import { getPendingAvatarKey } from '../utils/avatarUpload';
 import { reportMultiSessionViolation } from '../utils/sessionSecurity';
 import { clearFaceMfaVerified } from '../utils/faceAuth';
+import { clearDailyLoginState } from '../utils/dailySession';
 import { logError, logWarn } from '../utils/errorLogger';
 import { isProfileComplete } from '../utils/profileCompletion';
 import { logLoginEvent, logTakeoverEvent } from '../utils/loginHistory';
@@ -120,26 +121,13 @@ const Login = () => {
       if (linkError) throw new Error(linkError.message || 'Could not generate login link');
       if (linkData?.error) throw new Error(linkData.error);
 
-      if (linkData?.token) {
-        setFaceLoading('Signing in...');
-        const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
-          email: matchedEmail,
-          token: linkData.token,
-          type: 'magiclink',
-        });
-        if (otpError) throw new Error(otpError.message || 'OTP verification failed');
-        if (otpData?.session) {
-          navigate('/app', { replace: true });
-          return;
-        }
-      }
-
       if (linkData?.actionLink) {
+        clearDailyLoginState();
         window.location.href = linkData.actionLink;
         return;
       }
 
-      throw new Error('No login token received.');
+      throw new Error('No login link received.');
     } catch (err) {
       setFaceError(err?.message || 'Face login failed.');
       setFaceLoading('');
