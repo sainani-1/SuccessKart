@@ -33,7 +33,11 @@ HIST_MATCH_THRESHOLD = 0.45
 
 
 def decode_image(image_b64):
-    img_data = base64.b64decode(image_b64.split(",")[-1])
+    raw = image_b64.split(",")[-1]
+    missing = len(raw) % 4
+    if missing:
+        raw += "=" * (4 - missing)
+    img_data = base64.b64decode(raw)
     nparr = np.frombuffer(img_data, np.uint8)
     return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
@@ -150,12 +154,6 @@ def register_face():
                 "email": email,
                 "encoding": json.dumps(encoding),
             }).execute()
-
-        import datetime
-        supabase.table("profiles").update({
-            "face_auth_enabled": True,
-            "face_registered_at": datetime.datetime.utcnow().isoformat(),
-        }).eq("id", user_id).execute()
 
         return jsonify({"success": True, "message": "Face registered successfully"})
     except Exception as e:

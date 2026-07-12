@@ -28,7 +28,7 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const email = String(body?.email || "").trim().toLowerCase();
     const descriptor = Array.isArray(body?.descriptor) ? body.descriptor.map(Number) : [];
-    const redirectTo = String(body?.redirectTo || "");
+    const redirectTo = String(body?.redirectTo || `${supabaseUrl.replace(".supabase.co", "")}.app` || "");
     const pythonMatched = Boolean(body?.pythonMatched);
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -71,10 +71,25 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const { data: profileCheck } = await admin
+      .from("profiles")
+      .select("id")
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (!profileCheck?.id) {
+      return new Response(JSON.stringify({ error: "No account found for this email." }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const redirectUrl = redirectTo || `${window.location.origin}/app`;
+
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email,
-      options: redirectTo ? { redirectTo } : undefined,
+      options: { redirectTo: redirectUrl },
     });
     if (linkError) throw linkError;
 
