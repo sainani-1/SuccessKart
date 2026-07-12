@@ -28,9 +28,6 @@ if SUPABASE_URL and SUPABASE_KEY:
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
-eye_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_eye.xml"
-)
 
 HIST_MATCH_THRESHOLD = 0.45
 
@@ -213,64 +210,69 @@ def recognize_face():
         return jsonify({"error": str(e)}), 500
 
 
-def detect_eyes_in_face(face_img, face_x, face_y):
-    """Detect eyes within a face region and return their center+size."""
-    gray = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
-    eyes = eye_cascade.detectMultiScale(gray, 1.1, 4, minSize=(20, 20))
-    return len(eyes) >= 2
+def extract_eye_region(image, face_rect):
+    x, y, w, h = face_rect
+    eye_top = y + int(h * 0.2)
+    eye_bottom = y + int(h * 0.55)
+    eye_left = x + int(w * 0.1)
+    eye_right = x + int(w * 0.9)
+    eye_top = max(0, eye_top)
+    eye_left = max(0, eye_left)
+    eye_bottom = min(image.shape[0], eye_bottom)
+    eye_right = min(image.shape[1], eye_right)
+    roi = image[eye_top:eye_bottom, eye_left:eye_right]
+    if roi.size == 0:
+        return None
+    return cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
 
 @app.route("/api/detect-blink", methods=["POST"])
 def detect_blink():
-    """Accept multiple frames, detect eye blinks.
-    
-    Approach: track whether eye cascade finds eyes in each frame.
-    Blink = eyes open -> eyes NOT detected (closed) -> eyes open again.
-    """
     try:
         data = request.json
         frames = data.get("frames", [])
 
         if not frames or len(frames) < 4:
-            return jsonify({"error": "Need at least 4 frames for blink detection"}), 400
+            return jsonify({"error": "Need at least 4 frames"}), 400
 
-        eye_states = []
-        face_found_count = 0
+        eye_regions = []
         for frame_b64 in frames:
             image = decode_image(frame_b64)
             if image is None:
-                eye_states.append(True)
                 continue
 
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(80, 80))
+            faces = face_cascade.detectMultiScale(gray, 1.05, 4, minSize=(60, 60))
             if len(faces) == 0:
-                eye_states.append(True)
                 continue
 
-            face_found_count += 1
             x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
-            face_roi = image[y:y+h, x:x+w]
-            eyes_detected = detect_eyes_in_face(face_roi, x, y)
-            eye_states.append(eyes_detected)
+            region = extract_eye_region(image, (x, y, w, h))
+            if region is not None:
+                resized = cv2.resize(region, (100, 40))
+                eye_regions.append(resized)
 
-        if face_found_count < 2:
-            return jsonify({
-                "blink_detected": False,
-                "frame_count": len(frames),
-                "reason": "face_not_stable",
-            })
+        if len(eye_regions) < 3:
+            return jsonify({"blink_detected": False, "reason": "not_enough_faces"})
 
-        open_count = sum(1 for s in eye_states if s is True)
-        closed_count = sum(1 for s in eye_states if s is False)
+        diffs = []
+        for i in range(1, len(eye_regions)):
+            diff = cv2.absdiff(eye_regions[i - 1], eye_regions[i])
+            mean_diff = float(np.mean(diff))
+            diffs.append(mean_diff)
 
-        blink_detected = closed_count >= 1 and open_count >= 1
+        avg_diff = float(np.mean(diffs))
+        max_diff = float(max(diffs))
+        spike_count = sum(1 for d in diffs if d > avg_diff * 1.5 + 3)
+
+        blink_detected = spike_count >= 1 or max_diff > 18
 
         return jsonify({
             "blink_detected": blink_detected,
-            "frame_count": len(eye_states),
-            "open_frames": open_count,
-            "closed_frames": closed_count,
+            "frame_count": len(eye_regions),
+            "avg_diff": round(avg_diff, 2),
+            "max_diff": round(max_diff, 2),
+            "spike_count": spike_count,
         })
 
     except Exception as e:

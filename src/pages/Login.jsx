@@ -95,7 +95,7 @@ const Login = () => {
 
     try {
       const video = faceVideoRef.current;
-      const frameCount = 8;
+      const frameCount = 12;
       const frames = [];
 
       for (let i = 0; i < frameCount; i++) {
@@ -105,7 +105,7 @@ const Login = () => {
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
         frames.push(canvas.toDataURL('image/jpeg', 0.92));
         if (i < frameCount - 1) {
-          await new Promise(r => setTimeout(r, 150));
+          await new Promise(r => setTimeout(r, 100));
         }
       }
 
