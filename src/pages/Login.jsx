@@ -55,7 +55,6 @@ const Login = () => {
   const [faceCameraReady, setFaceCameraReady] = useState(false);
   const [faceLoading, setFaceLoading] = useState('');
   const [faceError, setFaceError] = useState('');
-  const [faceMatchedEmail, setFaceMatchedEmail] = useState('');
 
   const withTimeout = (promise, fallback, timeoutMs = 1800) =>
     Promise.race([
@@ -134,25 +133,20 @@ const Login = () => {
         body: JSON.stringify({ image_base64: lastFrame }),
       });
       const recognizeData = await recognizeRes.json();
-      if (!recognizeRes.ok) throw new Error(recognizeData.error || 'Face not recognized');
 
+      if (!recognizeRes.ok || !recognizeData?.email) {
+        stopFaceCamera();
+        setFaceError('No account found. Please register your face first.');
+        setFaceLoading('');
+        return;
+      }
+
+      const matchedEmail = recognizeData.email;
+      setFaceLoading(`Logging in as ${matchedEmail}...`);
       stopFaceCamera();
-      setFaceMatchedEmail(recognizeData.email);
-      setFaceLoading('');
-    } catch (err) {
-      setFaceError(err?.message || 'Face scan failed.');
-      setFaceLoading('');
-    }
-  };
 
-  const handleFaceConfirmLogin = async () => {
-    if (!faceMatchedEmail) return;
-    setFaceLoading(`Logging in as ${faceMatchedEmail}...`);
-    setFaceError('');
-
-    try {
       const { data: linkData, error: linkError } = await supabase.functions.invoke('face-login', {
-        body: { email: faceMatchedEmail, pythonMatched: true, redirectTo: `${window.location.origin}/app` },
+        body: { email: matchedEmail, pythonMatched: true, redirectTo: `${window.location.origin}/app` },
       });
       if (linkError) throw new Error(linkError.message || 'Could not generate login link');
       if (linkData?.error) throw new Error(linkData.error);
@@ -205,11 +199,10 @@ const Login = () => {
         await supabase.auth.signOut();
         setFaceError(sessionCheck.message || 'Login blocked. Account is active on another device.');
         setFaceLoading('');
-        setFaceMatchedEmail('');
         return;
       }
 
-      const userInfo = { email: userProfile?.email || faceMatchedEmail, full_name: userProfile?.full_name };
+      const userInfo = { email: userProfile?.email || matchedEmail, full_name: userProfile?.full_name };
       if (sessionCheck.takeoverOccurred) {
         await logTakeoverEvent(userId, userInfo);
         sessionStorage.setItem('sk_takeover_notice', JSON.stringify({
@@ -221,12 +214,10 @@ const Login = () => {
       }
 
       setFaceLoading('');
-      setFaceMatchedEmail('');
       navigate('/app', { replace: true });
     } catch (err) {
       setFaceError(err?.message || 'Face login failed.');
       setFaceLoading('');
-      setFaceMatchedEmail('');
     }
   };
 
@@ -1394,58 +1385,25 @@ const Login = () => {
                 <p className="text-sm font-bold text-cyan-900">Face Login</p>
                 <button
                   type="button"
-                  onClick={() => { stopFaceCamera(); setFaceLoginMode(false); setFaceError(''); setFaceLoading(''); setFaceMatchedEmail(''); }}
+                  onClick={() => { stopFaceCamera(); setFaceLoginMode(false); setFaceError(''); setFaceLoading(''); }}
                   className="text-cyan-600 hover:text-cyan-800"
                 >
                   <X size={18} />
                 </button>
               </div>
-
-              {faceMatchedEmail ? (
-                <div className="text-center">
-                  <div className="rounded-lg bg-white border border-cyan-200 p-4 mb-3">
-                    <p className="text-xs text-slate-500 mb-1">We detected this face as:</p>
-                    <p className="text-sm font-bold text-cyan-900">{faceMatchedEmail}</p>
-                  </div>
-                  <p className="text-xs text-slate-600 mb-3">Is this you? Confirm to continue login.</p>
-                  {faceError && <p className="text-xs font-semibold text-red-600 mb-2">{faceError}</p>}
-                  {faceLoading && <p className="text-xs font-semibold text-cyan-700 mb-2">{faceLoading}</p>}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => { setFaceMatchedEmail(''); setFaceError(''); startFaceCamera(); }}
-                      disabled={!!faceLoading}
-                      className="flex-1 rounded-lg border border-slate-300 py-2.5 font-semibold text-slate-700 hover:bg-white disabled:opacity-60"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleFaceConfirmLogin}
-                      disabled={!!faceLoading}
-                      className="flex-1 rounded-lg bg-cyan-600 py-2.5 font-bold text-white hover:bg-cyan-700 disabled:opacity-60"
-                    >
-                      {faceLoading || 'Yes, Login'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="rounded-lg bg-slate-950 overflow-hidden">
-                    <video ref={faceVideoRef} autoPlay muted playsInline className="h-48 w-full object-cover" />
-                  </div>
-                  {faceError && <p className="mt-2 text-xs font-semibold text-red-600">{faceError}</p>}
-                  {faceLoading && <p className="mt-2 text-xs font-semibold text-cyan-700">{faceLoading}</p>}
-                  <button
-                    type="button"
-                    onClick={handleFaceScan}
-                    disabled={!faceCameraReady || !!faceLoading}
-                    className="mt-3 w-full rounded-lg bg-cyan-600 py-2.5 font-bold text-white hover:bg-cyan-700 disabled:opacity-60"
-                  >
-                    {faceLoading || 'Scan Face'}
-                  </button>
-                </>
-              )}
+              <div className="rounded-lg bg-slate-950 overflow-hidden">
+                <video ref={faceVideoRef} autoPlay muted playsInline className="h-48 w-full object-cover" />
+              </div>
+              {faceError && <p className="mt-2 text-xs font-semibold text-red-600">{faceError}</p>}
+              {faceLoading && <p className="mt-2 text-xs font-semibold text-cyan-700">{faceLoading}</p>}
+              <button
+                type="button"
+                onClick={handleFaceScan}
+                disabled={!faceCameraReady || !!faceLoading}
+                className="mt-3 w-full rounded-lg bg-cyan-600 py-2.5 font-bold text-white hover:bg-cyan-700 disabled:opacity-60"
+              >
+                {faceLoading || 'Scan Face'}
+              </button>
             </div>
           )}
 
