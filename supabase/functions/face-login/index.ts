@@ -92,18 +92,47 @@ Deno.serve(async (req: Request) => {
     if (linkError) throw linkError;
 
     const actionLink = linkData?.properties?.action_link || "";
-    let token = "";
+    if (!actionLink) {
+      return new Response(JSON.stringify({ error: "Failed to generate login link." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let accessToken = "";
+    let refreshToken = "";
+
     try {
-      const url = new URL(actionLink);
-      token = url.searchParams.get("token") || "";
+      const verifyRes = await fetch(actionLink, { redirect: "manual" });
+      const location = verifyRes.headers.get("location") || "";
+      if (location) {
+        const hashIndex = location.indexOf("#");
+        if (hashIndex !== -1) {
+          const hash = location.substring(hashIndex + 1);
+          const params = new URLSearchParams(hash);
+          accessToken = params.get("access_token") || "";
+          refreshToken = params.get("refresh_token") || "";
+        }
+      }
     } catch {
-      token = "";
+      // fallback: try to parse from action link URL itself
+    }
+
+    if (!accessToken || !refreshToken) {
+      return new Response(JSON.stringify({
+        ok: true,
+        actionLink,
+        email,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({
       ok: true,
-      actionLink,
-      token,
+      accessToken,
+      refreshToken,
       email,
     }), {
       status: 200,

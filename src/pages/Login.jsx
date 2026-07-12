@@ -121,13 +121,25 @@ const Login = () => {
       if (linkError) throw new Error(linkError.message || 'Could not generate login link');
       if (linkData?.error) throw new Error(linkData.error);
 
+      if (linkData?.accessToken && linkData?.refreshToken) {
+        setFaceLoading('Signing in...');
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: linkData.accessToken,
+          refresh_token: linkData.refreshToken,
+        });
+        if (sessionError) throw new Error(sessionError.message || 'Session creation failed');
+        if (sessionData?.session) {
+          navigate('/app', { replace: true });
+          return;
+        }
+      }
+
       if (linkData?.actionLink) {
-        clearDailyLoginState();
         window.location.href = linkData.actionLink;
         return;
       }
 
-      throw new Error('No login link received.');
+      throw new Error('No login response received.');
     } catch (err) {
       setFaceError(err?.message || 'Face login failed.');
       setFaceLoading('');
