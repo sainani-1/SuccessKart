@@ -28,7 +28,7 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const email = String(body?.email || "").trim().toLowerCase();
     const descriptor = Array.isArray(body?.descriptor) ? body.descriptor.map(Number) : [];
-    const redirectTo = String(body?.redirectTo || `${supabaseUrl.replace(".supabase.co", "")}.app` || "");
+    const redirectTo = String(body?.redirectTo || "");
     const pythonMatched = Boolean(body?.pythonMatched);
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -84,18 +84,27 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const redirectUrl = redirectTo || `${window.location.origin}/app`;
-
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email,
-      options: { redirectTo: redirectUrl },
+      options: redirectTo ? { redirectTo } : undefined,
     });
     if (linkError) throw linkError;
 
+    const actionLink = linkData?.properties?.action_link || "";
+    let token = "";
+    try {
+      const url = new URL(actionLink);
+      token = url.searchParams.get("token") || "";
+    } catch {
+      token = "";
+    }
+
     return new Response(JSON.stringify({
       ok: true,
-      actionLink: linkData?.properties?.action_link || "",
+      actionLink,
+      token,
+      email,
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

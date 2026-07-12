@@ -120,12 +120,26 @@ const Login = () => {
       if (linkError) throw new Error(linkError.message || 'Could not generate login link');
       if (linkData?.error) throw new Error(linkData.error);
 
+      if (linkData?.token) {
+        setFaceLoading('Signing in...');
+        const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+          email: matchedEmail,
+          token: linkData.token,
+          type: 'magiclink',
+        });
+        if (otpError) throw new Error(otpError.message || 'OTP verification failed');
+        if (otpData?.session) {
+          navigate('/app', { replace: true });
+          return;
+        }
+      }
+
       if (linkData?.actionLink) {
         window.location.href = linkData.actionLink;
         return;
       }
 
-      throw new Error('No login link received.');
+      throw new Error('No login token received.');
     } catch (err) {
       setFaceError(err?.message || 'Face login failed.');
       setFaceLoading('');
