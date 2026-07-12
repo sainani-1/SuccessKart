@@ -29,6 +29,7 @@ Deno.serve(async (req: Request) => {
     const email = String(body?.email || "").trim().toLowerCase();
     const descriptor = Array.isArray(body?.descriptor) ? body.descriptor.map(Number) : [];
     const redirectTo = String(body?.redirectTo || "");
+    const pythonMatched = Boolean(body?.pythonMatched);
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(JSON.stringify({ error: "Enter a valid email address." }), {
@@ -36,34 +37,38 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (descriptor.length !== 128) {
-      return new Response(JSON.stringify({ error: "Face scan is invalid. Please try again." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
-    const { data: profile, error } = await admin
-      .from("profiles")
-      .select("id, email, face_auth_enabled, face_descriptor")
-      .ilike("email", email)
-      .maybeSingle();
 
-    if (error) throw error;
-    if (!profile?.id || !profile.face_auth_enabled || !Array.isArray(profile.face_descriptor)) {
-      return new Response(JSON.stringify({ error: "No face login account found for this email." }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!pythonMatched) {
+      if (descriptor.length !== 128) {
+        return new Response(JSON.stringify({ error: "Face scan is invalid. Please try again." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-    const score = distance(descriptor, profile.face_descriptor as number[]);
-    if (score > 0.52) {
-      return new Response(JSON.stringify({ error: "Face did not match this email account." }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const { data: profile, error } = await admin
+        .from("profiles")
+        .select("id, email, face_auth_enabled, face_descriptor")
+        .ilike("email", email)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!profile?.id || !profile.face_auth_enabled || !Array.isArray(profile.face_descriptor)) {
+        return new Response(JSON.stringify({ error: "No face login account found for this email." }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const score = distance(descriptor, profile.face_descriptor as number[]);
+      if (score > 0.52) {
+        return new Response(JSON.stringify({ error: "Face did not match this email account." }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({

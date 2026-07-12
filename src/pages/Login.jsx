@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
-import { ArrowLeft, KeyRound, MailCheck, ShieldCheck, UserRoundCheck, X } from 'lucide-react';
+import { ArrowLeft, KeyRound, MailCheck, ShieldCheck, UserRoundCheck, X, ScanFace } from 'lucide-react';
 import AlertModal from '../components/AlertModal';
 import Toast from '../components/Toast';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -48,11 +48,93 @@ const Login = () => {
   const loginOtpEndpoint = import.meta.env.VITE_LOGIN_OTP_ENDPOINT || '/api/login-otp';
   const otpResendCooldownSeconds = 60;
 
+  const faceBackendUrl = import.meta.env.VITE_FACE_BACKEND_URL || 'http://localhost:5000';
+  const faceVideoRef = useRef(null);
+  const faceStreamRef = useRef(null);
+  const [faceLoginMode, setFaceLoginMode] = useState(false);
+  const [faceCameraReady, setFaceCameraReady] = useState(false);
+  const [faceLoading, setFaceLoading] = useState('');
+  const [faceError, setFaceError] = useState('');
+
   const withTimeout = (promise, fallback, timeoutMs = 1800) =>
     Promise.race([
       promise,
       new Promise((resolve) => window.setTimeout(() => resolve(fallback), timeoutMs)),
     ]);
+
+  const startFaceCamera = async () => {
+    setFaceError('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: 640, height: 480 },
+        audio: false,
+      });
+      faceStreamRef.current = stream;
+      if (faceVideoRef.current) {
+        faceVideoRef.current.srcObject = stream;
+        await faceVideoRef.current.play();
+      }
+      setFaceCameraReady(true);
+    } catch (err) {
+      setFaceError(err?.message || 'Unable to access camera.');
+    }
+  };
+
+  const stopFaceCamera = () => {
+    if (faceStreamRef.current) {
+      faceStreamRef.current.getTracks().forEach((t) => t.stop());
+      faceStreamRef.current = null;
+    }
+    setFaceCameraReady(false);
+  };
+
+  const handleFaceLogin = async () => {
+    if (!faceVideoRef.current || !faceCameraReady) return;
+    setFaceLoading('Capturing face...');
+    setFaceError('');
+
+    try {
+      const video = faceVideoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageBase64 = canvas.toDataURL('image/jpeg', 0.92);
+
+      setFaceLoading('Recognizing face...');
+      const recognizeRes = await fetch(`${faceBackendUrl}/api/recognize-face`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_base64: imageBase64 }),
+      });
+      const recognizeData = await recognizeRes.json();
+      if (!recognizeRes.ok) throw new Error(recognizeData.error || 'Face not recognized');
+
+      const matchedEmail = recognizeData.email;
+      setFaceLoading(`Logging in as ${matchedEmail}...`);
+      stopFaceCamera();
+
+      const { data: linkData, error: linkError } = await supabase.functions.invoke('face-login', {
+        body: { email: matchedEmail, pythonMatched: true, redirectTo: `${window.location.origin}/app` },
+      });
+      if (linkError) throw new Error(linkError.message || 'Could not generate login link');
+      if (linkData?.error) throw new Error(linkData.error);
+
+      if (linkData?.actionLink) {
+        window.location.href = linkData.actionLink;
+        return;
+      }
+
+      throw new Error('No login link received.');
+    } catch (err) {
+      setFaceError(err?.message || 'Face login failed.');
+      setFaceLoading('');
+    }
+  };
+
+  useEffect(() => {
+    return () => stopFaceCamera();
+  }, []);
 
 
 
@@ -1195,6 +1277,51 @@ const Login = () => {
             </svg>
             {googleSigningIn ? 'Connecting...' : 'Continue with Google'}
           </button>
+          )}
+
+          {!registrationsPaused && !faceLoginMode && (
+            <button
+              type="button"
+              onClick={async () => { setFaceLoginMode(true); setFaceError(''); setFaceLoading(''); await startFaceCamera(); }}
+              className="mt-3 inline-flex w-full items-center justify-center gap-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 font-semibold text-cyan-800 shadow-sm transition hover:bg-cyan-100"
+            >
+              <ScanFace size={20} />
+              Login with Face
+            </button>
+          )}
+
+          {faceLoginMode && (
+            <div className="mt-4 rounded-xl border border-cyan-200 bg-cyan-50 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-bold text-cyan-900">Face Login</p>
+                <button
+                  type="button"
+                  onClick={() => { stopFaceCamera(); setFaceLoginMode(false); setFaceError(''); setFaceLoading(''); }}
+                  className="text-cyan-600 hover:text-cyan-800"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              {!faceCameraReady ? (
+                <div className="rounded-lg bg-slate-950 overflow-hidden">
+                  <video ref={faceVideoRef} autoPlay muted playsInline className="h-48 w-full object-cover" />
+                </div>
+              ) : (
+                <div className="rounded-lg bg-slate-950 overflow-hidden">
+                  <video ref={faceVideoRef} autoPlay muted playsInline className="h-48 w-full object-cover" />
+                </div>
+              )}
+              {faceError && <p className="mt-2 text-xs font-semibold text-red-600">{faceError}</p>}
+              {faceLoading && <p className="mt-2 text-xs font-semibold text-cyan-700">{faceLoading}</p>}
+              <button
+                type="button"
+                onClick={handleFaceLogin}
+                disabled={!faceCameraReady || !!faceLoading}
+                className="mt-3 w-full rounded-lg bg-cyan-600 py-2.5 font-bold text-white hover:bg-cyan-700 disabled:opacity-60"
+              >
+                {faceLoading || 'Scan & Login'}
+              </button>
+            </div>
           )}
 
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2, Bot } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2, Bot, ScanFace } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { useNotifications } from '../context/NotificationContext';
@@ -1380,6 +1380,13 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
           <NavLink to="/app/settings" className={navItemClass} title="Settings">
             <Settings size={28} />
             {shouldShowText && <span className="truncate text-sm font-medium">Settings</span>}
+          </NavLink>
+        ) : null}
+
+        {role === 'student' ? (
+          <NavLink to="/app/face-register" className={navItemClass} title="Register Face">
+            <ScanFace size={28} />
+            {shouldShowText && <span className="truncate text-sm font-medium">Register Face</span>}
           </NavLink>
         ) : null}
 

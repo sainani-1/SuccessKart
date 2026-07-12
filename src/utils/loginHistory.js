@@ -219,3 +219,8 @@ export const logSessionExpiredEvent = async (userId, userInfo = {}) => {
   fireGeoFetch();
   await insertEvent(buildPayload(userId, userInfo, 'session_expired'));
 };
+
+export const logTabClosedEvent = async (userId, userInfo = {}) => {
+  if (!userId) return;
+  await insertEvent(buildPayload(userId, userInfo, 'tab_closed'));
+};

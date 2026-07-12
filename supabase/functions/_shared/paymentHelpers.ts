@@ -127,19 +127,23 @@ const sendEmailIfConfigured = async ({
   subject: string;
   html: string;
 }) => {
-  const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  const fromEmail = Deno.env.get("PAYMENT_FROM_EMAIL") || Deno.env.get("RESEND_FROM_EMAIL");
-  if (!resendApiKey || !fromEmail || !to) return;
+  const mailerSendApiKey = Deno.env.get("MAILERSEND_API_KEY");
+  const fromEmail = Deno.env.get("MAILERSEND_FROM_EMAIL") || "noreply@test-69oxl5eke2zl785k.mlsender.net";
+  if (!mailerSendApiKey || !fromEmail || !to) return;
 
-  await fetch("https://api.resend.com/emails", {
+  await fetch("https://api.mailersend.com/v1/email", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${resendApiKey}`,
+      Authorization: `Bearer ${mailerSendApiKey}`,
       "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
     },
     body: JSON.stringify({
-      from: fromEmail,
-      to: [to],
+      from: {
+        email: fromEmail,
+        name: "SucessKart",
+      },
+      to: [{ email: to }],
       subject,
       html,
     }),

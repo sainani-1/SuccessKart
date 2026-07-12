@@ -54,9 +54,20 @@ const AdminLastActive = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  const [, setTick] = useState(0);
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => fetchData(), 60000);
+    return () => clearInterval(timer);
   }, []);
 
   const fetchData = async () => {

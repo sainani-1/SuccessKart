@@ -98,6 +98,7 @@ const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
 const CompleteGoogleProfile = lazy(() => import('./pages/CompleteGoogleProfile'));
 const FaceAuthSettings = lazy(() => import('./pages/FaceAuthSettings'));
 const FaceMfaVerify = lazy(() => import('./pages/FaceMfaVerify'));
+const FaceRegister = lazy(() => import('./pages/FaceRegister'));
 const AdminSupportContact = lazy(() => import('./pages/AdminSupportContact'));
 const AdminActivityLogs = lazy(() => import('./pages/AdminActivityLogs'));
 const AdminOnline = lazy(() => import('./pages/AdminOnline'));
@@ -456,6 +457,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
           <Route path="face-auth" element={<FaceAuthSettings />} />
+          <Route path="face-register" element={<FaceRegister />} />
           <Route path="payment" element={<Payment />} />
           <Route path="guidance" element={<CareerGuidance />} />
           <Route path="guidance-sessions" element={<GuidanceSessions />} />

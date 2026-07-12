@@ -1,0 +1,204 @@
+import os
+import base64
+import json
+import numpy as np
+import cv2
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from dotenv import load_dotenv
+from supabase import create_client
+
+load_dotenv()
+
+app = Flask(__name__)
+CORS(app, origins=[
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://sucesskart.vercel.app",
+])
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+face_cascade = cv2.CascadeClassifier(
+    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+)
+
+HIST_MATCH_THRESHOLD = 0.45
+
+
+def decode_image(image_b64):
+    img_data = base64.b64decode(image_b64.split(",")[-1])
+    nparr = np.frombuffer(img_data, np.uint8)
+    return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+
+def detect_and_crop_face(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(80, 80))
+    if len(faces) == 0:
+        return None
+    x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
+    pad = int(0.15 * max(w, h))
+    x1 = max(0, x - pad)
+    y1 = max(0, y - pad)
+    x2 = min(image.shape[1], x + w + pad)
+    y2 = min(image.shape[0], y + h + pad)
+    face_roi = image[y1:y2, x1:x2]
+    return face_roi
+
+
+def compute_face_encoding(face_img):
+    resized = cv2.resize(face_img, (100, 100))
+    hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
+    hist_h = cv2.calcHist([hsv], [0], None, [50], [0, 180])
+    hist_s = cv2.calcHist([hsv], [1], None, [60], [0, 256])
+    cv2.normalize(hist_h, hist_h, 0, 1, cv2.NORM_MINMAX)
+    cv2.normalize(hist_s, hist_s, 0, 1, cv2.NORM_MINMAX)
+    hist = np.concatenate([hist_h.flatten(), hist_s.flatten()])
+
+    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    lbp = compute_lbp(gray)
+    lbp_hist, _ = np.histogram(lbp.ravel(), bins=56, range=(0, 56), density=True)
+
+    encoding = np.concatenate([hist, lbp_hist])
+    return encoding.tolist()
+
+
+def compute_lbp(gray_img):
+    rows, cols = gray_img.shape
+    lbp = np.zeros((rows, cols), dtype=np.uint8)
+    for i in range(1, rows - 1):
+        for j in range(1, cols - 1):
+            center = gray_img[i, j]
+            code = 0
+            code |= (1 << 7) if gray_img[i - 1, j - 1] >= center else 0
+            code |= (1 << 6) if gray_img[i - 1, j] >= center else 0
+            code |= (1 << 5) if gray_img[i - 1, j + 1] >= center else 0
+            code |= (1 << 4) if gray_img[i, j + 1] >= center else 0
+            code |= (1 << 3) if gray_img[i + 1, j + 1] >= center else 0
+            code |= (1 << 2) if gray_img[i + 1, j] >= center else 0
+            code |= (1 << 1) if gray_img[i + 1, j - 1] >= center else 0
+            code |= (1 << 0) if gray_img[i, j - 1] >= center else 0
+            lbp[i, j] = code
+    return lbp
+
+
+def compare_encodings(a, b):
+    a = np.array(a, dtype=np.float64)
+    b = np.array(b, dtype=np.float64)
+    hist_size = 50 + 60
+    a_hist = a[:hist_size]
+    b_hist = b[:hist_size]
+    a_lbp = a[hist_size:]
+    b_lbp = b[hist_size:]
+    hist_corr = cv2.compareHist(
+        a_hist.astype(np.float32),
+        b_hist.astype(np.float32),
+        cv2.HISTCMP_CORREL,
+    )
+    lbp_corr = cv2.compareHist(
+        a_lbp.astype(np.float32),
+        b_lbp.astype(np.float32),
+        cv2.HISTCMP_CORREL,
+    )
+    return 0.5 * hist_corr + 0.5 * lbp_corr
+
+
+@app.route("/api/register-face", methods=["POST"])
+def register_face():
+    data = request.json
+    email = data.get("email")
+    image_b64 = data.get("image_base64")
+
+    if not email or not image_b64:
+        return jsonify({"error": "email and image_base64 are required"}), 400
+
+    image = decode_image(image_b64)
+    if image is None:
+        return jsonify({"error": "Invalid image data"}), 400
+
+    face = detect_and_crop_face(image)
+    if face is None:
+        return jsonify({"error": "No face detected. Please face the camera and try again."}), 400
+
+    encoding = compute_face_encoding(face)
+
+    profile = supabase.table("profiles").select("id").eq("email", email).execute()
+    if not profile.data:
+        return jsonify({"error": "User not found with this email"}), 404
+
+    user_id = profile.data[0]["id"]
+
+    existing = supabase.table("face_embeddings").select("id").eq("user_id", user_id).execute()
+    if existing.data:
+        supabase.table("face_embeddings").update({
+            "encoding": json.dumps(encoding),
+        }).eq("user_id", user_id).execute()
+    else:
+        supabase.table("face_embeddings").insert({
+            "user_id": user_id,
+            "email": email,
+            "encoding": json.dumps(encoding),
+        }).execute()
+
+    import datetime
+    supabase.table("profiles").update({
+        "face_auth_enabled": True,
+        "face_registered_at": datetime.datetime.utcnow().isoformat(),
+    }).eq("id", user_id).execute()
+
+    return jsonify({"success": True, "message": "Face registered successfully"})
+
+
+@app.route("/api/recognize-face", methods=["POST"])
+def recognize_face():
+    data = request.json
+    image_b64 = data.get("image_base64")
+
+    if not image_b64:
+        return jsonify({"error": "image_base64 is required"}), 400
+
+    image = decode_image(image_b64)
+    if image is None:
+        return jsonify({"error": "Invalid image data"}), 400
+
+    face = detect_and_crop_face(image)
+    if face is None:
+        return jsonify({"error": "No face detected. Please face the camera and try again."}), 400
+
+    encoding = compute_face_encoding(face)
+
+    result = supabase.table("face_embeddings").select("email, encoding").execute()
+    if not result.data:
+        return jsonify({"error": "No registered faces found"}), 404
+
+    best_match_email = None
+    best_score = HIST_MATCH_THRESHOLD
+
+    for row in result.data:
+        stored = json.loads(row["encoding"])
+        score = compare_encodings(encoding, stored)
+        if score > best_score:
+            best_score = score
+            best_match_email = row["email"]
+
+    if best_match_email:
+        return jsonify({
+            "success": True,
+            "email": best_match_email,
+            "confidence": round(float(best_score), 4),
+        })
+
+    return jsonify({"error": "No matching face found"}), 404
+
+
+@app.route("/api/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"})
+
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)

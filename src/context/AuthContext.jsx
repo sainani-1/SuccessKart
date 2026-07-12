@@ -20,7 +20,7 @@ import { refreshSessionFromHttpOnlyCookie } from '../utils/authCookieBridge';
 import { requestSessionFromOtherTabs } from '../utils/crossTabAuth';
 import { logError } from '../utils/errorLogger';
 import { clearFaceMfaVerified, clearFaceLoginData } from '../utils/faceAuth';
-import { logLogoutEvent } from '../utils/loginHistory';
+import { logLogoutEvent, logTabClosedEvent } from '../utils/loginHistory';
 
 const AuthContext = createContext();
 
@@ -462,6 +462,33 @@ export const AuthProvider = ({ children }) => {
       clearInterval(interval);
     };
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const userId = user.id;
+    const userInfo = { email: profile?.email, full_name: profile?.full_name };
+    let hasLoggedClose = false;
+
+    const logClose = () => {
+      if (hasLoggedClose) return;
+      hasLoggedClose = true;
+      logTabClosedEvent(userId, userInfo);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') logClose();
+    };
+
+    const onBeforeUnload = () => logClose();
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('beforeunload', onBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [user?.id, profile?.email, profile?.full_name]);
 
   const fetchProfile = async (userId, options = {}) => {
     const { background = false } = options;

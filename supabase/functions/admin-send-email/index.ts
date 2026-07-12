@@ -34,15 +34,15 @@ Deno.serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  const fromEmail = Deno.env.get("PAYMENT_FROM_EMAIL") || Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+  const mailerSendApiKey = Deno.env.get("MAILERSEND_API_KEY");
+  const fromEmail = Deno.env.get("MAILERSEND_FROM_EMAIL") || "noreply@test-69oxl5eke2zl785k.mlsender.net";
 
   if (!supabaseUrl || !serviceRoleKey || !anonKey) {
     return errorResponse("Missing Supabase environment variables.", 500);
   }
 
-  if (!resendApiKey) {
-    return errorResponse("RESEND_API_KEY is not configured.", 500);
+  if (!mailerSendApiKey) {
+    return errorResponse("MAILERSEND_API_KEY is not configured.", 500);
   }
 
   const authHeader = req.headers.get("Authorization");
@@ -90,15 +90,19 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    const response = await fetch("https://api.mailersend.com/v1/email", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${mailerSendApiKey}`,
         "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       },
       body: JSON.stringify({
-        from: `SucessKart <${fromEmail}>`,
-        to: validEmails,
+        from: {
+          email: fromEmail,
+          name: "SucessKart",
+        },
+        to: validEmails.map((e) => ({ email: e })),
         subject,
         html,
       }),

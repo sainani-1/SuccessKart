@@ -136,18 +136,21 @@ Deno.serve(async (req: Request) => {
     }
 
     if (adminEmail) {
-      const resendApiKey = Deno.env.get("RESEND_API_KEY");
-      const fromEmail = Deno.env.get("PAYMENT_FROM_EMAIL") || Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
-      if (resendApiKey) {
+      const mailerSendApiKey = Deno.env.get("MAILERSEND_API_KEY");
+      const fromEmail = Deno.env.get("MAILERSEND_FROM_EMAIL") || "noreply@test-69oxl5eke2zl785k.mlsender.net";
+      if (mailerSendApiKey) {
         try {
           const now = new Date();
           const createdDate = now.toLocaleString("en-IN", { day: "numeric", month: "numeric", year: "numeric", hour: "numeric", minute: "numeric", second: "numeric", hour12: true });
-          await fetch("https://api.resend.com/emails", {
+          await fetch("https://api.mailersend.com/v1/email", {
             method: "POST",
-            headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
+            headers: { Authorization: `Bearer ${mailerSendApiKey}`, "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
             body: JSON.stringify({
-              from: `SucessKart <${fromEmail}>`,
-              to: [adminEmail],
+              from: {
+                email: fromEmail,
+                name: "SucessKart",
+              },
+              to: [{ email: adminEmail }],
               subject: `SucessKart - Add-On Manual Payment from ${userName}`,
               html: `
                 <div style="font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
