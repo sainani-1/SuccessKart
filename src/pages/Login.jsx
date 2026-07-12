@@ -91,22 +91,47 @@ const Login = () => {
 
   const handleFaceScan = async () => {
     if (!faceVideoRef.current || !faceCameraReady) return;
-    setFaceLoading('Capturing face...');
+    setFaceLoading('Capturing frames...');
     setFaceError('');
 
     try {
       const video = faceVideoRef.current;
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageBase64 = canvas.toDataURL('image/jpeg', 0.92);
+      const frameCount = 8;
+      const frames = [];
+
+      for (let i = 0; i < frameCount; i++) {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        frames.push(canvas.toDataURL('image/jpeg', 0.92));
+        if (i < frameCount - 1) {
+          await new Promise(r => setTimeout(r, 150));
+        }
+      }
+
+      setFaceLoading('Checking for blink...');
+      const blinkRes = await fetch(`${faceBackendUrl}/api/detect-blink`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ frames }),
+      });
+      const blinkData = await blinkRes.json();
+      if (!blinkRes.ok) throw new Error(blinkData.error || 'Blink detection failed');
+
+      if (!blinkData.blink_detected) {
+        stopFaceCamera();
+        setFaceError('Blink not detected. Please blink your eyes and try again.');
+        setFaceLoading('');
+        return;
+      }
 
       setFaceLoading('Recognizing face...');
+      const lastFrame = frames[frames.length - 1];
       const recognizeRes = await fetch(`${faceBackendUrl}/api/recognize-face`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: imageBase64 }),
+        body: JSON.stringify({ image_base64: lastFrame }),
       });
       const recognizeData = await recognizeRes.json();
       if (!recognizeRes.ok) throw new Error(recognizeData.error || 'Face not recognized');

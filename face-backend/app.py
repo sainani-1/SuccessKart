@@ -28,8 +28,13 @@ if SUPABASE_URL and SUPABASE_KEY:
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
+eye_cascade = cv2.CascadeClassifier(
+    cv2.data.haarcascades + "haarcascade_eye.xml"
+)
 
 HIST_MATCH_THRESHOLD = 0.45
+EAR_THRESHOLD = 0.21
+EAR_CONSEC_FRAMES = 2
 
 
 def decode_image(image_b64):
@@ -210,7 +215,106 @@ def recognize_face():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/health", methods=["GET"])
+def compute_ear(eye_pts):
+    """Compute Eye Aspect Ratio from 6 eye landmark points."""
+    pts = np.array(eye_pts, dtype=np.float64)
+    A = np.linalg.norm(pts[1] - pts[5])
+    B = np.linalg.norm(pts[2] - pts[4])
+    C = np.linalg.norm(pts[0] - pts[3])
+    if C == 0:
+        return 0.0
+    return (A + B) / (2.0 * C)
+
+
+def detect_eyes_in_face(face_img, face_x, face_y):
+    """Detect eyes within a face region and return their center+size."""
+    gray = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
+    eyes = eye_cascade.detectMultiScale(gray, 1.1, 4, minSize=(20, 20))
+    if len(eyes) < 2:
+        return None
+    eye_list = []
+    for (ex, ey, ew, eh) in eyes:
+        cx = face_x + ex + ew // 2
+        cy = face_y + ey + eh // 2
+        eye_list.append((cx, cy, max(ew, eh)))
+    eye_list.sort(key=lambda e: e[0])
+    return eye_list[:2]
+
+
+@app.route("/api/detect-blink", methods=["POST"])
+def detect_blink():
+    """Accept multiple frames, detect eye blinks using EAR."""
+    try:
+        data = request.json
+        frames = data.get("frames", [])
+
+        if not frames or len(frames) < 4:
+            return jsonify({"error": "Need at least 4 frames for blink detection"}), 400
+
+        ear_values = []
+        for frame_b64 in frames:
+            image = decode_image(frame_b64)
+            if image is None:
+                continue
+
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(80, 80))
+            if len(faces) == 0:
+                ear_values.append(0.35)
+                continue
+
+            x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
+            face_roi = image[y:y+h, x:x+w]
+            eye_result = detect_eyes_in_face(face_roi, x, y)
+
+            if eye_result and len(eye_result) == 2:
+                left_eye, right_eye = eye_result
+                le_cx, le_cy, le_r = left_eye
+                re_cx, re_cy, re_r = right_eye
+
+                r = max(le_r, re_r) // 2 + 4
+                pts_left = [
+                    (le_cx - r, le_cy), (le_cx - r//2, le_cy - r//2),
+                    (le_cx + r//2, le_cy - r//2), (le_cx + r, le_cy),
+                    (le_cx + r//2, le_cy + r//2), (le_cx - r//2, le_cy + r//2),
+                ]
+                pts_right = [
+                    (re_cx - r, re_cy), (re_cx - r//2, re_cy - r//2),
+                    (re_cx + r//2, re_cy - r//2), (re_cx + r, re_cy),
+                    (re_cx + r//2, re_cy + r//2), (re_cx - r//2, re_cy + r//2),
+                ]
+                ear_left = compute_ear(pts_left)
+                ear_right = compute_ear(pts_right)
+                ear_values.append((ear_left + ear_right) / 2.0)
+            else:
+                ear_values.append(0.35)
+
+        if len(ear_values) < 4:
+            return jsonify({"error": "Could not process enough frames"}), 400
+
+        blink_detected = False
+        below_count = 0
+        for ear in ear_values:
+            if ear < EAR_THRESHOLD:
+                below_count += 1
+            else:
+                if below_count >= EAR_CONSEC_FRAMES:
+                    blink_detected = True
+                    break
+                below_count = 0
+
+        if not blink_detected and below_count >= EAR_CONSEC_FRAMES:
+            blink_detected = True
+
+        return jsonify({
+            "blink_detected": blink_detected,
+            "frame_count": len(ear_values),
+            "avg_ear": round(float(np.mean(ear_values)), 4),
+        })
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 def health():
     return jsonify({"status": "ok", "supabase_configured": supabase is not None})
 
