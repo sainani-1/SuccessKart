@@ -13,7 +13,6 @@ import { clearAdminVerificationState } from '../utils/adminPasskey';
 import { getPendingAvatarKey } from '../utils/avatarUpload';
 import { reportMultiSessionViolation } from '../utils/sessionSecurity';
 import { clearFaceMfaVerified } from '../utils/faceAuth';
-import { clearDailyLoginState } from '../utils/dailySession';
 import { logError, logWarn } from '../utils/errorLogger';
 import { isProfileComplete } from '../utils/profileCompletion';
 import { logLoginEvent, logTakeoverEvent } from '../utils/loginHistory';
@@ -56,6 +55,7 @@ const Login = () => {
   const [faceCameraReady, setFaceCameraReady] = useState(false);
   const [faceLoading, setFaceLoading] = useState('');
   const [faceError, setFaceError] = useState('');
+  const [faceMatchedEmail, setFaceMatchedEmail] = useState('');
 
   const withTimeout = (promise, fallback, timeoutMs = 1800) =>
     Promise.race([
@@ -89,7 +89,7 @@ const Login = () => {
     setFaceCameraReady(false);
   };
 
-  const handleFaceLogin = async () => {
+  const handleFaceScan = async () => {
     if (!faceVideoRef.current || !faceCameraReady) return;
     setFaceLoading('Capturing face...');
     setFaceError('');
@@ -111,38 +111,97 @@ const Login = () => {
       const recognizeData = await recognizeRes.json();
       if (!recognizeRes.ok) throw new Error(recognizeData.error || 'Face not recognized');
 
-      const matchedEmail = recognizeData.email;
-      setFaceLoading(`Logging in as ${matchedEmail}...`);
       stopFaceCamera();
+      setFaceMatchedEmail(recognizeData.email);
+      setFaceLoading('');
+    } catch (err) {
+      setFaceError(err?.message || 'Face scan failed.');
+      setFaceLoading('');
+    }
+  };
 
+  const handleFaceConfirmLogin = async () => {
+    if (!faceMatchedEmail) return;
+    setFaceLoading(`Logging in as ${faceMatchedEmail}...`);
+    setFaceError('');
+
+    try {
       const { data: linkData, error: linkError } = await supabase.functions.invoke('face-login', {
-        body: { email: matchedEmail, pythonMatched: true, redirectTo: `${window.location.origin}/app` },
+        body: { email: faceMatchedEmail, pythonMatched: true, redirectTo: `${window.location.origin}/app` },
       });
       if (linkError) throw new Error(linkError.message || 'Could not generate login link');
       if (linkData?.error) throw new Error(linkData.error);
 
-      if (linkData?.accessToken && linkData?.refreshToken) {
-        setFaceLoading('Signing in...');
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-          access_token: linkData.accessToken,
-          refresh_token: linkData.refreshToken,
-        });
-        if (sessionError) throw new Error(sessionError.message || 'Session creation failed');
-        if (sessionData?.session) {
-          navigate('/app', { replace: true });
+      if (!linkData?.accessToken || !linkData?.refreshToken) {
+        if (linkData?.actionLink) {
+          window.location.href = linkData.actionLink;
           return;
         }
+        throw new Error('No login response received.');
       }
 
-      if (linkData?.actionLink) {
-        window.location.href = linkData.actionLink;
+      setFaceLoading('Signing in...');
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: linkData.accessToken,
+        refresh_token: linkData.refreshToken,
+      });
+      if (sessionError) throw new Error(sessionError.message || 'Session creation failed');
+      if (!sessionData?.session) throw new Error('Session creation failed');
+
+      const userId = sessionData.session.user.id;
+
+      let { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id, role, is_disabled, is_locked, full_name, email, terms_accepted, education_level, study_stream, core_subject, session_violation_count')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (userProfile?.role === 'admin') {
+        navigate('/admin-auth-choice', { state: { next: '/admin-auth-choice' } });
         return;
       }
 
-      throw new Error('No login response received.');
+      if (userProfile && !isProfileComplete(userProfile)) {
+        navigate('/complete-profile', { replace: true });
+        return;
+      }
+
+      let sessionCheck;
+      try {
+        sessionCheck = await withTimeout(
+          ensureSingleActiveSession(userId, userProfile),
+          { allowed: true, takeoverOccurred: false, message: '' }
+        );
+      } catch {
+        sessionCheck = { allowed: true, takeoverOccurred: false, message: '' };
+      }
+
+      if (!sessionCheck.allowed) {
+        await supabase.auth.signOut();
+        setFaceError(sessionCheck.message || 'Login blocked. Account is active on another device.');
+        setFaceLoading('');
+        setFaceMatchedEmail('');
+        return;
+      }
+
+      const userInfo = { email: userProfile?.email || faceMatchedEmail, full_name: userProfile?.full_name };
+      if (sessionCheck.takeoverOccurred) {
+        await logTakeoverEvent(userId, userInfo);
+        sessionStorage.setItem('sk_takeover_notice', JSON.stringify({
+          title: 'Session Transferred',
+          message: sessionCheck.message
+        }));
+      } else {
+        await logLoginEvent(userId, userInfo);
+      }
+
+      setFaceLoading('');
+      setFaceMatchedEmail('');
+      navigate('/app', { replace: true });
     } catch (err) {
       setFaceError(err?.message || 'Face login failed.');
       setFaceLoading('');
+      setFaceMatchedEmail('');
     }
   };
 
@@ -1310,31 +1369,58 @@ const Login = () => {
                 <p className="text-sm font-bold text-cyan-900">Face Login</p>
                 <button
                   type="button"
-                  onClick={() => { stopFaceCamera(); setFaceLoginMode(false); setFaceError(''); setFaceLoading(''); }}
+                  onClick={() => { stopFaceCamera(); setFaceLoginMode(false); setFaceError(''); setFaceLoading(''); setFaceMatchedEmail(''); }}
                   className="text-cyan-600 hover:text-cyan-800"
                 >
                   <X size={18} />
                 </button>
               </div>
-              {!faceCameraReady ? (
-                <div className="rounded-lg bg-slate-950 overflow-hidden">
-                  <video ref={faceVideoRef} autoPlay muted playsInline className="h-48 w-full object-cover" />
+
+              {faceMatchedEmail ? (
+                <div className="text-center">
+                  <div className="rounded-lg bg-white border border-cyan-200 p-4 mb-3">
+                    <p className="text-xs text-slate-500 mb-1">We detected this face as:</p>
+                    <p className="text-sm font-bold text-cyan-900">{faceMatchedEmail}</p>
+                  </div>
+                  <p className="text-xs text-slate-600 mb-3">Is this you? Confirm to continue login.</p>
+                  {faceError && <p className="text-xs font-semibold text-red-600 mb-2">{faceError}</p>}
+                  {faceLoading && <p className="text-xs font-semibold text-cyan-700 mb-2">{faceLoading}</p>}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setFaceMatchedEmail(''); setFaceError(''); startFaceCamera(); }}
+                      disabled={!!faceLoading}
+                      className="flex-1 rounded-lg border border-slate-300 py-2.5 font-semibold text-slate-700 hover:bg-white disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleFaceConfirmLogin}
+                      disabled={!!faceLoading}
+                      className="flex-1 rounded-lg bg-cyan-600 py-2.5 font-bold text-white hover:bg-cyan-700 disabled:opacity-60"
+                    >
+                      {faceLoading || 'Yes, Login'}
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <div className="rounded-lg bg-slate-950 overflow-hidden">
-                  <video ref={faceVideoRef} autoPlay muted playsInline className="h-48 w-full object-cover" />
-                </div>
+                <>
+                  <div className="rounded-lg bg-slate-950 overflow-hidden">
+                    <video ref={faceVideoRef} autoPlay muted playsInline className="h-48 w-full object-cover" />
+                  </div>
+                  {faceError && <p className="mt-2 text-xs font-semibold text-red-600">{faceError}</p>}
+                  {faceLoading && <p className="mt-2 text-xs font-semibold text-cyan-700">{faceLoading}</p>}
+                  <button
+                    type="button"
+                    onClick={handleFaceScan}
+                    disabled={!faceCameraReady || !!faceLoading}
+                    className="mt-3 w-full rounded-lg bg-cyan-600 py-2.5 font-bold text-white hover:bg-cyan-700 disabled:opacity-60"
+                  >
+                    {faceLoading || 'Scan Face'}
+                  </button>
+                </>
               )}
-              {faceError && <p className="mt-2 text-xs font-semibold text-red-600">{faceError}</p>}
-              {faceLoading && <p className="mt-2 text-xs font-semibold text-cyan-700">{faceLoading}</p>}
-              <button
-                type="button"
-                onClick={handleFaceLogin}
-                disabled={!faceCameraReady || !!faceLoading}
-                className="mt-3 w-full rounded-lg bg-cyan-600 py-2.5 font-bold text-white hover:bg-cyan-700 disabled:opacity-60"
-              >
-                {faceLoading || 'Scan & Login'}
-              </button>
             </div>
           )}
 
