@@ -3,11 +3,11 @@ services:
     name: sucesskart-face-backend
     runtime: python
     rootDir: face-backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip setuptools wheel && CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release" MAKEFLAGS="-j2" pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
     envVars:
       - key: PYTHON_VERSION
-        value: 3.12.11
+        value: 3.12
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
