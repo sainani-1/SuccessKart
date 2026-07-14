@@ -119,7 +119,6 @@ const Login = () => {
       if (!blinkRes.ok) throw new Error(blinkData.error || 'Blink detection failed');
 
       if (!blinkData.blink_detected) {
-        stopFaceCamera();
         setFaceError('Blink not detected. Please blink your eyes and try again.');
         setFaceLoading('');
         return;

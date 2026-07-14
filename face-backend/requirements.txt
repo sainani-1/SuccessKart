@@ -2,6 +2,7 @@ flask
 flask-cors
 opencv-python-headless==4.11.0.86
 numpy<2.3
+mediapipe>=0.10.14
 supabase
 python-dotenv
 gunicorn
