@@ -24,13 +24,7 @@ from supabase import create_client
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins=[
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://sucesskart.vercel.app",
-    "https://sucesskart-git-main-sainani-1.vercel.app",
-    r"https://.*\.railway\.app",
-], supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
