@@ -3,7 +3,7 @@ services:
     name: sucesskart-face-backend
     runtime: python
     rootDir: face-backend
-    buildCommand: pip install -r requirements.txt && pip install mediapipe
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
     envVars:
       - key: PYTHON_VERSION

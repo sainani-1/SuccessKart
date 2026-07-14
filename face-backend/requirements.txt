@@ -5,3 +5,6 @@ numpy<2.3
 supabase
 python-dotenv
 gunicorn
+cmake
+dlib
+face_recognition

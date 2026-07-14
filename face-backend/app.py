@@ -10,6 +10,12 @@ try:
 except Exception:
     mp = None
     HAS_MEDIAPIPE = False
+try:
+    import face_recognition as fr_lib
+    HAS_DLIB = True
+except Exception:
+    fr_lib = None
+    HAS_DLIB = False
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -36,10 +42,10 @@ face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
 
-FACE_MATCH_THRESHOLD = 0.72
+FACE_MATCH_THRESHOLD = 0.6
 
 
-ENCODING_VERSION = 2
+ENCODING_VERSION = 3
 
 
 def decode_image(image_b64):
@@ -85,10 +91,15 @@ def _normalize_face(face_img):
 
 
 def compute_face_encoding(face_img):
+    if HAS_DLIB:
+        rgb = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
+        encodings = fr_lib.face_encodings(rgb)
+        if encodings:
+            return {"v": ENCODING_VERSION, "d": encodings[0].tolist(), "backend": "dlib"}
+
     normalized = _normalize_face(face_img)
     resized = cv2.resize(normalized, (100, 100))
     gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-
     blocks = []
     for by in range(5):
         for bx in range(5):
@@ -96,7 +107,6 @@ def compute_face_encoding(face_img):
             block = block.astype(np.float64)
             blocks.append(float(np.mean(block)))
             blocks.append(float(np.std(block)))
-
     lab = cv2.cvtColor(resized, cv2.COLOR_BGR2LAB)
     l_ch = lab[:, :, 0].astype(np.float64)
     a_ch = lab[:, :, 1].astype(np.float64)
@@ -104,27 +114,28 @@ def compute_face_encoding(face_img):
     blocks.extend([float(np.mean(l_ch)), float(np.std(l_ch))])
     blocks.extend([float(np.mean(a_ch)), float(np.std(a_ch))])
     blocks.extend([float(np.mean(b_ch)), float(np.std(b_ch))])
-
     encoding = np.array(blocks, dtype=np.float64)
     norm = np.linalg.norm(encoding)
     if norm > 0:
         encoding = encoding / norm
-    return {"v": ENCODING_VERSION, "d": encoding.tolist()}
+    return {"v": ENCODING_VERSION, "d": encoding.tolist(), "backend": "fallback"}
 
 
 def compare_encodings(a, b):
     try:
-        if isinstance(a, dict) and isinstance(b, dict):
-            if a.get("v") != b.get("v"):
-                return 0.0
-            a_vec = np.array(a["d"], dtype=np.float64)
-            b_vec = np.array(b["d"], dtype=np.float64)
-        else:
+        if not isinstance(a, dict) or not isinstance(b, dict):
             return 0.0
-
+        a_ver = a.get("v", 0)
+        b_ver = b.get("v", 0)
+        if a_ver != b_ver:
+            return 0.0
+        a_vec = np.array(a["d"], dtype=np.float64)
+        b_vec = np.array(b["d"], dtype=np.float64)
         if a_vec.shape != b_vec.shape or a_vec.shape[0] == 0:
             return 0.0
-
+        if a.get("backend") == "dlib" and b.get("backend") == "dlib":
+            distance = np.linalg.norm(a_vec - b_vec)
+            return max(0.0, 1.0 - distance)
         norm_a = np.linalg.norm(a_vec)
         norm_b = np.linalg.norm(b_vec)
         if norm_a == 0 or norm_b == 0:
@@ -179,7 +190,13 @@ def register_face():
         stale_ids = []
         for row in (all_faces.data or []):
             raw = row.get("encoding", "")
-            if isinstance(raw, str) and raw.startswith("["):
+            try:
+                parsed = json.loads(raw) if isinstance(raw, str) else raw
+                if isinstance(parsed, dict) and parsed.get("v", 0) != ENCODING_VERSION:
+                    stale_ids.append(row["id"])
+                elif isinstance(parsed, list):
+                    stale_ids.append(row["id"])
+            except Exception:
                 stale_ids.append(row["id"])
         for sid in stale_ids:
             supabase.table("face_embeddings").delete().eq("id", sid).execute()
@@ -449,6 +466,7 @@ def health():
         "status": "ok",
         "supabase_configured": supabase is not None,
         "mediapipe": HAS_MEDIAPIPE,
+        "dlib": HAS_DLIB,
     })
 
 
