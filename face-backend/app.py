@@ -325,7 +325,7 @@ def _detect_blink_mediapipe(frames):
     max_ear = float(np.max(ear_arr))
     std_ear = float(np.std(ear_arr))
 
-    EAR_CLOSED_THRESH = 0.22
+    EAR_CLOSED_THRESH = 0.28
     blink_detected = False
     blink_method = None
 
@@ -336,15 +336,19 @@ def _detect_blink_mediapipe(frames):
         blink_detected = True
         blink_method = "ear_closed_open"
 
-    if not blink_detected and std_ear > 0.03:
+    if not blink_detected and std_ear > 0.01:
         for i in range(1, len(ear_values) - 1):
             neighbor_avg = (ear_values[i - 1] + ear_values[i + 1]) / 2.0
-            if neighbor_avg - ear_values[i] > 0.06:
+            if neighbor_avg - ear_values[i] > 0.03:
                 blink_detected = True
                 blink_method = "ear_valley"
                 break
 
-    if not blink_detected and min_ear < avg_ear - 1.5 * std_ear and min_ear < EAR_CLOSED_THRESH:
+    if not blink_detected and max_ear - min_ear > 0.03:
+        blink_detected = True
+        blink_method = "ear_range"
+
+    if not blink_detected and min_ear < avg_ear - 1.0 * std_ear and min_ear < EAR_CLOSED_THRESH:
         blink_detected = True
         blink_method = "ear_statistical"
 
@@ -422,13 +426,13 @@ def _detect_blink_opencv(frames):
 
     if avg_var > 0:
         var_drop = (avg_var - min_var) / avg_var
-        if var_drop > 0.15:
+        if var_drop > 0.08:
             blink_detected = True
             blink_method = "variance_drop"
 
     if not blink_detected and avg_mean > 0:
         mean_drop = (avg_mean - min_mean) / avg_mean
-        if mean_drop > 0.06:
+        if mean_drop > 0.03:
             blink_detected = True
             blink_method = "brightness_drop"
 
