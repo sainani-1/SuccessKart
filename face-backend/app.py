@@ -4,7 +4,12 @@ import base64
 import json
 import numpy as np
 import cv2
-import mediapipe as mp
+try:
+    import mediapipe as mp
+    HAS_MEDIAPIPE = True
+except Exception:
+    mp = None
+    HAS_MEDIAPIPE = False
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -229,111 +234,199 @@ def detect_blink():
         if not frames or len(frames) < 4:
             return jsonify({"error": "Need at least 4 frames"}), 400
 
-        LEFT_EYE = [33, 160, 158, 133, 153, 144]
-        RIGHT_EYE = [362, 385, 387, 263, 373, 380]
-
-        def compute_ear(landmarks, eye_indices, w, h):
-            pts = []
-            for idx in eye_indices:
-                lm = landmarks[idx]
-                pts.append((lm.x * w, lm.y * h))
-            pts = np.array(pts, dtype=np.float64)
-            v1 = np.linalg.norm(pts[1] - pts[5])
-            v2 = np.linalg.norm(pts[2] - pts[4])
-            h1 = np.linalg.norm(pts[0] - pts[3])
-            if h1 == 0:
-                return 0.0
-            return (v1 + v2) / (2.0 * h1)
-
-        face_mesh = mp.solutions.face_mesh.FaceMesh(
-            static_image_mode=True,
-            max_num_faces=1,
-            refine_landmarks=True,
-            min_detection_confidence=0.5,
-        )
-
-        ear_values = []
-        faces_detected = 0
-
-        for frame_b64 in frames:
-            try:
-                image = decode_image(frame_b64)
-                if image is None or image.size == 0:
-                    continue
-                h, w = image.shape[:2]
-                rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                results = face_mesh.process(rgb)
-                if not results.multi_face_landmarks:
-                    continue
-                faces_detected += 1
-                landmarks = results.multi_face_landmarks[0].landmark
-                left_ear = compute_ear(landmarks, LEFT_EYE, w, h)
-                right_ear = compute_ear(landmarks, RIGHT_EYE, w, h)
-                avg_ear = (left_ear + right_ear) / 2.0
-                ear_values.append(avg_ear)
-            except Exception:
-                continue
-
-        face_mesh.close()
-
-        if len(ear_values) < 3:
-            return jsonify({
-                "blink_detected": False,
-                "reason": "not_enough_landmarks",
-                "faces_detected": faces_detected,
-            })
-
-        ear_arr = np.array(ear_values)
-        avg_ear = float(np.mean(ear_arr))
-        min_ear = float(np.min(ear_arr))
-        max_ear = float(np.max(ear_arr))
-        std_ear = float(np.std(ear_arr))
-
-        EAR_CLOSED_THRESH = 0.22
-
-        blink_detected = False
-        blink_method = None
-
-        closed_frames = [i for i, e in enumerate(ear_values) if e < EAR_CLOSED_THRESH]
-        open_frames = [i for i, e in enumerate(ear_values) if e >= EAR_CLOSED_THRESH]
-
-        if closed_frames and open_frames:
-            blink_detected = True
-            blink_method = "ear_closed_open"
-
-        if not blink_detected and std_ear > 0.03:
-            for i in range(1, len(ear_values) - 1):
-                left_ear = ear_values[i - 1]
-                right_ear_val = ear_values[i + 1]
-                curr_ear = ear_values[i]
-                neighbor_avg = (left_ear + right_ear_val) / 2.0
-                if neighbor_avg - curr_ear > 0.06:
-                    blink_detected = True
-                    blink_method = "ear_valley"
-                    break
-
-        if not blink_detected and min_ear < avg_ear - 1.5 * std_ear and min_ear < EAR_CLOSED_THRESH:
-            blink_detected = True
-            blink_method = "ear_statistical"
-
-        return jsonify({
-            "blink_detected": blink_detected,
-            "valid_frames": len(ear_values),
-            "faces_detected": faces_detected,
-            "ear_values": [round(e, 4) for e in ear_values],
-            "avg_ear": round(avg_ear, 4),
-            "min_ear": round(min_ear, 4),
-            "max_ear": round(max_ear, 4),
-            "std_ear": round(std_ear, 4),
-            "blink_method": blink_method,
-        })
+        if HAS_MEDIAPIPE:
+            return _detect_blink_mediapipe(frames)
+        else:
+            return _detect_blink_opencv(frames)
 
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+def _detect_blink_mediapipe(frames):
+    LEFT_EYE = [33, 160, 158, 133, 153, 144]
+    RIGHT_EYE = [362, 385, 387, 263, 373, 380]
+
+    def compute_ear(landmarks, eye_indices, w, h):
+        pts = []
+        for idx in eye_indices:
+            lm = landmarks[idx]
+            pts.append((lm.x * w, lm.y * h))
+        pts = np.array(pts, dtype=np.float64)
+        v1 = np.linalg.norm(pts[1] - pts[5])
+        v2 = np.linalg.norm(pts[2] - pts[4])
+        h1 = np.linalg.norm(pts[0] - pts[3])
+        if h1 == 0:
+            return 0.0
+        return (v1 + v2) / (2.0 * h1)
+
+    face_mesh = mp.solutions.face_mesh.FaceMesh(
+        static_image_mode=True,
+        max_num_faces=1,
+        refine_landmarks=True,
+        min_detection_confidence=0.5,
+    )
+
+    ear_values = []
+    faces_detected = 0
+
+    for frame_b64 in frames:
+        try:
+            image = decode_image(frame_b64)
+            if image is None or image.size == 0:
+                continue
+            h, w = image.shape[:2]
+            rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            results = face_mesh.process(rgb)
+            if not results.multi_face_landmarks:
+                continue
+            faces_detected += 1
+            landmarks = results.multi_face_landmarks[0].landmark
+            left_ear = compute_ear(landmarks, LEFT_EYE, w, h)
+            right_ear = compute_ear(landmarks, RIGHT_EYE, w, h)
+            avg_ear = (left_ear + right_ear) / 2.0
+            ear_values.append(avg_ear)
+        except Exception:
+            continue
+
+    face_mesh.close()
+
+    if len(ear_values) < 3:
+        return jsonify({
+            "blink_detected": False,
+            "reason": "not_enough_landmarks",
+            "faces_detected": faces_detected,
+            "backend": "mediapipe",
+        })
+
+    ear_arr = np.array(ear_values)
+    avg_ear = float(np.mean(ear_arr))
+    min_ear = float(np.min(ear_arr))
+    max_ear = float(np.max(ear_arr))
+    std_ear = float(np.std(ear_arr))
+
+    EAR_CLOSED_THRESH = 0.22
+    blink_detected = False
+    blink_method = None
+
+    closed_frames = [i for i, e in enumerate(ear_values) if e < EAR_CLOSED_THRESH]
+    open_frames = [i for i, e in enumerate(ear_values) if e >= EAR_CLOSED_THRESH]
+
+    if closed_frames and open_frames:
+        blink_detected = True
+        blink_method = "ear_closed_open"
+
+    if not blink_detected and std_ear > 0.03:
+        for i in range(1, len(ear_values) - 1):
+            neighbor_avg = (ear_values[i - 1] + ear_values[i + 1]) / 2.0
+            if neighbor_avg - ear_values[i] > 0.06:
+                blink_detected = True
+                blink_method = "ear_valley"
+                break
+
+    if not blink_detected and min_ear < avg_ear - 1.5 * std_ear and min_ear < EAR_CLOSED_THRESH:
+        blink_detected = True
+        blink_method = "ear_statistical"
+
+    return jsonify({
+        "blink_detected": blink_detected,
+        "valid_frames": len(ear_values),
+        "faces_detected": faces_detected,
+        "ear_values": [round(e, 4) for e in ear_values],
+        "avg_ear": round(avg_ear, 4),
+        "min_ear": round(min_ear, 4),
+        "max_ear": round(max_ear, 4),
+        "std_ear": round(std_ear, 4),
+        "blink_method": blink_method,
+        "backend": "mediapipe",
+    })
+
+
+def _detect_blink_opencv(frames):
+    images = []
+    for frame_b64 in frames:
+        try:
+            image = decode_image(frame_b64)
+            if image is not None and image.size > 0:
+                images.append(image)
+        except Exception:
+            continue
+
+    if len(images) < 4:
+        return jsonify({"blink_detected": False, "reason": "not_enough_frames", "backend": "opencv"})
+
+    ref_gray = cv2.cvtColor(images[0], cv2.COLOR_BGR2GRAY)
+    ref_faces = face_cascade.detectMultiScale(ref_gray, 1.05, 4, minSize=(60, 60))
+    if len(ref_faces) == 0:
+        return jsonify({"blink_detected": False, "reason": "no_face_found", "backend": "opencv"})
+
+    rx, ry, rw, rh = max(ref_faces, key=lambda f: f[2] * f[3])
+
+    eye_bands = []
+    for image in images:
+        try:
+            ih, iw = image.shape[:2]
+            pad_x = int(0.1 * rw)
+            y1 = max(0, ry + int(rh * 0.2))
+            y2 = min(ih, ry + int(rh * 0.55))
+            x1 = max(0, rx + pad_x)
+            x2 = min(iw, rx + rw - pad_x)
+            eye_band = image[y1:y2, x1:x2]
+            if eye_band.size == 0 or eye_band.shape[0] < 5 or eye_band.shape[1] < 5:
+                continue
+            gray = cv2.cvtColor(eye_band, cv2.COLOR_BGR2GRAY)
+            resized = cv2.resize(gray, (100, 40))
+            eye_bands.append(resized)
+        except Exception:
+            continue
+
+    if len(eye_bands) < 3:
+        return jsonify({"blink_detected": False, "reason": "not_enough_bands", "backend": "opencv"})
+
+    variances = []
+    means = []
+    for band in eye_bands:
+        variances.append(float(np.var(band)))
+        means.append(float(np.mean(band)))
+
+    var_arr = np.array(variances)
+    mean_arr = np.array(means)
+
+    avg_var = float(np.mean(var_arr))
+    min_var = float(np.min(var_arr))
+    avg_mean = float(np.mean(mean_arr))
+    min_mean = float(np.min(mean_arr))
+
+    blink_detected = False
+    blink_method = None
+
+    if avg_var > 0:
+        var_drop = (avg_var - min_var) / avg_var
+        if var_drop > 0.15:
+            blink_detected = True
+            blink_method = "variance_drop"
+
+    if not blink_detected and avg_mean > 0:
+        mean_drop = (avg_mean - min_mean) / avg_mean
+        if mean_drop > 0.06:
+            blink_detected = True
+            blink_method = "brightness_drop"
+
+    return jsonify({
+        "blink_detected": blink_detected,
+        "valid_frames": len(eye_bands),
+        "variances": [round(v, 2) for v in variances],
+        "blink_method": blink_method,
+        "backend": "opencv",
+    })
 @app.route("/api/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "supabase_configured": supabase is not None})
+    return jsonify({
+        "status": "ok",
+        "supabase_configured": supabase is not None,
+        "mediapipe": HAS_MEDIAPIPE,
+    })
 
 
 if __name__ == "__main__":
