@@ -36,7 +36,10 @@ face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
 
-HIST_MATCH_THRESHOLD = 0.92
+FACE_MATCH_THRESHOLD = 0.72
+
+
+ENCODING_VERSION = 2
 
 
 def decode_image(image_b64):
@@ -72,61 +75,63 @@ def detect_and_crop_face(image):
     return face_roi
 
 
+def _normalize_face(face_img):
+    lab = cv2.cvtColor(face_img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+    lab = cv2.merge([l, a, b])
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
+
 def compute_face_encoding(face_img):
-    resized = cv2.resize(face_img, (100, 100))
-    hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
-    hist_h = cv2.calcHist([hsv], [0], None, [50], [0, 180])
-    hist_s = cv2.calcHist([hsv], [1], None, [60], [0, 256])
-    cv2.normalize(hist_h, hist_h, 0, 1, cv2.NORM_MINMAX)
-    cv2.normalize(hist_s, hist_s, 0, 1, cv2.NORM_MINMAX)
-    hist = np.concatenate([hist_h.flatten(), hist_s.flatten()])
-
+    normalized = _normalize_face(face_img)
+    resized = cv2.resize(normalized, (100, 100))
     gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-    lbp = compute_lbp(gray)
-    lbp_hist, _ = np.histogram(lbp.ravel(), bins=56, range=(0, 56), density=True)
 
-    encoding = np.concatenate([hist, lbp_hist])
-    return encoding.tolist()
+    blocks = []
+    for by in range(5):
+        for bx in range(5):
+            block = gray[by * 20:(by + 1) * 20, bx * 20:(bx + 1) * 20]
+            block = block.astype(np.float64)
+            blocks.append(float(np.mean(block)))
+            blocks.append(float(np.std(block)))
 
+    lab = cv2.cvtColor(resized, cv2.COLOR_BGR2LAB)
+    l_ch = lab[:, :, 0].astype(np.float64)
+    a_ch = lab[:, :, 1].astype(np.float64)
+    b_ch = lab[:, :, 2].astype(np.float64)
+    blocks.extend([float(np.mean(l_ch)), float(np.std(l_ch))])
+    blocks.extend([float(np.mean(a_ch)), float(np.std(a_ch))])
+    blocks.extend([float(np.mean(b_ch)), float(np.std(b_ch))])
 
-def compute_lbp(gray_img):
-    rows, cols = gray_img.shape
-    lbp = np.zeros((rows, cols), dtype=np.uint8)
-    for i in range(1, rows - 1):
-        for j in range(1, cols - 1):
-            center = gray_img[i, j]
-            code = 0
-            code |= (1 << 7) if gray_img[i - 1, j - 1] >= center else 0
-            code |= (1 << 6) if gray_img[i - 1, j] >= center else 0
-            code |= (1 << 5) if gray_img[i - 1, j + 1] >= center else 0
-            code |= (1 << 4) if gray_img[i, j + 1] >= center else 0
-            code |= (1 << 3) if gray_img[i + 1, j + 1] >= center else 0
-            code |= (1 << 2) if gray_img[i + 1, j] >= center else 0
-            code |= (1 << 1) if gray_img[i + 1, j - 1] >= center else 0
-            code |= (1 << 0) if gray_img[i, j - 1] >= center else 0
-            lbp[i, j] = code
-    return lbp
+    encoding = np.array(blocks, dtype=np.float64)
+    norm = np.linalg.norm(encoding)
+    if norm > 0:
+        encoding = encoding / norm
+    return {"v": ENCODING_VERSION, "d": encoding.tolist()}
 
 
 def compare_encodings(a, b):
-    a = np.array(a, dtype=np.float64)
-    b = np.array(b, dtype=np.float64)
-    hist_size = 50 + 60
-    a_hist = a[:hist_size]
-    b_hist = b[:hist_size]
-    a_lbp = a[hist_size:]
-    b_lbp = b[hist_size:]
-    hist_corr = cv2.compareHist(
-        a_hist.astype(np.float32),
-        b_hist.astype(np.float32),
-        cv2.HISTCMP_CORREL,
-    )
-    lbp_corr = cv2.compareHist(
-        a_lbp.astype(np.float32),
-        b_lbp.astype(np.float32),
-        cv2.HISTCMP_CORREL,
-    )
-    return 0.5 * hist_corr + 0.5 * lbp_corr
+    try:
+        if isinstance(a, dict) and isinstance(b, dict):
+            if a.get("v") != b.get("v"):
+                return 0.0
+            a_vec = np.array(a["d"], dtype=np.float64)
+            b_vec = np.array(b["d"], dtype=np.float64)
+        else:
+            return 0.0
+
+        if a_vec.shape != b_vec.shape or a_vec.shape[0] == 0:
+            return 0.0
+
+        norm_a = np.linalg.norm(a_vec)
+        norm_b = np.linalg.norm(b_vec)
+        if norm_a == 0 or norm_b == 0:
+            return 0.0
+        return float(np.dot(a_vec, b_vec) / (norm_a * norm_b))
+    except Exception:
+        return 0.0
 
 
 @app.route("/api/register-face", methods=["POST"])
@@ -170,6 +175,16 @@ def register_face():
                 "encoding": json.dumps(encoding),
             }).execute()
 
+        all_faces = supabase.table("face_embeddings").select("id, encoding").execute()
+        stale_ids = []
+        for row in (all_faces.data or []):
+            raw = row.get("encoding", "")
+            if isinstance(raw, str) and raw.startswith("["):
+                stale_ids.append(row["id"])
+        for sid in stale_ids:
+            supabase.table("face_embeddings").delete().eq("id", sid).execute()
+        print(f"[register] Saved encoding for {email}, cleaned {len(stale_ids)} old-format rows")
+
         return jsonify({"success": True, "message": "Face registered successfully"})
     except Exception as e:
         traceback.print_exc()
@@ -203,14 +218,18 @@ def recognize_face():
             return jsonify({"error": "No registered faces found"}), 404
 
         best_match_email = None
-        best_score = HIST_MATCH_THRESHOLD
+        best_score = FACE_MATCH_THRESHOLD
+        all_scores = []
 
         for row in result.data:
             stored = json.loads(row["encoding"])
             score = compare_encodings(encoding, stored)
+            all_scores.append({"email": row["email"], "score": round(score, 4)})
             if score > best_score:
                 best_score = score
                 best_match_email = row["email"]
+
+        print(f"[recognize] Scores: {all_scores}")
 
         if best_match_email:
             return jsonify({
@@ -427,6 +446,55 @@ def health():
         "supabase_configured": supabase is not None,
         "mediapipe": HAS_MEDIAPIPE,
     })
+
+
+@app.route("/api/admin/face-data", methods=["GET"])
+def list_face_data():
+    try:
+        if not supabase:
+            return jsonify({"error": "Backend not configured"}), 500
+
+        result = supabase.table("face_embeddings").select("id, user_id, email, encoding").execute()
+        rows = result.data or []
+
+        face_data = []
+        for row in rows:
+            enc_raw = row.get("encoding", "{}")
+            if isinstance(enc_raw, str):
+                enc = json.loads(enc_raw)
+            else:
+                enc = enc_raw
+            if isinstance(enc, dict):
+                dim = len(enc.get("d", []))
+                version = enc.get("v", 0)
+            else:
+                dim = 0
+                version = 0
+            face_data.append({
+                "id": row.get("id"),
+                "user_id": row.get("user_id"),
+                "email": row.get("email"),
+                "encoding_version": version,
+                "encoding_length": dim,
+            })
+
+        return jsonify({"success": True, "faces": face_data, "total": len(face_data)})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/admin/face-data/<face_id>", methods=["DELETE"])
+def delete_face_data(face_id):
+    try:
+        if not supabase:
+            return jsonify({"error": "Backend not configured"}), 500
+
+        supabase.table("face_embeddings").delete().eq("id", face_id).execute()
+        return jsonify({"success": True, "message": "Face data deleted"})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

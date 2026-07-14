@@ -154,6 +154,7 @@ const AdminAIBasicLimit = lazy(() => import('./pages/AdminAIBasicLimit'));
 const AdminAILimitIncreaser = lazy(() => import('./pages/AdminAILimitIncreaser'));
 const AdminTriedToRegister = lazy(() => import('./pages/AdminTriedToRegister'));
 const AdminUserTools = lazy(() => import('./pages/AdminUserTools'));
+const AdminFaceData = lazy(() => import('./pages/AdminFaceData'));
 const AdminErrorLogs = lazy(() => import('./pages/AdminErrorLogs'));
 const LearnWithAI = lazy(() => import('./pages/LearnWithAI'));
 const AIInterviewPrep = lazy(() => import('./pages/AIInterviewPrep'));
@@ -582,6 +583,7 @@ function App() {
           <Route path="admin/login-otp" element={<AdminRoute><AdminLoginOtpSettings /></AdminRoute>} />
           <Route path="admin/tried-to-register" element={<AdminRoute><AdminTriedToRegister /></AdminRoute>} />
           <Route path="admin/user-tools" element={<AdminRoute><AdminUserTools /></AdminRoute>} />
+          <Route path="admin/face-data" element={<AdminRoute><AdminFaceData /></AdminRoute>} />
           <Route path="admin/mfa-rules" element={<AdminRoute><RequireSensitiveAdminMFA><AdminMFARules /></RequireSensitiveAdminMFA></AdminRoute>} />
           <Route path="admin/multi-session-alerts" element={<AdminRoute><AdminMultiSessionAlerts /></AdminRoute>} />
           <Route path="admin/deleted-accounts" element={<AdminRoute><AdminDeletedAccounts /></AdminRoute>} />

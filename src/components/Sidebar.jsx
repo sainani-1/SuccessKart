@@ -1343,6 +1343,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <ShieldCheck size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">MFA Rules</span>}
             </NavLink>
+            <NavLink to="/app/admin/face-data" className={navItemClass} title="Face Data">
+              <ScanFace size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Face Data</span>}
+            </NavLink>
             <NavLink to="/app/admin/deleted-accounts" className={navItemClass} title="Deleted Accounts">
               <Trash2 size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Deleted Accounts</span>}
