@@ -5,6 +5,11 @@ import { usePresenceContext } from '../context/PresenceContext';
 import { MessageCircle, Send, Search } from 'lucide-react';
 import { getChatReadTimes, markChatAsRead } from '../utils/chatReadState';
 import { logError } from '../utils/errorLogger';
+import {
+  getGroupKeyForUser,
+  encryptMessage,
+  decryptMessages,
+} from '../utils/chatCrypto';
 
 const ClearDoubts = () => {
   const { profile } = useAuth();
@@ -21,6 +26,7 @@ const ClearDoubts = () => {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [otherUserId, setOtherUserId] = useState(null);
+  const [groupKeys, setGroupKeys] = useState({});
   const scrollPositionsRef = useRef({});
   const savePosTimeoutRef = useRef(null);
   const autoLoadRef = useRef(0);
@@ -165,7 +171,13 @@ const ClearDoubts = () => {
         .eq('group_id', groupId)
         .order('created_at', { ascending: false })
         .limit(8);
-      setChatMessages((messages || []).reverse());
+      let loaded = (messages || []).reverse();
+      const key = groupKeys[groupId] || await getGroupKeyForUser(groupId, profile.id);
+      if (key) {
+        if (!groupKeys[groupId]) setGroupKeys(prev => ({ ...prev, [groupId]: key }));
+        loaded = await decryptMessages(loaded, key);
+      }
+      setChatMessages(loaded);
       setHasMoreOldMessages((messages || []).length === 8);
       if (markAsReadFlag) await markChatAsRead(profile.id, groupId);
       await loadReceiverReadState(groupId);
@@ -185,7 +197,12 @@ const ClearDoubts = () => {
         .gt('id', latest.id)
         .order('created_at', { ascending: true });
       if (messages?.length) {
-        setChatMessages(prev => [...prev, ...messages]);
+        let newMsgs = messages;
+        const key = groupKeys[selectedChat.id];
+        if (key) {
+          newMsgs = await decryptMessages(messages, key);
+        }
+        setChatMessages(prev => [...prev, ...newMsgs]);
       }
       await markChatAsRead(profile.id, selectedChat.id);
     } catch (err) { logError({ message: 'Error refreshing messages:', source: 'ClearDoubts', details: err }); }
@@ -204,7 +221,12 @@ const ClearDoubts = () => {
         .order('created_at', { ascending: false })
         .limit(20);
       if (messages?.length) {
-        setChatMessages(prev => [...messages.reverse(), ...prev]);
+        let older = messages.reverse();
+        const key = groupKeys[selectedChat.id];
+        if (key) {
+          older = await decryptMessages(older, key);
+        }
+        setChatMessages(prev => [...older, ...prev]);
         if (messages.length < 20) setHasMoreOldMessages(false);
       } else {
         setHasMoreOldMessages(false);
@@ -274,7 +296,9 @@ const ClearDoubts = () => {
     if (selectedChat?.id) delete scrollPositionsRef.current[selectedChat.id];
     scrollToBottom();
     try {
-      const { data } = await supabase.from('chat_messages').insert({ group_id: selectedChat.id, sender_id: profile.id, content }).select();
+      const key = groupKeys[selectedChat.id];
+      const encryptedContent = key ? await encryptMessage(content, key) : content;
+      const { data } = await supabase.from('chat_messages').insert({ group_id: selectedChat.id, sender_id: profile.id, content: encryptedContent }).select();
       if (data?.[0]) {
         setChatMessages(prev => prev.map(m => m.id === tempId ? { ...data[0], sender: m.sender } : m));
       }
@@ -396,6 +420,10 @@ const ClearDoubts = () => {
                   ) : (
                     <span className="text-slate-400">Offline</span>
                   )}
+                </p>
+                <p className="text-[9px] text-green-600 flex items-center gap-0.5 mt-0.5">
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  End-to-end encrypted
                 </p>
               </div>
             </div>

@@ -1,14 +1,13 @@
 services:
   - type: web
     name: sucesskart-face-backend
-    runtime: python
+    runtime: docker
     rootDir: face-backend
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install --prefer-binary -r requirements.txt && (pip install --prefer-binary dlib face_recognition || echo "dlib install failed, using fallback encoding")
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    dockerfilePath: Dockerfile
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: PORT
+        value: 8080

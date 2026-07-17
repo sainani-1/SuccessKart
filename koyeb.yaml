@@ -1,0 +1,17 @@
+services:
+  face-backend:
+    type: web
+    dockerfile: face-backend/Dockerfile
+    context: face-backend
+    instance_type: nano
+    ports:
+      - port: 8080
+        protocol: http
+    env:
+      - key: SUPABASE_URL
+        value: ""
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: ""
+    healthcheck:
+      path: /api/health
+      port: 8080

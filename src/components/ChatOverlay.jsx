@@ -5,6 +5,13 @@ import { useChatOverlay } from '../context/ChatOverlayContext';
 import { markChatAsRead } from '../utils/chatReadState';
 import { Send, MessageCircle, X } from 'lucide-react';
 import { logError } from '../utils/errorLogger';
+import {
+  createGroupEncryptionKey,
+  getGroupKeyForUser,
+  encryptMessage,
+  decryptMessage,
+  isEncryptedContent,
+} from '../utils/chatCrypto';
 
 const ChatOverlay = () => {
   const { overlayChat, closeChat } = useChatOverlay();
@@ -12,6 +19,7 @@ const ChatOverlay = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [groupId, setGroupId] = useState(null);
+  const [groupKey, setGroupKey] = useState(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
@@ -24,6 +32,10 @@ const ChatOverlay = () => {
 
   useEffect(() => {
     if (!groupId) return;
+    (async () => {
+      const key = await getGroupKeyForUser(groupId, profile.id);
+      setGroupKey(key);
+    })();
     const subscription = supabase
       .channel(`chat_overlay:${groupId}`)
       .on('postgres_changes', {
@@ -37,7 +49,11 @@ const ChatOverlay = () => {
           .select('*, sender:profiles(full_name, avatar_url)')
           .eq('id', payload.new.id)
           .maybeSingle();
-        setMessages(prev => prev.some(m => m.id === payload.new.id) ? prev : [...prev, data || payload.new]);
+        const msg = data || payload.new;
+        if (groupKey && isEncryptedContent(msg.content)) {
+          msg.content = await decryptMessage(msg.content, groupKey);
+        }
+        setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
         scrollToBottom();
         void markChatAsRead(profile?.id, groupId);
       })
@@ -80,17 +96,29 @@ const ChatOverlay = () => {
             { group_id: group.id, user_id: profile.id },
             { group_id: group.id, user_id: overlayChat.userId }
           ]);
+          await createGroupEncryptionKey(group.id, [profile.id, overlayChat.userId]);
           gid = group.id;
         }
       }
       if (gid) {
         setGroupId(gid);
+        const key = await getGroupKeyForUser(gid, profile.id);
+        setGroupKey(key);
         const { data } = await supabase
           .from('chat_messages')
           .select('*, sender:profiles(full_name, avatar_url)')
           .eq('group_id', gid)
           .order('created_at', { ascending: true });
-        setMessages(data || []);
+        let loaded = data || [];
+        if (key) {
+          loaded = await Promise.all(loaded.map(async m => {
+            if (isEncryptedContent(m.content)) {
+              return { ...m, content: await decryptMessage(m.content, key) };
+            }
+            return m;
+          }));
+        }
+        setMessages(loaded);
         void markChatAsRead(profile.id, gid);
       }
     } catch (err) {
@@ -108,10 +136,14 @@ const ChatOverlay = () => {
       sender: { full_name: profile.full_name, avatar_url: profile.avatar_url }
     }]);
     setNewMessage('');
+    const encryptedContent = groupKey ? await encryptMessage(content, groupKey) : content;
     const { data } = await supabase.from('chat_messages').insert({
-      group_id: groupId, sender_id: profile.id, content
+      group_id: groupId, sender_id: profile.id, content: encryptedContent
     }).select('*, sender:profiles(full_name, avatar_url)').single();
     if (data) {
+      if (groupKey && isEncryptedContent(data.content)) {
+        data.content = await decryptMessage(data.content, groupKey);
+      }
       setMessages(prev => prev.map(m => m.id === tempId ? data : m));
       void markChatAsRead(profile.id, groupId);
     } else {
@@ -136,6 +168,10 @@ const ChatOverlay = () => {
               <div>
                 <h3 className="font-semibold text-sm text-slate-800">{overlayChat.userName}</h3>
                 <p className="text-[10px] text-slate-400">Online</p>
+                <p className="text-[9px] text-green-600 flex items-center gap-0.5 mt-0.5">
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  End-to-end encrypted
+                </p>
               </div>
             </div>
             <button onClick={closeChat} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">

@@ -7,6 +7,12 @@ import { MessageCircle, Shield, Users, BookOpen, Calendar, UserCheck } from 'luc
 import { useAuth } from '../context/AuthContext';
 import { isLifetimePremium, formatPremiumLabel } from '../utils/premium';
 import { ensureUsernameForUser, ensureUsernamesForUsers } from '../utils/usernames';
+import {
+  getGroupKeyAsAdmin,
+  encryptMessage,
+  decryptMessages,
+  isEncryptedContent,
+} from '../utils/chatCrypto';
 
 const ROLE_OPTIONS = [
   { value: 'student', label: 'Students' },
@@ -19,7 +25,7 @@ const ADMIN_USER_ACCESS_TARGET_KEY = 'admin_user_access_target';
 
 const AdminUserAccess = () => {
   const navigate = useNavigate();
-  const { startImpersonation } = useAuth();
+  const { startImpersonation, profile } = useAuth();
   const { userId } = useParams();
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -208,16 +214,34 @@ const AdminUserAccess = () => {
 
       setChatMembersByGroup(membersMap);
 
+      const decryptedMessages = [];
+      for (const message of (messages || [])) {
+        if (isEncryptedContent(message.content) && membersMap[message.group_id]?.length > 0) {
+          const adminUserId = profile?.id;
+          if (adminUserId) {
+            try {
+              const key = await getGroupKeyAsAdmin(message.group_id, adminUserId);
+              if (key) {
+                const plain = await decryptMessages([message], key);
+                decryptedMessages.push(plain[0]);
+                continue;
+              }
+            } catch {}
+          }
+        }
+        decryptedMessages.push(message);
+      }
+
       const nextGroups = (groups || []).map((group) => ({
         ...group,
-        latestMessage: latestByGroup[group.id] || null,
-        messageCount: (messages || []).filter((message) => message.group_id === group.id).length,
+        latestMessage: latestByGroup[group.id] ? decryptedMessages.find(m => m.group_id === group.id && m.id === latestByGroup[group.id]?.id) || latestByGroup[group.id] : null,
+        messageCount: decryptedMessages.filter((message) => message.group_id === group.id).length,
         members: membersMap[group.id] || [],
       }));
       setChatGroups(nextGroups);
       if (nextGroups[0]?.id) {
         setSelectedGroupId(nextGroups[0].id);
-        setChatMessages((messages || []).filter((message) => message.group_id === nextGroups[0].id).reverse());
+        setChatMessages(decryptedMessages.filter((message) => message.group_id === nextGroups[0].id).reverse());
       }
     } catch (err) {
       setError(err.message || 'Failed to load user access data.');
@@ -250,7 +274,17 @@ const AdminUserAccess = () => {
       setError(messagesError.message || 'Failed to load chat messages.');
       return;
     }
-    setChatMessages(data || []);
+    let loaded = data || [];
+    const adminUserId = profile?.id;
+    if (adminUserId && loaded.some(m => isEncryptedContent(m.content))) {
+      try {
+        const key = await getGroupKeyAsAdmin(groupId, adminUserId);
+        if (key) {
+          loaded = await decryptMessages(loaded, key);
+        }
+      } catch {}
+    }
+    setChatMessages(loaded);
   };
 
   const handleSendAdminMessage = async () => {
@@ -269,12 +303,20 @@ const AdminUserAccess = () => {
         throw new Error('Admin session not found. Please sign in again.');
       }
 
+      let encryptedContent = content;
+      try {
+        const key = await getGroupKeyAsAdmin(selectedGroupId, user.id);
+        if (key) {
+          encryptedContent = await encryptMessage(content, key);
+        }
+      } catch {}
+
       const { data: insertedMessage, error: insertError } = await supabase
         .from('chat_messages')
         .insert({
           group_id: selectedGroupId,
           sender_id: user.id,
-          content,
+          content: encryptedContent,
         })
         .select('id, group_id, content, created_at, sender_id, sender:profiles(full_name, email)')
         .single();

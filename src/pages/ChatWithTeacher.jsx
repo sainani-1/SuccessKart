@@ -7,6 +7,14 @@ import { markChatAsRead } from '../utils/chatReadState';
 import { usePresenceContext } from '../context/PresenceContext';
 import { buildPlanCheckoutPath } from '../utils/planCheckout';
 import { logError } from '../utils/errorLogger';
+import {
+  createGroupEncryptionKey,
+  getGroupKeyForUser,
+  encryptMessage,
+  decryptMessage,
+  decryptMessages,
+  isEncryptedContent,
+} from '../utils/chatCrypto';
 
 const ChatWithTeacher = () => {
   const ADMIN_USER_ACCESS_TARGET_KEY = 'admin_user_access_target';
@@ -15,6 +23,7 @@ const ChatWithTeacher = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [groupId, setGroupId] = useState(null);
+  const [groupKey, setGroupKey] = useState(null);
   const [teacher, setTeacher] = useState(null);
   const [error, setError] = useState(null);
   const [receiverReadAt, setReceiverReadAt] = useState(null);
@@ -59,6 +68,11 @@ const ChatWithTeacher = () => {
     if (!groupId) return;
     loadMessagesRef.current?.();
 
+    (async () => {
+      const key = await getGroupKeyForUser(groupId, profile.id);
+      setGroupKey(key);
+    })();
+
     const channel = supabase
       .channel(`chat-messages-${groupId}`)
       .on('postgres_changes',
@@ -70,6 +84,10 @@ const ChatWithTeacher = () => {
             .eq('id', payload.new.id)
             .single();
           if (data) {
+            const currentKey = groupKey || await getGroupKeyForUser(groupId, profile.id);
+            if (currentKey && isEncryptedContent(data.content)) {
+              data.content = await decryptMessage(data.content, currentKey);
+            }
             setMessages(prev => [...prev, data]);
             await markChatAsRead(profile.id, groupId);
           }
@@ -136,6 +154,7 @@ const ChatWithTeacher = () => {
             { group_id: newGroup.id, user_id: profile.id },
             { group_id: newGroup.id, user_id: profile.assigned_teacher_id }
           ]);
+          await createGroupEncryptionKey(newGroup.id, [profile.id, profile.assigned_teacher_id]);
           groupIdToUse = newGroup.id;
         }
       }
@@ -170,7 +189,13 @@ const ChatWithTeacher = () => {
         .select('*, profiles(full_name, avatar_url)')
         .eq('group_id', groupId)
         .order('created_at', { ascending: true });
-      setMessages(data || []);
+      let loaded = data || [];
+      const key = groupKey || await getGroupKeyForUser(groupId, profile.id);
+      if (key) {
+        loaded = await decryptMessages(loaded, key);
+        if (!groupKey) setGroupKey(key);
+      }
+      setMessages(loaded);
       await markChatAsRead(profile.id, groupId);
       await loadReceiverReadState(groupId);
     } catch (err) { logError({ message: 'Error loading messages:', source: 'ChatWithTeacher', details: err }); }
@@ -190,7 +215,11 @@ const ChatWithTeacher = () => {
         .gt('id', latest.id)
         .order('created_at', { ascending: true });
       if (data?.length) {
-        setMessages(prev => [...prev, ...data]);
+        let newMsgs = data;
+        if (groupKey) {
+          newMsgs = await decryptMessages(data, groupKey);
+        }
+        setMessages(prev => [...prev, ...newMsgs]);
       }
       await markChatAsRead(profile.id, groupId);
     } catch (err) { logError({ message: 'Error refreshing messages:', source: 'ChatWithTeacher', details: err }); }
@@ -209,7 +238,11 @@ const ChatWithTeacher = () => {
         .order('created_at', { ascending: false })
         .limit(20);
       if (data?.length) {
-        setMessages(prev => [...data.reverse(), ...prev]);
+        let older = data.reverse();
+        if (groupKey) {
+          older = await decryptMessages(older, groupKey);
+        }
+        setMessages(prev => [...older, ...prev]);
         if (data.length < 20) setHasMoreOldMessages(false);
       } else {
         setHasMoreOldMessages(false);
@@ -242,7 +275,8 @@ const ChatWithTeacher = () => {
     scrollToBottom();
     setError(null);
     try {
-      const { data } = await supabase.from('chat_messages').insert({ group_id: groupId, sender_id: profile.id, content }).select();
+      const encryptedContent = groupKey ? await encryptMessage(content, groupKey) : content;
+      const { data } = await supabase.from('chat_messages').insert({ group_id: groupId, sender_id: profile.id, content: encryptedContent }).select();
       if (data?.[0]) {
         setMessages(prev => prev.map(m => m.id === tempId ? { ...data[0], profiles: m.profiles } : m));
       }
@@ -318,6 +352,10 @@ const ChatWithTeacher = () => {
               ) : (
                 <span className="text-slate-400">Offline</span>
               )}
+            </p>
+            <p className="text-[9px] text-green-600 flex items-center gap-0.5 mt-0.5">
+              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              End-to-end encrypted
             </p>
           </div>
         </div>
