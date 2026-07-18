@@ -96,7 +96,7 @@ const Login = () => {
     canvas.height = h;
     const ctx = canvas.getContext('2d');
 
-    const frameCount = 15;
+    const frameCount = 20;
     const brightnesses = [];
     for (let i = 0; i < frameCount; i++) {
       ctx.drawImage(video, 0, 0, w, h);
@@ -112,18 +112,20 @@ const Login = () => {
       if (i < frameCount - 1) await new Promise(r => setTimeout(r, 120));
     }
 
-    const third = Math.floor(frameCount / 3);
-    const firstThird = brightnesses.slice(0, third);
-    const lastThird = brightnesses.slice(-third);
-    const baseline = (firstThird.reduce((a, b) => a + b, 0) / firstThird.length +
-      lastThird.reduce((a, b) => a + b, 0) / lastThird.length) / 2;
+    const sorted = [...brightnesses].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    const closedFrames = brightnesses.filter(b => b < median * 0.97);
+    const openFrames = brightnesses.filter(b => b >= median * 0.97);
 
-    const minBrightness = Math.min(...brightnesses);
-    const minIdx = brightnesses.indexOf(minBrightness);
-    const drop = (baseline - minBrightness) / baseline;
-    const hasDip = drop > 0.005;
+    let foundPattern = false;
+    if (closedFrames.length >= 1 && openFrames.length >= 2) {
+      const minIdx = brightnesses.indexOf(Math.min(...brightnesses));
+      const hasOpenBefore = brightnesses.slice(0, minIdx).some(b => b >= median * 0.97);
+      const hasOpenAfter = brightnesses.slice(minIdx + 1).some(b => b >= median * 0.97);
+      foundPattern = hasOpenBefore && hasOpenAfter;
+    }
 
-    return { detected: hasDip, drop, min: minBrightness, baseline };
+    return { detected: foundPattern, brightnesses, median };
   };
 
   const handleFaceScan = async () => {
