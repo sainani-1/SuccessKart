@@ -88,6 +88,35 @@ const Login = () => {
     setFaceCameraReady(false);
   };
 
+  const detectBlinkClientSide = async (video) => {
+    const canvas = document.createElement('canvas');
+    const w = 160;
+    const h = 120;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    const frameCount = 20;
+    const brightnesses = [];
+    for (let i = 0; i < frameCount; i++) {
+      ctx.drawImage(video, 0, 0, w, h);
+      const data = ctx.getImageData(0, Math.floor(h * 0.3), w, Math.floor(h * 0.35)).data;
+      let sum = 0;
+      for (let j = 0; j < data.length; j += 4) {
+        sum += data[j] * 0.299 + data[j + 1] * 0.587 + data[j + 2] * 0.114;
+      }
+      brightnesses.push(sum / (data.length / 4));
+      if (i < frameCount - 1) await new Promise(r => setTimeout(r, 150));
+    }
+    const avg = brightnesses.reduce((a, b) => a + b, 0) / brightnesses.length;
+    const min = Math.min(...brightnesses);
+    const drop = (avg - min) / avg;
+    const minIdx = brightnesses.indexOf(min);
+    const isDip = minIdx > 0 && minIdx < brightnesses.length - 1 &&
+      brightnesses[minIdx - 1] > min && brightnesses[minIdx + 1] > min;
+    return { detected: drop > 0.02 && isDip, drop, min, avg };
+  };
+
   const handleFaceScan = async () => {
     if (!faceVideoRef.current || !faceCameraReady) return;
     setFaceLoading('Capturing frames...');
@@ -95,9 +124,17 @@ const Login = () => {
 
     try {
       const video = faceVideoRef.current;
+
+      setFaceLoading('Checking for blink...');
+      const clientBlink = await detectBlinkClientSide(video);
+      if (!clientBlink.detected) {
+        setFaceError('Blink not detected. Please blink your eyes clearly and try again.');
+        setFaceLoading('');
+        return;
+      }
+
       const frameCount = 20;
       const frames = [];
-
       for (let i = 0; i < frameCount; i++) {
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
@@ -105,27 +142,8 @@ const Login = () => {
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
         frames.push(canvas.toDataURL('image/jpeg', 0.85));
         if (i < frameCount - 1) {
-          await new Promise(r => setTimeout(r, 150));
+          await new Promise(r => setTimeout(r, 100));
         }
-      }
-
-      setFaceLoading('Checking for blink...');
-      const blinkRes = await withTimeout(
-        fetch(`${faceBackendUrl}/api/detect-blink`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ frames }),
-        }),
-        { ok: false, json: async () => ({ error: 'Backend timeout' }) },
-        10000
-      );
-      const blinkData = await blinkRes.json();
-      if (!blinkRes.ok) throw new Error(blinkData.error || 'Blink detection failed');
-
-      if (!blinkData.blink_detected) {
-        setFaceError('Blink not detected. Please blink your eyes clearly and try again.');
-        setFaceLoading('');
-        return;
       }
 
       setFaceLoading('Recognizing face...');
