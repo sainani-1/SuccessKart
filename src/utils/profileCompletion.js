@@ -2,6 +2,7 @@ export const getProfileCompletionIssues = (profile) => {
   if (!profile) return ['profile'];
 
   const issues = [];
+  if (!String(profile.username || '').trim()) issues.push('username');
   if (!String(profile.full_name || '').trim()) issues.push('full_name');
   if (!String(profile.phone || '').trim()) issues.push('phone');
 

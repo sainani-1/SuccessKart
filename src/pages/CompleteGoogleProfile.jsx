@@ -147,7 +147,7 @@ const CompleteGoogleProfile = () => {
 
       setFormData((prev) => ({
         ...prev,
-        username: prev.username || authProfile?.username || '',
+        username: prev.username || authProfile?.username || profile?.username || '',
         fullName: prev.fullName || profile?.full_name || meta.full_name || meta.name || '',
         phoneCountry: prev.phone ? prev.phoneCountry : parsedPhone.countryCode,
         phone: prev.phone || parsedPhone.phone,
@@ -156,6 +156,22 @@ const CompleteGoogleProfile = () => {
         diploma: prev.diploma || profile?.diploma_certificate || meta.diploma_certificate || '',
         termsAccepted: prev.termsAccepted || Boolean(profile?.terms_accepted || meta.terms_accepted)
       }));
+
+      const role = profile?.role || meta.role || 'student';
+      const visible = [0];
+      if (!String(profile?.username || authProfile?.username || meta.username || '').trim()) visible.push(1);
+      if (!String(profile?.full_name || meta.full_name || meta.name || '').trim()) visible.push(2);
+      if (!String(profile?.phone || meta.phone || '').trim()) visible.push(3);
+      visible.push(4);
+      if (role === 'student') {
+        const hasEdu = String(profile?.education_level || meta.education_level || '').trim();
+        const hasStream = String(profile?.study_stream || meta.study_stream || profile?.core_subject || meta.core_subject || '').trim();
+        if (!hasEdu || !hasStream) visible.push(5);
+      }
+      visible.push(6);
+      if (profile?.auth_provider === 'google' || profile?.google_profile_completed === false) visible.push(7);
+      visible.push(8);
+      setVisibleSteps(visible);
     };
     hydrateFromSession();
   }, [user, authProfile?.username, navigate]);
@@ -230,32 +246,30 @@ const CompleteGoogleProfile = () => {
         setErrors({ phone: 'This phone number is already registered. Try a different number.' });
         return;
       }
+      const currentIdx = visibleSteps.indexOf(step);
       setDirection('forward');
-      setStep((s) => s + 1);
+      setStep(visibleSteps[currentIdx + 1]);
       setErrors({});
       return;
     }
     const errs = validateStep(step);
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
+    const currentIdx = visibleSteps.indexOf(step);
     setDirection('forward');
-    setStep((s) => s + 1);
+    setStep(visibleSteps[currentIdx + 1]);
     setErrors({});
   };
 
   const goBack = () => {
+    const currentIdx = visibleSteps.indexOf(step);
     setDirection('backward');
-    setStep((s) => s - 1);
+    setStep(visibleSteps[currentIdx - 1]);
     setErrors({});
   };
 
   const studentSteps = profileRole === 'student';
-  const steps = useMemo(() => {
-    const base = [0, 1, 2, 3, 4];
-    if (studentSteps) base.push(5);
-    base.push(6, 7, 8);
-    return base;
-  }, [studentSteps]);
+  const [visibleSteps, setVisibleSteps] = useState([0, 8]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -360,12 +374,14 @@ const CompleteGoogleProfile = () => {
     }
   };
 
-  const progressPercent = step === 0 ? 0 : Math.round((step / (steps.length - 1)) * 100);
+  const progressPercent = step === 0 ? 0 : Math.round((currentStepIdx / (visibleSteps.length - 1)) * 100);
 
   const renderStep = () => {
     const animClass = direction === 'forward' ? 'animate-slide-in-right' : 'animate-slide-in-left';
 
     if (step === 0) {
+      const fieldLabels = { 1: 'Username', 2: 'Full Name', 3: 'Phone', 4: 'Password', 5: 'Education', 6: 'Photo', 7: 'Terms' };
+      const neededFields = visibleSteps.filter((s) => s > 0 && s < 8).map((s) => fieldLabels[s]).filter(Boolean);
       return (
         <div key="welcome" className={`space-y-6 ${animClass}`}>
           <div className="text-center">
@@ -374,24 +390,27 @@ const CompleteGoogleProfile = () => {
             </div>
             <h2 className="text-2xl font-bold text-slate-900">Welcome!</h2>
             <p className="text-slate-500 mt-2 text-sm leading-relaxed">
-              Let's set up your profile with just a few details.
-              You'll be done in under a minute.
+              {neededFields.length <= 2
+                ? "Almost there! Just a couple more details needed."
+                : "Let's set up your profile with just a few details. You'll be done in under a minute."}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {['Username', 'Full Name', 'Phone', 'Password', 'Education', 'Photo'].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 rounded-xl text-sm text-slate-600">
-                <ChevronRight size={14} className="text-blue-500 shrink-0" />
-                {item}
-              </div>
-            ))}
-          </div>
+          {neededFields.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              {neededFields.map((item, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 rounded-xl text-sm text-slate-600">
+                  <ChevronRight size={14} className="text-blue-500 shrink-0" />
+                  {item}
+                </div>
+              ))}
+            </div>
+          )}
           <button
             type="button"
             onClick={goNext}
             className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
           >
-            Get Started
+            {neededFields.length <= 2 ? 'Continue' : 'Get Started'}
           </button>
         </div>
       );
@@ -708,9 +727,10 @@ const CompleteGoogleProfile = () => {
     return null;
   };
 
-  const currentStepObj = steps.indexOf(step) >= 0 ? STEPS[steps.indexOf(step)] : STEPS[steps[0]];
-  const isFirst = step === 0;
-  const isLast = (studentSteps ? step === 8 : step === 7);
+  const currentStepObj = visibleSteps.indexOf(step) >= 0 ? STEPS[step] : STEPS[visibleSteps[0]];
+  const isFirst = step === visibleSteps[0];
+  const isLast = step === visibleSteps[visibleSteps.length - 1];
+  const currentStepIdx = visibleSteps.indexOf(step);
   const showNextCheck = !isLast && step > 0 && canProceed(step);
 
   return (
@@ -737,11 +757,11 @@ const CompleteGoogleProfile = () => {
         </div>
 
         {/* Progress bar */}
-        {step > 0 && step < (studentSteps ? 8 : 7) && (
+        {step > 0 && !isLast && (
           <div className="mb-6">
             <div className="flex justify-between text-xs text-slate-500 mb-1.5">
-              <span>{STEPS[steps.indexOf(step)]?.label || ''}</span>
-              <span>{Math.round((step / (steps.length - 1)) * 100)}%</span>
+              <span>{STEPS[step]?.label || ''}</span>
+              <span>{progressPercent}%</span>
             </div>
             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
@@ -759,7 +779,7 @@ const CompleteGoogleProfile = () => {
           {/* Navigation buttons (not on welcome, submit, or last review) */}
           {step > 0 && !isLast && (
             <div className="flex gap-3 mt-6">
-              {step > 1 && (
+              {currentStepIdx > 0 && (
                 <button
                   type="button"
                   onClick={goBack}
@@ -773,7 +793,7 @@ const CompleteGoogleProfile = () => {
                 type={isLast ? 'submit' : 'button'}
                 onClick={isLast ? undefined : goNext}
                 disabled={checkingPhone}
-                className={`${step > 1 ? 'flex-1' : 'w-full'} py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed`}
+                className={`${currentStepIdx > 0 ? 'flex-1' : 'w-full'} py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed`}
               >
                 {checkingPhone ? 'Checking...' : isLast ? 'Finish' : 'Continue'}
                 {!checkingPhone && !isLast && <ArrowRight size={16} />}

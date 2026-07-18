@@ -111,7 +111,7 @@ const RegisterAdmin = () => {
       setAlertModal({
         show: true,
         title: 'Success',
-        message: 'Admin registered successfully! Please check your email to confirm your account.',
+        message: 'Admin registered successfully! Please check your email inbox to confirm your account. If you don\'t see it, check your spam/junk folder.',
         type: 'success'
       });
       setTimeout(() => navigate('/login'), 2500);

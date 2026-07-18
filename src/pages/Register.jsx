@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { logWarn } from '../utils/errorLogger';
 import { countryPhoneOptions, digitsOnly, formatPhone, getCountryPhoneOption, validatePhoneNumber } from '../utils/phoneValidation';
 import { detectFace } from '../utils/detectFace';
+import { updateUsernameForUser } from '../utils/usernames';
 
 const Register = () => {
   const { user, loading: authLoading } = useAuth();
@@ -22,6 +23,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    username: '',
     fullName: '',
     phone: '',
     phoneCountry: '+91',
@@ -188,6 +190,9 @@ const Register = () => {
     const stepErrors = {};
 
     if (step === 1) {
+      if (!formData.username.trim()) stepErrors.username = 'Username is required';
+      else if (formData.username.trim().length < 6) stepErrors.username = 'Username must be at least 6 characters';
+      else if (!/^[a-zA-Z0-9_]+$/.test(formData.username.trim())) stepErrors.username = 'Username can only contain letters, numbers, and underscores';
       if (!formData.fullName.trim()) stepErrors.fullName = 'Full name is required';
       const phoneError = validatePhoneNumber({ countryCode: formData.phoneCountry, phone: formData.phone });
       if (phoneError) stepErrors.phone = phoneError;
@@ -221,6 +226,10 @@ const Register = () => {
 
   const validateForm = () => {
     const newErrors = {};
+
+    if (!formData.username.trim()) newErrors.username = 'Username is required';
+    else if (formData.username.trim().length < 6) newErrors.username = 'Username must be at least 6 characters';
+    else if (!/^[a-zA-Z0-9_]+$/.test(formData.username.trim())) newErrors.username = 'Username can only contain letters, numbers, and underscores';
 
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Full name is required';
@@ -326,6 +335,7 @@ const Register = () => {
         options: {
           emailRedirectTo: `${window.location.origin}/login?confirmed=true`,
           data: {
+            username: formData.username.trim(),
             full_name: formData.fullName.trim(),
             phone: formattedPhone,
             terms_accepted: true,
@@ -377,6 +387,7 @@ const Register = () => {
       const { error: profileError } = await supabase.from('profiles').upsert([{
         id: user.id,
         auth_user_id: user.id,
+        username: formData.username.trim(),
         full_name: formData.fullName.trim(),
         email: formData.email.trim(),
         phone: formattedPhone,
@@ -397,6 +408,12 @@ const Register = () => {
       }
 
       try {
+        await updateUsernameForUser({ userId: user.id, username: formData.username.trim() });
+      } catch (usernameError) {
+        logWarn({ message: 'Username registration warning:', source: 'Register', details: usernameError.message || usernameError });
+      }
+
+      try {
         await attachPendingReferral(user.id, formData.email.trim());
       } catch (referralError) {
         logWarn({ message: 'Referral attach failed:', source: 'Register', details: referralError.message || referralError })
@@ -405,7 +422,7 @@ const Register = () => {
       setAlertModal({
         show: true,
         title: 'Success',
-        message: 'Registration successful! Please check your email to confirm your account.',
+        message: 'Registration successful! Please check your email inbox to confirm your account. If you don\'t see it, check your spam/junk folder.',
         type: 'success'
       });
       setRegisteredEmail(formData.email.trim());
@@ -465,6 +482,20 @@ const Register = () => {
             <form onSubmit={handleRegister} className="space-y-4">
                   {currentStep === 1 && (
                     <>
+                      <div>
+                        <label className="block text-sm text-slate-600 mb-1 font-semibold">Username *</label>
+                        <input
+                          className={`w-full p-3 border rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300 transition ${errors.username ? 'border-red-500' : 'border-slate-200'}`}
+                          placeholder="Choose a username (min 6 characters)"
+                          value={formData.username}
+                          onChange={e => {
+                            setFormData({ ...formData, username: e.target.value });
+                            if (errors.username) setErrors({ ...errors, username: '' });
+                          }}
+                        />
+                        {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username}</p>}
+                      </div>
+
                       <div>
                         <label className="block text-sm text-slate-600 mb-1 font-semibold">Full Name *</label>
                         <input
@@ -674,6 +705,7 @@ const Register = () => {
                     <>
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <h3 className="text-sm font-bold text-slate-900 mb-2">Review</h3>
+                        <p className="text-sm text-slate-700">Username: {formData.username || '-'}</p>
                         <p className="text-sm text-slate-700">Name: {formData.fullName || '-'}</p>
                         <p className="text-sm text-slate-700">Phone: {formData.phone ? formatPhone({ countryCode: formData.phoneCountry, phone: formData.phone }) : '-'}</p>
                         <p className="text-sm text-slate-700">Education: {formData.educationLevel || '-'}</p>
@@ -741,7 +773,7 @@ const Register = () => {
           {registrationDone && (
             <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
               <p className="mb-2 text-xs text-cyan-900">
-                Verification email sent to <span className="font-semibold">{registeredEmail}</span>
+                Verification email sent to <span className="font-semibold">{registeredEmail}</span>. Check your inbox, and if not found there, look in your <span className="font-semibold">spam/junk folder</span>.
               </p>
               <button
                 type="button"
