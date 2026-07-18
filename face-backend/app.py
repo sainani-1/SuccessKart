@@ -337,7 +337,7 @@ def _detect_blink_mediapipe(frames):
     max_ear = float(np.max(ear_arr))
     std_ear = float(np.std(ear_arr))
 
-    EAR_CLOSED_THRESH = 0.32
+    EAR_CLOSED_THRESH = 0.30
     blink_detected = False
     blink_method = None
 
@@ -348,19 +348,19 @@ def _detect_blink_mediapipe(frames):
         blink_detected = True
         blink_method = "ear_closed_open"
 
-    if not blink_detected and std_ear > 0.005:
+    if not blink_detected and std_ear > 0.008:
         for i in range(1, len(ear_values) - 1):
             neighbor_avg = (ear_values[i - 1] + ear_values[i + 1]) / 2.0
-            if neighbor_avg - ear_values[i] > 0.015:
+            if neighbor_avg - ear_values[i] > 0.025:
                 blink_detected = True
                 blink_method = "ear_valley"
                 break
 
-    if not blink_detected and max_ear - min_ear > 0.015:
+    if not blink_detected and max_ear - min_ear > 0.025:
         blink_detected = True
         blink_method = "ear_range"
 
-    if not blink_detected and min_ear < avg_ear - 0.5 * std_ear:
+    if not blink_detected and min_ear < avg_ear - 0.8 * std_ear and min_ear < EAR_CLOSED_THRESH:
         blink_detected = True
         blink_method = "ear_statistical"
 
