@@ -5,6 +5,3 @@ numpy<2.3
 supabase
 python-dotenv
 gunicorn
-cmake
-dlib==19.24.6
-face_recognition
