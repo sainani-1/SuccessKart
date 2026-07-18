@@ -96,25 +96,34 @@ const Login = () => {
     canvas.height = h;
     const ctx = canvas.getContext('2d');
 
-    const frameCount = 20;
+    const frameCount = 15;
     const brightnesses = [];
     for (let i = 0; i < frameCount; i++) {
       ctx.drawImage(video, 0, 0, w, h);
-      const data = ctx.getImageData(0, Math.floor(h * 0.3), w, Math.floor(h * 0.35)).data;
+      const y1 = Math.floor(h * 0.25);
+      const y2 = Math.floor(h * 0.55);
+      const data = ctx.getImageData(0, y1, w, y2 - y1).data;
       let sum = 0;
+      const pxCount = data.length / 4;
       for (let j = 0; j < data.length; j += 4) {
         sum += data[j] * 0.299 + data[j + 1] * 0.587 + data[j + 2] * 0.114;
       }
-      brightnesses.push(sum / (data.length / 4));
-      if (i < frameCount - 1) await new Promise(r => setTimeout(r, 150));
+      brightnesses.push(sum / pxCount);
+      if (i < frameCount - 1) await new Promise(r => setTimeout(r, 120));
     }
-    const avg = brightnesses.reduce((a, b) => a + b, 0) / brightnesses.length;
-    const min = Math.min(...brightnesses);
-    const drop = (avg - min) / avg;
-    const minIdx = brightnesses.indexOf(min);
-    const isDip = minIdx > 0 && minIdx < brightnesses.length - 1 &&
-      brightnesses[minIdx - 1] > min && brightnesses[minIdx + 1] > min;
-    return { detected: drop > 0.02 && isDip, drop, min, avg };
+
+    const third = Math.floor(frameCount / 3);
+    const firstThird = brightnesses.slice(0, third);
+    const lastThird = brightnesses.slice(-third);
+    const baseline = (firstThird.reduce((a, b) => a + b, 0) / firstThird.length +
+      lastThird.reduce((a, b) => a + b, 0) / lastThird.length) / 2;
+
+    const minBrightness = Math.min(...brightnesses);
+    const minIdx = brightnesses.indexOf(minBrightness);
+    const drop = (baseline - minBrightness) / baseline;
+    const hasDip = drop > 0.005;
+
+    return { detected: hasDip, drop, min: minBrightness, baseline };
   };
 
   const handleFaceScan = async () => {
