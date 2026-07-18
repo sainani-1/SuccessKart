@@ -37,7 +37,7 @@ face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
 
-FACE_MATCH_THRESHOLD = 0.6
+FACE_MATCH_THRESHOLD = 0.45
 
 
 ENCODING_VERSION = 3
@@ -63,7 +63,7 @@ def decode_image(image_b64):
 
 def detect_and_crop_face(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(80, 80))
+    faces = face_cascade.detectMultiScale(gray, 1.1, 3, minSize=(60, 60))
     if len(faces) == 0:
         return None
     x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
@@ -296,7 +296,7 @@ def _detect_blink_mediapipe(frames):
         static_image_mode=True,
         max_num_faces=1,
         refine_landmarks=True,
-        min_detection_confidence=0.5,
+        min_detection_confidence=0.3,
     )
 
     ear_values = []
@@ -337,7 +337,7 @@ def _detect_blink_mediapipe(frames):
     max_ear = float(np.max(ear_arr))
     std_ear = float(np.std(ear_arr))
 
-    EAR_CLOSED_THRESH = 0.28
+    EAR_CLOSED_THRESH = 0.32
     blink_detected = False
     blink_method = None
 
@@ -348,19 +348,19 @@ def _detect_blink_mediapipe(frames):
         blink_detected = True
         blink_method = "ear_closed_open"
 
-    if not blink_detected and std_ear > 0.01:
+    if not blink_detected and std_ear > 0.005:
         for i in range(1, len(ear_values) - 1):
             neighbor_avg = (ear_values[i - 1] + ear_values[i + 1]) / 2.0
-            if neighbor_avg - ear_values[i] > 0.03:
+            if neighbor_avg - ear_values[i] > 0.015:
                 blink_detected = True
                 blink_method = "ear_valley"
                 break
 
-    if not blink_detected and max_ear - min_ear > 0.03:
+    if not blink_detected and max_ear - min_ear > 0.015:
         blink_detected = True
         blink_method = "ear_range"
 
-    if not blink_detected and min_ear < avg_ear - 1.0 * std_ear and min_ear < EAR_CLOSED_THRESH:
+    if not blink_detected and min_ear < avg_ear - 0.5 * std_ear:
         blink_detected = True
         blink_method = "ear_statistical"
 
@@ -438,13 +438,13 @@ def _detect_blink_opencv(frames):
 
     if avg_var > 0:
         var_drop = (avg_var - min_var) / avg_var
-        if var_drop > 0.08:
+        if var_drop > 0.04:
             blink_detected = True
             blink_method = "variance_drop"
 
     if not blink_detected and avg_mean > 0:
         mean_drop = (avg_mean - min_mean) / avg_mean
-        if mean_drop > 0.03:
+        if mean_drop > 0.015:
             blink_detected = True
             blink_method = "brightness_drop"
 

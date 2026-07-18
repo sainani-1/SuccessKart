@@ -837,6 +837,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Wrench size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Report Issue</span>}
             </NavLink>
+            <NavLink to="/app/assignments" className={navItemClass} title="Assignments">
+              <ClipboardList size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Assignments</span>}
+            </NavLink>
           </>
         )}
 
@@ -862,6 +866,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/teacher/tests" className={navItemClass} title="Conduct Tests">
               <CheckSquare size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Conduct Tests</span>}
+            </NavLink>
+            <NavLink to="/app/teacher/assignments" className={navItemClass} title="Assignments">
+              <ClipboardList size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Assignments</span>}
             </NavLink>
             <NavLink to="/app/teacher/career-queue" className={navItemClass} title="Career Queue">
               <BarChart3 size={28} />
@@ -1214,6 +1222,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/admin/courses" className={navItemClass} title="Courses">
               <BookOpen size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Courses</span>}
+            </NavLink>
+            <NavLink to="/app/admin/assignments" className={navItemClass} title="Assignments">
+              <ClipboardList size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Assignments</span>}
             </NavLink>
             <NavLink to="/app/admin/exam-overrides" className={navItemClass} title="Exam Retake Overrides">
               <Clock size={28} />

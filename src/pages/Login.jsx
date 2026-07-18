@@ -95,7 +95,7 @@ const Login = () => {
 
     try {
       const video = faceVideoRef.current;
-      const frameCount = 12;
+      const frameCount = 20;
       const frames = [];
 
       for (let i = 0; i < frameCount; i++) {
@@ -103,34 +103,42 @@ const Login = () => {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        frames.push(canvas.toDataURL('image/jpeg', 0.92));
+        frames.push(canvas.toDataURL('image/jpeg', 0.85));
         if (i < frameCount - 1) {
-          await new Promise(r => setTimeout(r, 100));
+          await new Promise(r => setTimeout(r, 150));
         }
       }
 
       setFaceLoading('Checking for blink...');
-      const blinkRes = await fetch(`${faceBackendUrl}/api/detect-blink`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ frames }),
-      });
+      const blinkRes = await withTimeout(
+        fetch(`${faceBackendUrl}/api/detect-blink`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ frames }),
+        }),
+        { ok: false, json: async () => ({ error: 'Backend timeout' }) },
+        10000
+      );
       const blinkData = await blinkRes.json();
       if (!blinkRes.ok) throw new Error(blinkData.error || 'Blink detection failed');
 
       if (!blinkData.blink_detected) {
-        setFaceError('Blink not detected. Please blink your eyes and try again.');
+        setFaceError('Blink not detected. Please blink your eyes clearly and try again.');
         setFaceLoading('');
         return;
       }
 
       setFaceLoading('Recognizing face...');
       const lastFrame = frames[frames.length - 1];
-      const recognizeRes = await fetch(`${faceBackendUrl}/api/recognize-face`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: lastFrame }),
-      });
+      const recognizeRes = await withTimeout(
+        fetch(`${faceBackendUrl}/api/recognize-face`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_base64: lastFrame }),
+        }),
+        { ok: false, json: async () => ({ error: 'Backend timeout' }) },
+        10000
+      );
       const recognizeData = await recognizeRes.json();
 
       if (!recognizeRes.ok || !recognizeData?.email) {

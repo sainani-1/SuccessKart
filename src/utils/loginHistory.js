@@ -19,7 +19,7 @@ const fetchGeoInfo = async () => {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch('http://ip-api.com/json/', { signal: controller.signal });
+    const res = await fetch('https://ip-api.com/json/', { signal: controller.signal });
     clearTimeout(timer);
     const data = await res.json();
     if (data.status === 'success') {

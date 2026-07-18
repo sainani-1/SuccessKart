@@ -374,6 +374,12 @@ const CompleteGoogleProfile = () => {
     }
   };
 
+  const currentStepObj = visibleSteps.indexOf(step) >= 0 ? STEPS[step] : STEPS[visibleSteps[0]];
+  const isFirst = step === visibleSteps[0];
+  const isLast = step === visibleSteps[visibleSteps.length - 1];
+  const currentStepIdx = visibleSteps.indexOf(step);
+  const showNextCheck = !isLast && step > 0 && canProceed(step);
+
   const progressPercent = step === 0 ? 0 : Math.round((currentStepIdx / (visibleSteps.length - 1)) * 100);
 
   const renderStep = () => {
@@ -726,12 +732,6 @@ const CompleteGoogleProfile = () => {
 
     return null;
   };
-
-  const currentStepObj = visibleSteps.indexOf(step) >= 0 ? STEPS[step] : STEPS[visibleSteps[0]];
-  const isFirst = step === visibleSteps[0];
-  const isLast = step === visibleSteps[visibleSteps.length - 1];
-  const currentStepIdx = visibleSteps.indexOf(step);
-  const showNextCheck = !isLast && step > 0 && canProceed(step);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-white to-blue-50 p-4">

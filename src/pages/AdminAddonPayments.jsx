@@ -49,17 +49,26 @@ const AdminAddonPayments = () => {
     return payments.filter((p) => p.status === statusFilter);
   }, [payments, statusFilter]);
 
+  const callReviewEdge = async (paymentId, action, note = '') => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-review-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || ''}`,
+      },
+      body: JSON.stringify({ payment_id: paymentId, action, note }),
+    });
+    const json = await res.json();
+    if (!res.ok || json.error) throw new Error(json.error || 'Review failed');
+    return json;
+  };
+
   const handleApprove = async (paymentId) => {
     setSavingId(paymentId);
     try {
-      const { error } = await supabase
-        .from('payments')
-        .update({ status: 'success', paid_at: new Date().toISOString() })
-        .eq('id', paymentId);
-
-      if (error) throw error;
-
-      setAlertModal({ show: true, title: 'Approved', message: 'Add-on purchase approved successfully.', type: 'success' });
+      await callReviewEdge(paymentId, 'approve');
+      setAlertModal({ show: true, title: 'Approved', message: 'Add-on purchase approved. User has been notified.', type: 'success' });
       await loadPayments();
     } catch (err) {
       setAlertModal({ show: true, title: 'Error', message: err.message || 'Failed to approve.', type: 'error' });
@@ -71,14 +80,8 @@ const AdminAddonPayments = () => {
   const handleReject = async (paymentId) => {
     setSavingId(paymentId);
     try {
-      const { error } = await supabase
-        .from('payments')
-        .update({ status: 'failed', failure_reason: 'Rejected by admin' })
-        .eq('id', paymentId);
-
-      if (error) throw error;
-
-      setAlertModal({ show: true, title: 'Rejected', message: 'Add-on purchase has been rejected.', type: 'warning' });
+      await callReviewEdge(paymentId, 'reject', 'Rejected by admin');
+      setAlertModal({ show: true, title: 'Rejected', message: 'Add-on purchase rejected. User has been notified.', type: 'warning' });
       await loadPayments();
     } catch (err) {
       setAlertModal({ show: true, title: 'Error', message: err.message || 'Failed to reject.', type: 'error' });

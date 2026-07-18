@@ -60,6 +60,8 @@ const TeacherChat = lazy(() => import('./pages/TeacherChat'));
 const LiveClass = lazy(() => import('./pages/LiveClass'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const AdminNotifications = lazy(() => import('./pages/AdminNotifications'));
+const PushNotificationSettings = lazy(() => import('./pages/PushNotificationSettings'));
+const AdminPushNotifications = lazy(() => import('./pages/AdminPushNotifications'));
 const SessionReassignments = lazy(() => import('./pages/SessionReassignments'));
 const CareerChatbot = lazy(() => import('./pages/CareerChatbot'));
 const AILearningPath = lazy(() => import('./pages/AILearningPath'));
@@ -177,6 +179,11 @@ const AdminMaintenanceMode = lazy(() => import('./pages/AdminMaintenanceMode'));
 const MaintenanceModePage = lazy(() => import('./pages/MaintenanceModePage'));
 const AdminLastActive = lazy(() => import('./pages/AdminLastActive'));
 const AdminAHI = lazy(() => import('./pages/AdminAHI'));
+const StudentAnalytics = lazy(() => import('./pages/StudentAnalytics'));
+const CourseRecommendations = lazy(() => import('./pages/CourseRecommendations'));
+const AdminPaymentReminders = lazy(() => import('./pages/AdminPaymentReminders'));
+const AdminBulkImport = lazy(() => import('./pages/AdminBulkImport'));
+const AdminAuditTrail = lazy(() => import('./pages/AdminAuditTrail'));
 const AHIInterview = lazy(() => import('./pages/AHIInterview'));
 const AdminSucesskartMeetSettings = lazy(() => import('./pages/AdminSucesskartMeetSettings'));
 const SucesskartMeetDocs = lazy(() => import('./pages/SucesskartMeetDocs'));
@@ -193,6 +200,9 @@ const ExamReadinessScore = lazy(() => import('./pages/ZeroCostGrowthPanels').the
 const MotivationLeaderboard = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.MotivationLeaderboard })));
 const StudentDailyPlanner = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.StudentDailyPlanner })));
 const TeacherPerformancePanel = lazy(() => import('./pages/ZeroCostGrowthPanels').then(m => ({ default: m.TeacherPerformancePanel })));
+const AssignmentSubmit = lazy(() => import('./pages/AssignmentSubmit'));
+const TeacherAssignmentsPage = lazy(() => import('./pages/TeacherAssignments'));
+const AdminAssignments = lazy(() => import('./pages/AdminAssignments'));
 
 const ViewPortfolioRedirect = () => {
   const loc = useLocation();
@@ -494,6 +504,8 @@ function App() {
           <Route path="project-showcase" element={<ProjectShowcase />} />
           <Route path="coding-playground" element={<CodingPlayground />} />
           <Route path="discussion-forum" element={<DiscussionForum />} />
+          <Route path="analytics" element={<StudentAnalytics />} />
+          <Route path="recommendations" element={<CourseRecommendations />} />
           <Route path="skill-badges" element={<SkillBadges />} />
           <Route path="learn-with-ai" element={<LearnWithAI />} />
           <Route path="ai-prep" element={<AIInterviewPrep />} />
@@ -519,8 +531,10 @@ function App() {
           <Route path="leaves" element={<TeacherLeaves />} />
           <Route path="session-reassignments" element={<SessionReassignments />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="push-notifications" element={<PushNotificationSettings />} />
           <Route path="report-issue" element={<ReportIssue />} />
           <Route path="teacher-chat" element={<TeacherChat />} />
+          <Route path="assignments" element={<AssignmentSubmit />} />
           <Route path="admin/users" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="admin/leaves" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="admin/user-management" element={<AdminRoute><UserManagementPage /></AdminRoute>} />
@@ -530,6 +544,7 @@ function App() {
           <Route path="admin/teacher-progress" element={<AdminRoute><TeacherProgress /></AdminRoute>} />
           <Route path="admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
           <Route path="teacher/tests" element={<TeacherRoute><TeacherConductTests /></TeacherRoute>} />
+          <Route path="teacher/assignments" element={<TeacherRoute><TeacherAssignmentsPage /></TeacherRoute>} />
           <Route path="instructor/live-exams" element={<InstructorRoute><LiveExamProctoring forcedPanel="slots" /></InstructorRoute>} />
           <Route path="instructor/all-in-one" element={<InstructorRoute><LiveExamProctoring forcedPanel="all-in-one" /></InstructorRoute>} />
           <Route path="instructor/live-exam-slots" element={<InstructorRoute><LiveExamProctoring forcedPanel="slots" /></InstructorRoute>} />
@@ -552,10 +567,12 @@ function App() {
           <Route path="admin/student-reassignments" element={<AdminRoute><AdminStudentReassignments /></AdminRoute>} />
           <Route path="admin/auto-assigned-students" element={<AdminRoute><AdminAutoAssignedStudents /></AdminRoute>} />
           <Route path="admin/teacher-requests" element={<AdminRoute><AdminTeacherRequests /></AdminRoute>} />
+          <Route path="admin/assignments" element={<AdminRoute><AdminAssignments /></AdminRoute>} />
           <Route path="admin/certificate-blocks" element={<AdminRoute><CertificateBlocks /></AdminRoute>} />
           <Route path="admin/accounts" element={<AdminRoute><AccountManagement /></AdminRoute>} />
           <Route path="admin/access-codes" element={<AdminRoute><AdminAccessCodes /></AdminRoute>} />
           <Route path="admin/notifications" element={<AdminRoute><AdminNotifications /></AdminRoute>} />
+          <Route path="admin/push-notifications" element={<AdminRoute><AdminPushNotifications /></AdminRoute>} />
           <Route path="admin/exam-overrides" element={<AdminRoute><AdminExamOverrides /></AdminRoute>} />
           <Route path="admin/exam-bans" element={<AdminRoute><AdminExamBans /></AdminRoute>} />
           <Route path="admin/live-exam-booking-controls" element={<AdminRoute><AdminLiveExamBookingControls /></AdminRoute>} />
@@ -605,6 +622,10 @@ function App() {
           <Route path="addons" element={<Addons />} />
           <Route path="admin/addons" element={<AdminRoute><AdminAddons /></AdminRoute>} />
           <Route path="admin/addon-payments" element={<AdminRoute><AdminAddonPayments /></AdminRoute>} />
+          <Route path="admin/push-notifications" element={<AdminRoute><AdminPushNotifications /></AdminRoute>} />
+          <Route path="admin/payment-reminders" element={<AdminRoute><AdminPaymentReminders /></AdminRoute>} />
+          <Route path="admin/bulk-import" element={<AdminRoute><AdminBulkImport /></AdminRoute>} />
+          <Route path="admin/audit-trail" element={<AdminRoute><AdminAuditTrail /></AdminRoute>} />
           <Route path="admin/ai-basic-limit" element={<AdminRoute><AdminAIBasicLimit /></AdminRoute>} />
           <Route path="admin/ai-limit-increaser" element={<AdminRoute><AdminAILimitIncreaser /></AdminRoute>} />
           <Route path="admin/ai-settings-extended" element={<AdminRoute><AdminMultiAISettings /></AdminRoute>} />
