@@ -606,7 +606,7 @@ const ClassSchedule = ({
   const builtInProviderLabel = 'SucessKart';
   const isBuiltInProviderLiveKit = configuredMeetingProvider === 'livekit';
 
-  if (isFreeStudent) {
+  if (isFreeStudent && sessionKind !== 'demo') {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -639,7 +639,7 @@ const ClassSchedule = ({
           <h1 className="text-2xl font-bold text-slate-900">{pageTitle}</h1>
           <p className="text-slate-500">{pageDescription}</p>
         </div>
-        {(profile.role === 'teacher' || profile.role === 'admin') && (
+        {(profile.role === 'admin' || (profile.role === 'teacher' && sessionKind !== 'demo')) && (
           <button 
             onClick={() => setShowForm(!showForm)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
