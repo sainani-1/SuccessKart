@@ -145,6 +145,7 @@ const PremiumPlusMockInterviews = lazy(() => import('./pages/PremiumPlusMockInte
 const PremiumPlusRoadmap = lazy(() => import('./pages/PremiumPlusRoadmap'));
 const CareerSupportDashboard = lazy(() => import('./pages/CareerSupportDashboard'));
 const TeacherCareerQueue = lazy(() => import('./pages/TeacherCareerQueue'));
+const TeacherRecordClass = lazy(() => import('./pages/TeacherRecordClass'));
 const AdminCareerAnalytics = lazy(() => import('./pages/AdminCareerAnalytics'));
 const PortfolioBuilder = lazy(() => import('./pages/PortfolioBuilder'));
 const PublicPortfolio = lazy(() => import('./pages/PublicPortfolio'));
@@ -545,6 +546,7 @@ function App() {
           <Route path="admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
           <Route path="teacher/tests" element={<TeacherRoute><TeacherConductTests /></TeacherRoute>} />
           <Route path="teacher/assignments" element={<TeacherRoute><TeacherAssignmentsPage /></TeacherRoute>} />
+          <Route path="teacher/record-class" element={<TeacherRoute><TeacherRecordClass /></TeacherRoute>} />
           <Route path="instructor/live-exams" element={<InstructorRoute><LiveExamProctoring forcedPanel="slots" /></InstructorRoute>} />
           <Route path="instructor/all-in-one" element={<InstructorRoute><LiveExamProctoring forcedPanel="all-in-one" /></InstructorRoute>} />
           <Route path="instructor/live-exam-slots" element={<InstructorRoute><LiveExamProctoring forcedPanel="slots" /></InstructorRoute>} />

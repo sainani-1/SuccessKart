@@ -231,6 +231,7 @@ const Layout = () => {
       { label: 'Attendance', path: '/app/attendance' },
       { label: 'My Students', path: '/app/my-students' },
       { label: 'Assigned Classes', path: '/app/assigned-classes' },
+      { label: 'Record Class', path: '/app/teacher/record-class' },
       { label: 'Schedule Sessions', path: '/app/class-schedule' },
       { label: 'Demo Sessions', path: '/app/demo-sessions' },
       { label: 'Apply Leave', path: '/app/leaves' },
