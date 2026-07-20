@@ -798,10 +798,6 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Compass size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">AI Career Roadmap</span>}
             </NavLink>
-            <NavLink to="/app/skill-credentials" className={navItemClass} title="Skill Credentials">
-              <Shield size={28} />
-              {shouldShowText && <span className="truncate text-sm font-medium">Skill Credentials</span>}
-            </NavLink>
             <NavLink to="/app/skill-up" className={navItemClass} title="SkillUp Yourself">
               <Trophy size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">SkillUp Yourself</span>}

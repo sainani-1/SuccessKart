@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Clock, FileText, CheckCircle, XCircle, ArrowLeft, Trophy, ChevronRight, Lock, Award, BarChart3, Zap } from 'lucide-react';
 import { COMPANIES, COMPANY_QUESTIONS } from '../data/companyExamQuestions';
+import { setExamMode } from '../data/examMode';
 
 const SECTION_COLORS = {
   Aptitude: 'from-blue-500 to-indigo-500',
@@ -44,7 +45,11 @@ const CompanyExamPage = () => {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      setExamMode(false);
+      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    };
   }, []);
 
   const getSectionQuestions = useCallback(() => {
@@ -66,6 +71,8 @@ const CompanyExamPage = () => {
     setShowExplanation(false);
     setExamResults(null);
     setView('exam');
+    setExamMode(true);
+    try { document.documentElement.requestFullscreen?.(); } catch {}
 
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
@@ -81,6 +88,8 @@ const CompanyExamPage = () => {
 
   const submitExam = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    setExamMode(false);
+    try { document.exitFullscreen?.().catch(() => {}); } catch {}
     const questions = COMPANY_QUESTIONS[selectedCompany.id] || [];
     let correct = 0;
     let total = questions.length;
@@ -209,7 +218,7 @@ const CompanyExamPage = () => {
         <div className="bg-white border-b shadow-sm sticky top-0 z-30">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button onClick={() => { if(timerRef.current) clearInterval(timerRef.current); setView('list'); }} className="p-2 rounded-lg hover:bg-gray-100 transition">
+              <button onClick={() => { if(timerRef.current) clearInterval(timerRef.current); setExamMode(false); try { document.exitFullscreen?.().catch(() => {}); } catch {} setView('list'); }} className="p-2 rounded-lg hover:bg-gray-100 transition">
                 <ArrowLeft size={18} className="text-gray-600" />
               </button>
               <div>

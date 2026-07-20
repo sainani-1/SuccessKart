@@ -13,6 +13,7 @@ import { useNotifications } from '../context/NotificationContext';
 import { readBrowserState, writeBrowserState } from '../utils/browserState';
 import ChatOverlay from './ChatOverlay';
 import { logError } from '../utils/errorLogger';
+import { onExamModeChange } from '../data/examMode';
 
 const SIDEBAR_COLLAPSED_KEY = 'layout_sidebar_collapsed';
 const LAST_OPENED_PAGE_KEY = 'layout_last_opened_page';
@@ -698,7 +699,12 @@ const Layout = () => {
 
   // Sidebar width: 16rem (256px) when open, 5rem (80px) when collapsed
   // We'll use a state to track the sidebar width for margin
-  const [sidebarWidth, setSidebarWidth] = useState(256); // default w-64
+  const [sidebarWidth, setSidebarWidth] = useState(256);
+  const [examModeActive, setExamModeActive] = useState(false);
+
+  useEffect(() => {
+    return onExamModeChange(setExamModeActive);
+  }, []);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -779,18 +785,20 @@ const Layout = () => {
           </div>
         </div>
       ) : null}
+      {!examModeActive && (
       <Sidebar
         isMobile={isMobileViewport}
         mobileOpen={mobileSidebarOpen}
         onClose={() => setMobileSidebarOpen(false)}
         onRequestNavigation={requestPageSwitch}
       />
-      <ChatOverlay />
+      )}
+      {!examModeActive && <ChatOverlay />}
       <div
         className="flex flex-col transition-all duration-300"
-        style={{ marginLeft: isMobileViewport ? 0 : sidebarWidth, minHeight: '100vh' }}
+        style={{ marginLeft: examModeActive ? 0 : isMobileViewport ? 0 : sidebarWidth, minHeight: '100vh' }}
       >
-        {/* Top Navbar */}
+        {!examModeActive && (
         <header className="bg-white shadow-sm h-16 flex items-center justify-between px-3 md:px-8 sticky top-0 z-10">
           <div className="flex items-center gap-3 w-full">
             {isMobileViewport ? (
@@ -864,14 +872,16 @@ const Layout = () => {
             </div>
           </div>
         </header>
+        )}
         {/* Main Content */}
-        <main className="p-2 md:p-4 flex-1 overflow-hidden h-[calc(100vh-128px)] md:h-[calc(100vh-144px)]">
+        <main className={`p-2 md:p-4 flex-1 overflow-hidden ${examModeActive ? 'h-screen' : 'h-[calc(100vh-128px)] md:h-[calc(100vh-144px)]'}`}>
           <Outlet />
         </main>
-        {/* Footer */}
+        {!examModeActive && (
         <footer className="text-center py-4 text-xs text-slate-400">
            &copy; {new Date().getFullYear()} SucessKart. All rights reserved. 
         </footer>
+        )}
       </div>
 
       {/* Takeover Success Notice Modal */}
