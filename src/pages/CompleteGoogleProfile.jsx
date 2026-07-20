@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { X, ArrowLeft, ArrowRight, Check, LogOut, User, Phone, LockKeyhole, GraduationCap, Image, FileText, ChevronRight } from 'lucide-react';
+import { X, ArrowLeft, ArrowRight, Check, LogOut, User, Phone, GraduationCap, FileText, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import AlertModal from '../components/AlertModal';
 import { useAuth } from '../context/AuthContext';
 import { attachPendingReferral } from '../utils/referrals';
-import { uploadAvatarForUser } from '../utils/avatarUpload';
-import { detectFace } from '../utils/detectFace';
 import { updateUsernameForUser } from '../utils/usernames';
 import { isProfileComplete } from '../utils/profileCompletion';
 import { countryPhoneOptions, digitsOnly, formatPhone, getCountryPhoneOption, parseStoredPhone, validatePhoneNumber } from '../utils/phoneValidation';
@@ -25,9 +23,7 @@ const STEPS = [
   { id: 'username', label: 'Username', icon: User },
   { id: 'fullName', label: 'Full Name', icon: User },
   { id: 'phone', label: 'Phone', icon: Phone },
-  { id: 'password', label: 'Password', icon: LockKeyhole },
   { id: 'education', label: 'Education', icon: GraduationCap },
-  { id: 'photo', label: 'Photo', icon: Image },
   { id: 'terms', label: 'Terms', icon: FileText },
   { id: 'done', label: 'Done', icon: Check },
 ];
@@ -41,18 +37,12 @@ const CompleteGoogleProfile = () => {
   const [loading, setLoading] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
   const [profileRole, setProfileRole] = useState('student');
-  const [file, setFile] = useState(null);
-  const [filePreview, setFilePreview] = useState('');
-  const [faceChecking, setFaceChecking] = useState(false);
-  const [faceStatus, setFaceStatus] = useState({ state: 'idle', message: '' });
   const [alertModal, setAlertModal] = useState({ show: false, title: '', message: '', type: 'info' });
   const [formData, setFormData] = useState({
     username: '',
     fullName: '',
     phone: '',
     phoneCountry: '+91',
-    password: '',
-    confirmPassword: '',
     educationLevel: '',
     studyStream: '',
     customStudyStream: '',
@@ -61,52 +51,6 @@ const CompleteGoogleProfile = () => {
   });
   const [errors, setErrors] = useState({});
   const selectedPhoneCountry = useMemo(() => getCountryPhoneOption(formData.phoneCountry), [formData.phoneCountry]);
-
-  useEffect(() => {
-    if (!file) {
-      setFilePreview('');
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setFilePreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-
-  const clearProfilePhoto = () => {
-    setFile(null);
-    setFaceStatus({ state: 'idle', message: '' });
-    setErrors((prev) => ({ ...prev, file: '' }));
-  };
-
-  const handleProfilePhotoChange = async (event) => {
-    const nextFile = event.target.files?.[0] || null;
-    event.target.value = '';
-    if (!nextFile) return;
-
-    if (!nextFile.type?.startsWith('image/')) {
-      setFile(nextFile);
-      setFaceStatus({ state: 'invalid', message: 'Upload an image file with a clear face.' });
-      setErrors((prev) => ({ ...prev, file: 'Upload an image file with a clear face.' }));
-      return;
-    }
-
-    setFile(nextFile);
-    setFaceChecking(true);
-    setFaceStatus({ state: 'checking', message: 'Checking photo for a clear face...' });
-    setErrors((prev) => ({ ...prev, file: '' }));
-    try {
-      const result = await detectFace(nextFile);
-      if (!result.detected) {
-        const message = result.error || 'No clear face detected. Upload another photo where the face is visible.';
-        setFaceStatus({ state: 'invalid', message });
-        setErrors((prev) => ({ ...prev, file: message }));
-        return;
-      }
-      setFaceStatus({ state: 'valid', message: 'Face detected. Photo approved.' });
-    } finally {
-      setFaceChecking(false);
-    }
-  };
 
   useEffect(() => {
     const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -162,15 +106,13 @@ const CompleteGoogleProfile = () => {
       if (!String(profile?.username || authProfile?.username || meta.username || '').trim()) visible.push(1);
       if (!String(profile?.full_name || meta.full_name || meta.name || '').trim()) visible.push(2);
       if (!String(profile?.phone || meta.phone || '').trim()) visible.push(3);
-      visible.push(4);
       if (role === 'student') {
         const hasEdu = String(profile?.education_level || meta.education_level || '').trim();
         const hasStream = String(profile?.study_stream || meta.study_stream || profile?.core_subject || meta.core_subject || '').trim();
-        if (!hasEdu || !hasStream) visible.push(5);
+        if (!hasEdu || !hasStream) visible.push(4);
       }
+      if (profile?.auth_provider === 'google' || profile?.google_profile_completed === false) visible.push(5);
       visible.push(6);
-      if (profile?.auth_provider === 'google' || profile?.google_profile_completed === false) visible.push(7);
-      visible.push(8);
       setVisibleSteps(visible);
     };
     hydrateFromSession();
@@ -195,12 +137,7 @@ const CompleteGoogleProfile = () => {
         const phoneError = validatePhoneNumber({ countryCode: formData.phoneCountry, phone: formData.phone });
         if (phoneError) next.phone = phoneError;
         break;
-      case 4: // password
-        if (!formData.password) next.password = 'Password is required';
-        else if (formData.password.length < 6) next.password = 'Password must be at least 6 characters';
-        if (formData.password !== formData.confirmPassword) next.confirmPassword = 'Passwords do not match';
-        break;
-      case 5: // education
+      case 4: // education
         if (profileRole === 'student') {
           if (!formData.educationLevel) next.educationLevel = 'Education level is required';
           if (!formData.studyStream) next.studyStream = 'Please select stream/branch';
@@ -209,12 +146,7 @@ const CompleteGoogleProfile = () => {
           }
         }
         break;
-      case 6: // photo
-        if (file && faceStatus.state !== 'valid') {
-          next.file = faceStatus.message || 'Upload a clear face photo or remove this photo.';
-        }
-        break;
-      case 7: // terms
+      case 5: // terms
         if (!formData.termsAccepted) next.termsAccepted = 'You must accept Terms and Conditions';
         break;
     }
@@ -310,9 +242,6 @@ const CompleteGoogleProfile = () => {
         .eq('id', currentUser.id)
         .maybeSingle();
       let avatarUrl = existingProfile?.avatar_url || currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || null;
-      if (file && faceStatus.state === 'valid') {
-        avatarUrl = await uploadAvatarForUser(supabase, currentUser.id, file);
-      }
 
       const formattedPhone = formatPhone({ countryCode: formData.phoneCountry, phone: formData.phone });
       const payload = {
@@ -336,8 +265,7 @@ const CompleteGoogleProfile = () => {
 
       const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
       if (error) throw error;
-      const { error: passwordError } = await supabase.auth.updateUser({
-        password: formData.password,
+      const { error: metadataError } = await supabase.auth.updateUser({
         data: {
           full_name: formData.fullName.trim(),
           phone: formattedPhone,
@@ -345,7 +273,7 @@ const CompleteGoogleProfile = () => {
           role: payload.role,
         },
       });
-      if (passwordError) throw passwordError;
+      if (metadataError) throw metadataError;
       await updateUsernameForUser({ userId: currentUser.id, username: formData.username.trim() });
       const { error: completeError } = await supabase
         .from('profiles')
@@ -386,8 +314,8 @@ const CompleteGoogleProfile = () => {
     const animClass = direction === 'forward' ? 'animate-slide-in-right' : 'animate-slide-in-left';
 
     if (step === 0) {
-      const fieldLabels = { 1: 'Username', 2: 'Full Name', 3: 'Phone', 4: 'Password', 5: 'Education', 6: 'Photo', 7: 'Terms' };
-      const neededFields = visibleSteps.filter((s) => s > 0 && s < 8).map((s) => fieldLabels[s]).filter(Boolean);
+      const fieldLabels = { 1: 'Username', 2: 'Full Name', 3: 'Phone', 4: 'Education', 5: 'Terms' };
+      const neededFields = visibleSteps.filter((s) => s > 0 && s < 6).map((s) => fieldLabels[s]).filter(Boolean);
       return (
         <div key="welcome" className={`space-y-6 ${animClass}`}>
           <div className="text-center">
@@ -507,41 +435,7 @@ const CompleteGoogleProfile = () => {
       );
     }
 
-    if (step === 4) {
-      return (
-        <div key="password" className={`space-y-4 ${animClass}`}>
-          <div className="text-center mb-2">
-            <div className="mx-auto w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-3">
-              <LockKeyhole className="text-blue-600" size={22} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900">Set a Password</h3>
-            <p className="text-sm text-slate-500">Create a strong password (min 6 characters)</p>
-          </div>
-          <input
-            autoFocus
-            type="password"
-            className={`w-full p-4 border-2 rounded-xl bg-slate-50 text-base transition-all focus:bg-white focus:border-blue-400 ${errors.password ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
-            placeholder="Create Password *"
-            value={formData.password}
-            onChange={(e) => { setFormData((prev) => ({ ...prev, password: e.target.value })); setErrors((prev) => ({ ...prev, password: '' })); }}
-          />
-          <input
-            type="password"
-            className={`w-full p-4 border-2 rounded-xl bg-slate-50 text-base transition-all focus:bg-white focus:border-blue-400 ${errors.confirmPassword ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
-            placeholder="Confirm Password *"
-            value={formData.confirmPassword}
-            onChange={(e) => { setFormData((prev) => ({ ...prev, confirmPassword: e.target.value })); setErrors((prev) => ({ ...prev, confirmPassword: '' })); }}
-          />
-          {errors.password && <p className="text-red-500 text-xs flex items-center gap-1"><X size={12} />{errors.password}</p>}
-          {errors.confirmPassword && <p className="text-red-500 text-xs flex items-center gap-1"><X size={12} />{errors.confirmPassword}</p>}
-          {formData.password && formData.confirmPassword && formData.password === formData.confirmPassword && (
-            <p className="text-emerald-600 text-xs flex items-center gap-1"><Check size={12} />Passwords match</p>
-          )}
-        </div>
-      );
-    }
-
-    if (step === 5 && studentSteps) {
+    if (step === 4 && studentSteps) {
       return (
         <div key="education" className={`space-y-4 ${animClass}`}>
           <div className="text-center mb-2">
@@ -605,129 +499,69 @@ const CompleteGoogleProfile = () => {
       );
     }
 
-    if (step === 5 && !studentSteps) {
-      // For non-students, skip to photo
+    if (step === 4 && !studentSteps) {
       return null;
     }
 
-    if ((step === 6) || (step === 5 && !studentSteps)) {
+    if (step === 5) {
       return (
-        <div key="photo" className={`space-y-4 ${animClass}`}>
+        <div key="terms" className={`space-y-4 ${animClass}`}>
           <div className="text-center mb-2">
             <div className="mx-auto w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-3">
-              <Image className="text-blue-600" size={22} />
+              <FileText className="text-blue-600" size={22} />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">Profile Photo</h3>
-            <p className="text-sm text-slate-500">Optional — but helps your teacher recognize you</p>
+            <h3 className="text-lg font-bold text-slate-900">Terms & Conditions</h3>
+            <p className="text-sm text-slate-500">Please agree to continue</p>
           </div>
-
-          <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 cursor-pointer hover:bg-slate-100 hover:border-blue-400 transition-all">
-            {filePreview ? (
-              <div className="relative">
-                <img src={filePreview} alt="Preview" className="w-28 h-28 rounded-2xl object-cover shadow-md" />
-                {faceStatus.state === 'invalid' && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-red-950/55 rounded-2xl">
-                    <X size={34} className="text-white" strokeWidth={3} />
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center">
-                <div className="mx-auto w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center mb-3">
-                  <Image className="text-slate-500" size={24} />
-                </div>
-                <p className="text-sm font-medium text-slate-600">Tap to upload a photo</p>
-                <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
-              </div>
-            )}
-            <input type="file" accept="image/*" onChange={handleProfilePhotoChange} className="hidden" />
+          <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-600 leading-relaxed max-h-44 overflow-y-auto">
+            By creating an account, you agree to our{' '}
+            <Link to="/terms-and-conditions" target="_blank" className="text-blue-600 font-semibold underline">Terms and Conditions</Link>.
+            Your data is handled securely and will never be shared without your consent.
+          </div>
+          <label className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200 cursor-pointer hover:bg-blue-100 transition-all">
+            <input
+              type="checkbox"
+              className="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              checked={formData.termsAccepted}
+              onChange={(e) => { setFormData((prev) => ({ ...prev, termsAccepted: e.target.checked })); setErrors((prev) => ({ ...prev, termsAccepted: '' })); }}
+            />
+            <span className="text-sm font-medium text-slate-700">
+              I agree to the <Link to="/terms-and-conditions" target="_blank" className="text-blue-600 underline">Terms and Conditions</Link>
+            </span>
           </label>
-
-          {file && faceStatus.state === 'valid' && <p className="text-emerald-600 text-xs flex items-center gap-1"><Check size={12} />Face detected. Photo approved.</p>}
-          {faceChecking && <p className="text-sm text-slate-500 text-center">Checking photo...</p>}
-          {errors.file && <p className="text-red-500 text-xs flex items-center gap-1"><X size={12} />{errors.file}</p>}
-
-          {filePreview && (
-            <button
-              type="button"
-              onClick={clearProfilePhoto}
-              className="w-full py-2.5 border border-slate-300 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-all"
-            >
-              Remove Photo
-            </button>
-          )}
+          {errors.termsAccepted && <p className="text-red-500 text-xs flex items-center gap-1"><X size={12} />{errors.termsAccepted}</p>}
         </div>
       );
     }
 
-    if ((step === 7) || (step === 6 && !studentSteps) || (step === 6 && studentSteps)) {
-      // step 7 is terms, step 6 might be photo for non-students
-      const isTermsStep = studentSteps ? step === 7 : step === 6;
-      if (isTermsStep) {
-        return (
-          <div key="terms" className={`space-y-4 ${animClass}`}>
-            <div className="text-center mb-2">
-              <div className="mx-auto w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-3">
-                <FileText className="text-blue-600" size={22} />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Terms & Conditions</h3>
-              <p className="text-sm text-slate-500">Please agree to continue</p>
+    if (step === 6) {
+      return (
+        <div key="done" className={`space-y-5 ${animClass}`}>
+          <div className="text-center">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center shadow-lg mb-3">
+              <Check className="text-white" size={28} />
             </div>
-            <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-600 leading-relaxed max-h-44 overflow-y-auto">
-              By creating an account, you agree to our{' '}
-              <Link to="/terms-and-conditions" target="_blank" className="text-blue-600 font-semibold underline">Terms and Conditions</Link>.
-              Your data is handled securely and will never be shared without your consent.
-            </div>
-            <label className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200 cursor-pointer hover:bg-blue-100 transition-all">
-              <input
-                type="checkbox"
-                className="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                checked={formData.termsAccepted}
-                onChange={(e) => { setFormData((prev) => ({ ...prev, termsAccepted: e.target.checked })); setErrors((prev) => ({ ...prev, termsAccepted: '' })); }}
-              />
-              <span className="text-sm font-medium text-slate-700">
-                I agree to the <Link to="/terms-and-conditions" target="_blank" className="text-blue-600 underline">Terms and Conditions</Link>
-              </span>
-            </label>
-            {errors.termsAccepted && <p className="text-red-500 text-xs flex items-center gap-1"><X size={12} />{errors.termsAccepted}</p>}
+            <h3 className="text-xl font-bold text-slate-900">All Set!</h3>
+            <p className="text-sm text-slate-500 mt-1">Review your details before finishing</p>
           </div>
-        );
-      }
-    }
 
-    // Final step: review + submit
-    if ((step === 8) || (step === 7 && !studentSteps) || (step === 7 && studentSteps)) {
-      const isSubmit = studentSteps ? step === 8 : step === 7;
-      if (isSubmit) {
-        return (
-          <div key="done" className={`space-y-5 ${animClass}`}>
-            <div className="text-center">
-              <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center shadow-lg mb-3">
-                <Check className="text-white" size={28} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900">All Set!</h3>
-              <p className="text-sm text-slate-500 mt-1">Review your details before finishing</p>
-            </div>
-
-            <div className="space-y-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
-              {formData.username && <DetailRow label="Username" value={formData.username} />}
-              {formData.fullName && <DetailRow label="Name" value={formData.fullName} />}
-              {formData.phone && <DetailRow label="Phone" value={`${formData.phoneCountry} ${formData.phone}`} />}
-              {formData.educationLevel && <DetailRow label="Education" value={`${formData.educationLevel}${formData.studyStream ? ' - ' + (formData.studyStream === 'Others' ? formData.customStudyStream : formData.studyStream) : ''}`} />}
-              {file && <DetailRow label="Photo" value="Uploaded" />}
-            </div>
-
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={loading || faceChecking}
-              className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl font-semibold hover:from-emerald-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {faceChecking ? 'Checking Photo...' : loading ? 'Saving...' : 'Create Profile'}
-            </button>
+          <div className="space-y-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
+            {formData.username && <DetailRow label="Username" value={formData.username} />}
+            {formData.fullName && <DetailRow label="Name" value={formData.fullName} />}
+            {formData.phone && <DetailRow label="Phone" value={`${formData.phoneCountry} ${formData.phone}`} />}
+            {formData.educationLevel && <DetailRow label="Education" value={`${formData.educationLevel}${formData.studyStream ? ' - ' + (formData.studyStream === 'Others' ? formData.customStudyStream : formData.studyStream) : ''}`} />}
           </div>
-        );
-      }
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl font-semibold hover:from-emerald-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Saving...' : 'Create Profile'}
+          </button>
+        </div>
+      );
     }
 
     return null;

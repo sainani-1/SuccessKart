@@ -207,7 +207,7 @@ const Login = () => {
 
       let { data: userProfile } = await supabase
         .from('profiles')
-        .select('id, role, is_disabled, is_locked, full_name, email, terms_accepted, education_level, study_stream, core_subject, session_violation_count')
+        .select('id, role, is_disabled, is_locked, full_name, email, phone, username, terms_accepted, education_level, study_stream, core_subject, auth_provider, google_profile_completed, session_violation_count')
         .eq('id', userId)
         .maybeSingle();
 
@@ -562,7 +562,7 @@ const Login = () => {
   const routeGoogleUser = async (oauthUser) => {
     let { data: profile } = await supabase
       .from('profiles')
-      .select('id, role, is_disabled, is_locked, locked_until, lock_reason, disabled_reason, terms_accepted, google_profile_completed, auth_provider, full_name, email, phone, education_level, study_stream, core_subject, session_violation_count')
+      .select('id, role, is_disabled, is_locked, locked_until, lock_reason, disabled_reason, terms_accepted, google_profile_completed, auth_provider, full_name, email, phone, username, education_level, study_stream, core_subject, session_violation_count')
       .eq('id', oauthUser.id)
       .maybeSingle();
 
@@ -725,7 +725,7 @@ const Login = () => {
 
               const { data: profile } = await supabase
                 .from('profiles')
-                .select('id, role, terms_accepted, google_profile_completed, auth_provider, full_name, email, phone, education_level, study_stream, core_subject')
+                .select('id, role, terms_accepted, google_profile_completed, auth_provider, full_name, email, phone, username, education_level, study_stream, core_subject')
                 .eq('id', session.user.id)
                 .maybeSingle();
 
@@ -886,7 +886,7 @@ const Login = () => {
       // Fetch user profile
       let { data: userProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, role, is_disabled, is_locked, locked_until, lock_reason, disabled_reason, deleted_at, deleted_reason, email, full_name, phone, avatar_url, education_level, study_stream, diploma_certificate, core_subject, session_violation_count, auth_provider, google_profile_completed, terms_accepted')
+        .select('id, role, is_disabled, is_locked, locked_until, lock_reason, disabled_reason, deleted_at, deleted_reason, email, full_name, phone, username, avatar_url, education_level, study_stream, diploma_certificate, core_subject, session_violation_count, auth_provider, google_profile_completed, terms_accepted')
         .eq('id', signInData.user.id)
         .single();
 
@@ -943,7 +943,7 @@ const Login = () => {
 
         const profileFetchRetry = await supabase
           .from('profiles')
-          .select('id, role, is_disabled, is_locked, locked_until, avatar_url')
+          .select('id, role, is_disabled, is_locked, locked_until, avatar_url, email, full_name, phone, username, education_level, study_stream, diploma_certificate, core_subject, auth_provider, google_profile_completed, terms_accepted')
           .eq('id', signInData.user.id)
           .single();
         userProfile = profileFetchRetry.data;

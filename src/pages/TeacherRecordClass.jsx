@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, Monitor, Camera, Video, Square, Download, RotateCcw, Circle, Settings, CheckCircle2, AlertCircle, Clock, Trash2, AudioLines, Volume2, VolumeX, Headphones, ShieldCheck } from 'lucide-react';
+import { Mic, Monitor, Camera, Video, Square, Download, RotateCcw, Circle, Settings, CheckCircle2, AlertCircle, Clock, Trash2, AudioLines, Volume2, VolumeX, Headphones, ShieldCheck, MonitorPlay, MonitorOff } from 'lucide-react';
 
 const RECORD_MODES = [
   { id: 'mic', label: 'Voice Only', icon: Mic, description: 'Record audio from your microphone', color: 'from-green-500 to-emerald-600', hasMic: true, hasScreen: false, hasCamera: false },
@@ -259,6 +259,11 @@ export default function TeacherRecordClass() {
   const [previewingVoice, setPreviewingVoice] = useState(null);
   const [noiseCancellation, setNoiseCancellation] = useState(true);
   const [micLevel, setMicLevel] = useState(0);
+  const [showLogoInPreview, setShowLogoInPreview] = useState(true);
+  const [showLogoDuringSave, setShowLogoDuringSave] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [changingScreen, setChangingScreen] = useState(false);
+  const [screenShareLost, setScreenShareLost] = useState(false);
 
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -272,7 +277,15 @@ export default function TeacherRecordClass() {
   const previewCtxRef = useRef(null);
   const micLevelRef = useRef(null);
   const micLevelAnimRef = useRef(null);
-
+  const screenVideoElRef = useRef(null);
+  const cameraVideoElRef = useRef(null);
+  const canvasDrawRef = useRef(null);
+  const recordStreamRef = useRef(null);
+  const mimeTypeRef = useRef('video/webm');
+  const isChangingScreenRef = useRef(false);
+  const logoImageRef = useRef(null);
+  const canvasPreviewRef = useRef(null);
+  const screenShareLostRef = useRef(false);
   const cleanupStreams = useCallback(() => {
     streamsRef.current.forEach((stream) => {
       stream.getTracks().forEach((track) => track.stop());
@@ -282,16 +295,32 @@ export default function TeacherRecordClass() {
       combinedStreamRef.current.getTracks().forEach((track) => track.stop());
       combinedStreamRef.current = null;
     }
+    recordStreamRef.current = null;
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
+    if (canvasDrawRef.current) {
+      cancelAnimationFrame(canvasDrawRef.current);
+      canvasDrawRef.current = null;
+    }
+    canvasRef.current = null;
     if (micLevelAnimRef.current) {
       cancelAnimationFrame(micLevelAnimRef.current);
       micLevelAnimRef.current = null;
     }
     if (previewVideoRef.current) {
       previewVideoRef.current.srcObject = null;
+    }
+    if (screenVideoElRef.current) {
+      screenVideoElRef.current.srcObject = null;
+      if (screenVideoElRef.current.parentNode) screenVideoElRef.current.parentNode.removeChild(screenVideoElRef.current);
+      screenVideoElRef.current = null;
+    }
+    if (cameraVideoElRef.current) {
+      cameraVideoElRef.current.srcObject = null;
+      if (cameraVideoElRef.current.parentNode) cameraVideoElRef.current.parentNode.removeChild(cameraVideoElRef.current);
+      cameraVideoElRef.current = null;
     }
     if (audioCtxRef.current) {
       audioCtxRef.current.close().catch(() => {});
@@ -342,6 +371,13 @@ export default function TeacherRecordClass() {
   }, [cleanupStreams]);
 
   useEffect(() => {
+    const img = new Image();
+    img.src = '/sucesskart-logo.svg';
+    img.onload = () => { logoImageRef.current = img; };
+    img.onerror = () => { logoImageRef.current = null; };
+  }, []);
+
+  useEffect(() => {
     if (!permissionGranted || !selectedMode || isRecording || recordedBlob) return;
     const { hasMic } = getModeFlags(selectedMode);
     if (!hasMic || streamsRef.current.length === 0) return;
@@ -385,14 +421,12 @@ export default function TeacherRecordClass() {
   const setupPreview = useCallback((mode) => {
     const { hasScreen, hasCamera } = getModeFlags(mode);
 
-    if (hasScreen && hasCamera) {
-      const canvas = document.createElement('canvas');
-      canvasRef.current = canvas;
-      const ctx = canvas.getContext('2d');
+    if (canvasDrawRef.current) cancelAnimationFrame(canvasDrawRef.current);
+    canvasDrawRef.current = null;
 
+    if (hasScreen && hasCamera) {
       let screenStream = null;
       let cameraStream = null;
-
       for (const s of streamsRef.current) {
         for (const track of s.getVideoTracks()) {
           if (track.label && track.label.toLowerCase().includes('screen')) {
@@ -402,36 +436,55 @@ export default function TeacherRecordClass() {
           }
         }
       }
-
       if (!screenStream) screenStream = streamsRef.current[0];
       if (!cameraStream) cameraStream = streamsRef.current.find((s) => s !== screenStream) || streamsRef.current[1];
 
+      const canvas = document.createElement('canvas');
+      canvas.width = 1920;
+      canvas.height = 1080;
+      canvasRef.current = canvas;
+      let ctx = canvas.getContext('2d');
+
       const screenVideo = document.createElement('video');
-      const cameraVideo = document.createElement('video');
       screenVideo.srcObject = screenStream;
-      cameraVideo.srcObject = cameraStream;
       screenVideo.muted = true;
+      screenVideo.playsInline = true;
+      screenVideo.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;';
+      document.body.appendChild(screenVideo);
+      screenVideoElRef.current = screenVideo;
+
+      const cameraVideo = document.createElement('video');
+      cameraVideo.srcObject = cameraStream;
       cameraVideo.muted = true;
-      screenVideo.play().catch(() => {});
-      cameraVideo.play().catch(() => {});
+      cameraVideo.playsInline = true;
+      cameraVideo.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;';
+      document.body.appendChild(cameraVideo);
+      cameraVideoElRef.current = cameraVideo;
+
+      let screenReady = false;
 
       const drawFrame = () => {
         if (!canvasRef.current) return;
-        const sw = screenVideo.videoWidth;
-        const sh = screenVideo.videoHeight;
-        if (!sw || !sh) {
-          canvas.width = 1920;
-          canvas.height = 1080;
-        } else {
-          canvas.width = sw;
-          canvas.height = sh;
+        const sv = screenVideoElRef.current;
+        const cv = cameraVideoElRef.current;
+        if (!sv || !cv) { canvasDrawRef.current = requestAnimationFrame(drawFrame); return; }
+        const sw = sv.videoWidth;
+        const sh = sv.videoHeight;
+        if (sw > 0 && sh > 0) {
+          if (!screenReady || canvas.width !== sw || canvas.height !== sh) {
+            canvas.width = sw;
+            canvas.height = sh;
+            ctx = canvas.getContext('2d');
+          }
+          screenReady = true;
         }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
-
-        const cw = cameraVideo.videoWidth;
-        const ch = cameraVideo.videoHeight;
-        if (cw && ch) {
+        if (screenReady) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(sv, 0, 0, canvas.width, canvas.height);
+        }
+        const cw = cv.videoWidth;
+        const ch = cv.videoHeight;
+        if (cw > 0 && ch > 0) {
           const camW = Math.floor(canvas.width * 0.25);
           const camH = Math.floor((ch / cw) * camW);
           const camX = canvas.width - camW - 16;
@@ -440,25 +493,37 @@ export default function TeacherRecordClass() {
           ctx.beginPath();
           ctx.roundRect(camX, camY, camW, camH, 10);
           ctx.clip();
-          ctx.drawImage(cameraVideo, camX, camY, camW, camH);
+          ctx.drawImage(cv, camX, camY, camW, camH);
           ctx.restore();
         }
-
-        animationRef.current = requestAnimationFrame(drawFrame);
-      };
-
-      const waitForVideo = () => {
-        if (screenVideo.videoWidth > 0 && screenVideo.videoHeight > 0) {
-          drawFrame();
-        } else {
-          setTimeout(waitForVideo, 100);
+        if (logoImageRef.current && screenReady) {
+          const logoW = Math.max(48, Math.floor(canvas.width * 0.035));
+          const logoH = Math.floor((logoImageRef.current.naturalHeight / logoImageRef.current.naturalWidth) * logoW);
+          const logoX = canvas.width - logoW - 20;
+          const logoY = 20;
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.drawImage(logoImageRef.current, logoX, logoY, logoW, logoH);
+          ctx.restore();
         }
+        canvasDrawRef.current = requestAnimationFrame(drawFrame);
       };
-      waitForVideo();
+
+      const startStreams = () => {
+        Promise.all([
+          screenVideo.play().catch((e) => console.warn('Screen play failed:', e)),
+          cameraVideo.play().catch((e) => console.warn('Camera play failed:', e)),
+        ]).then(() => { drawFrame(); });
+      };
+
+      let loaded = 0;
+      const onReady = () => { loaded++; if (loaded >= 2) startStreams(); };
+      screenVideo.onloadeddata = onReady;
+      cameraVideo.onloadeddata = onReady;
+      startStreams();
 
       const combinedStream = canvas.captureStream(30);
       combinedStreamRef.current = combinedStream;
-
       if (previewVideoRef.current) {
         previewVideoRef.current.srcObject = combinedStream;
       }
@@ -513,15 +578,9 @@ export default function TeacherRecordClass() {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
         streamsRef.current.push(screenStream);
         screenStream.getVideoTracks()[0].onended = () => {
-          if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-            mediaRecorderRef.current.stop();
-          }
-          setIsRecording(false);
-          setIsPaused(false);
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
+          if (isChangingScreenRef.current) return;
+          screenShareLostRef.current = true;
+          setScreenShareLost(true);
         };
       }
     } catch (e) {
@@ -552,7 +611,7 @@ export default function TeacherRecordClass() {
 
     const stream = new MediaStream();
 
-    if (hasScreen && hasCamera && combinedStreamRef.current) {
+    if (hasScreen && combinedStreamRef.current) {
       combinedStreamRef.current.getVideoTracks().forEach((t) => stream.addTrack(t));
     } else {
       streamsRef.current.forEach((s) => {
@@ -598,6 +657,7 @@ export default function TeacherRecordClass() {
   }, [voiceEffect]);
 
   const stopRecording = useCallback(() => {
+    isChangingScreenRef.current = false;
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
@@ -618,11 +678,130 @@ export default function TeacherRecordClass() {
     setRecordedUrl(null);
     setError(null);
 
+    const { hasMic, hasScreen, hasCamera } = getModeFlags(mode);
+
+    if (hasScreen && !canvasRef.current) {
+      let screenStream = streamsRef.current.find((s) => s.getVideoTracks().length > 0) || streamsRef.current[0];
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 1920;
+      canvas.height = 1080;
+      canvasRef.current = canvas;
+      let ctx = canvas.getContext('2d');
+
+      const screenVideo = document.createElement('video');
+      screenVideo.srcObject = screenStream;
+      screenVideo.muted = true;
+      screenVideo.playsInline = true;
+      screenVideo.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;';
+      document.body.appendChild(screenVideo);
+      screenVideoElRef.current = screenVideo;
+
+      let cameraVideo = null;
+      if (hasCamera) {
+        const camStream = streamsRef.current.find((s) => {
+          return s.getVideoTracks().length > 0 && !s.getVideoTracks().some((t) => t.label && t.label.toLowerCase().includes('screen'));
+        });
+        if (camStream) {
+          cameraVideo = document.createElement('video');
+          cameraVideo.srcObject = camStream;
+          cameraVideo.muted = true;
+          cameraVideo.playsInline = true;
+          cameraVideo.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;';
+          document.body.appendChild(cameraVideo);
+          cameraVideoElRef.current = cameraVideo;
+        }
+      }
+
+      let screenReady = false;
+
+      const drawPlaceholder = () => {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 48px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Screen share ended', canvas.width / 2, canvas.height / 2 - 30);
+        ctx.font = '28px sans-serif';
+        ctx.fillText('Click "Re-share Screen" to continue', canvas.width / 2, canvas.height / 2 + 30);
+      };
+
+      const drawFrame = () => {
+        if (!canvasRef.current) return;
+        const sv = screenVideoElRef.current;
+        if (!sv) { canvasDrawRef.current = requestAnimationFrame(drawFrame); return; }
+        const sw = sv.videoWidth;
+        const sh = sv.videoHeight;
+        if (sw > 0 && sh > 0) {
+          if (!screenReady || canvas.width !== sw || canvas.height !== sh) {
+            canvas.width = sw;
+            canvas.height = sh;
+            ctx = canvas.getContext('2d');
+          }
+          screenReady = true;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(sv, 0, 0, canvas.width, canvas.height);
+        } else if (screenReady) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          drawPlaceholder();
+        }
+        if (cameraVideo) {
+          const cv = cameraVideoElRef.current;
+          if (cv) {
+            const cw = cv.videoWidth;
+            const ch = cv.videoHeight;
+            if (cw > 0 && ch > 0 && screenReady) {
+              const camW = Math.floor(canvas.width * 0.25);
+              const camH = Math.floor((ch / cw) * camW);
+              const camX = canvas.width - camW - 16;
+              const camY = canvas.height - camH - 16;
+              ctx.save();
+              ctx.beginPath();
+              ctx.roundRect(camX, camY, camW, camH, 10);
+              ctx.clip();
+              ctx.drawImage(cv, camX, camY, camW, camH);
+              ctx.restore();
+            }
+          }
+        }
+        if (logoImageRef.current && screenReady) {
+          const logoW = Math.max(48, Math.floor(canvas.width * 0.035));
+          const logoH = Math.floor((logoImageRef.current.naturalHeight / logoImageRef.current.naturalWidth) * logoW);
+          const logoX = canvas.width - logoW - 20;
+          const logoY = 20;
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.drawImage(logoImageRef.current, logoX, logoY, logoW, logoH);
+          ctx.restore();
+        }
+        canvasDrawRef.current = requestAnimationFrame(drawFrame);
+      };
+
+      const startStream = () => {
+        const plays = [screenVideo.play().catch((e) => console.warn('Screen play failed:', e))];
+        if (cameraVideo) plays.push(cameraVideo.play().catch((e) => console.warn('Camera play failed:', e)));
+        Promise.all(plays).then(() => { drawFrame(); });
+      };
+
+      let loaded = 0;
+      const totalReady = cameraVideo ? 2 : 1;
+      const onReady = () => { loaded++; if (loaded >= totalReady) startStreams(); };
+      screenVideo.onloadeddata = onReady;
+      if (cameraVideo) cameraVideo.onloadeddata = onReady;
+      const startStreams = () => { startStream(); };
+      startStreams();
+
+      const combinedStream = canvas.captureStream(30);
+      combinedStreamRef.current = combinedStream;
+    }
+
     const recordStream = buildRecordStream(mode);
     if (!recordStream) {
       setError('No media streams available to record.');
       return;
     }
+    recordStreamRef.current = recordStream;
 
     let mimeType = 'video/webm';
     if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
@@ -630,6 +809,7 @@ export default function TeacherRecordClass() {
     } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
       mimeType = 'video/webm;codecs=vp9,opus';
     }
+    mimeTypeRef.current = mimeType;
 
     const recorder = new MediaRecorder(recordStream, {
       mimeType,
@@ -642,6 +822,7 @@ export default function TeacherRecordClass() {
     };
 
     recorder.onstop = () => {
+      if (isChangingScreenRef.current) return;
       const blob = new Blob(chunksRef.current, { type: mimeType });
       const url = URL.createObjectURL(blob);
       setRecordedBlob(blob);
@@ -673,14 +854,72 @@ export default function TeacherRecordClass() {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
       mediaRecorderRef.current.resume();
       setIsPaused(false);
+      isChangingScreenRef.current = false;
       timerRef.current = setInterval(() => {
         setElapsedTime((prev) => prev + 1);
       }, 1000);
     }
   }, []);
 
-  const downloadRecording = useCallback(() => {
+  const changeScreenShare = useCallback(async () => {
+    if (!selectedMode) return;
+    const { hasScreen } = getModeFlags(selectedMode);
+    if (!hasScreen) return;
+
+    try {
+      setChangingScreen(true);
+      isChangingScreenRef.current = true;
+
+      const newScreenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+
+      const oldScreenStreamIdx = streamsRef.current.findIndex((s) => {
+        return s.getVideoTracks().some((t) => t.label && t.label.toLowerCase().includes('screen'));
+      });
+
+      if (oldScreenStreamIdx !== -1) {
+        streamsRef.current[oldScreenStreamIdx] = newScreenStream;
+      } else {
+        streamsRef.current.push(newScreenStream);
+      }
+
+      newScreenStream.getVideoTracks()[0].onended = () => {
+        if (isChangingScreenRef.current) return;
+        screenShareLostRef.current = true;
+        setScreenShareLost(true);
+      };
+
+      screenShareLostRef.current = false;
+      setScreenShareLost(false);
+
+      if (screenVideoElRef.current) {
+        screenVideoElRef.current.srcObject = newScreenStream;
+        screenVideoElRef.current.play().catch((e) => console.warn('Screen video play failed:', e));
+      } else {
+        const newVideo = document.createElement('video');
+        newVideo.srcObject = newScreenStream;
+        newVideo.muted = true;
+        newVideo.playsInline = true;
+        newVideo.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;';
+        document.body.appendChild(newVideo);
+        screenVideoElRef.current = newVideo;
+        newVideo.play().catch((e) => console.warn('Screen video play failed:', e));
+      }
+
+      isChangingScreenRef.current = false;
+      setChangingScreen(false);
+    } catch (e) {
+      isChangingScreenRef.current = false;
+      console.warn('Change screen share failed:', e);
+      setChangingScreen(false);
+    }
+  }, [selectedMode]);
+
+  const downloadRecording = useCallback(async () => {
     if (!recordedBlob) return;
+    setIsSaving(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+
     const modeLabel = RECORD_MODES.find((m) => m.id === selectedMode)?.label || 'Recording';
     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
     const defaultName = `Class_${modeLabel.replace(/\s+/g, '_')}_${timestamp}`;
@@ -698,6 +937,8 @@ export default function TeacherRecordClass() {
       { id: Date.now(), name: finalName, size: recordedBlob.size, time: new Date().toLocaleTimeString(), duration: formatTime(elapsedTime), voice: voiceEffect },
       ...prev,
     ]);
+
+    setIsSaving(false);
   }, [recordedBlob, recordedUrl, fileName, selectedMode, elapsedTime, voiceEffect]);
 
   const resetRecording = useCallback(() => {
@@ -722,6 +963,38 @@ export default function TeacherRecordClass() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+      <style>{`
+        @keyframes logoFadeSlide {
+          0% { opacity: 0; transform: scale(0.7) translateY(10px); }
+          30% { opacity: 1; transform: scale(1) translateY(0); }
+          70% { opacity: 1; transform: scale(1) translateY(0); }
+          100% { opacity: 0.85; transform: scale(1) translateY(0); }
+        }
+        @keyframes logoSpin {
+          0% { transform: rotate(0deg) scale(0.8); opacity: 0; }
+          50% { transform: rotate(180deg) scale(1.1); opacity: 1; }
+          100% { transform: rotate(360deg) scale(1); opacity: 0.9; }
+        }
+        @keyframes logoPulse {
+          0%, 100% { transform: scale(1); opacity: 0.9; }
+          50% { transform: scale(1.05); opacity: 1; }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .logo-anim-save {
+          animation: logoSpin 1.5s ease-out forwards, logoPulse 2s ease-in-out 1.5s infinite;
+        }
+        .logo-anim-preview {
+          animation: logoFadeSlide 1.2s ease-out forwards;
+        }
+        .saving-shimmer {
+          background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+        }
+      `}</style>
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
@@ -893,7 +1166,19 @@ export default function TeacherRecordClass() {
                     className="w-full h-full object-contain"
                   />
                 ) : recordedUrl ? (
-                  <video src={recordedUrl} controls className="w-full h-full object-contain" />
+                  <div className="relative w-full h-full">
+                    <video src={recordedUrl} controls className="w-full h-full object-contain" />
+                    {showLogoInPreview && (
+                      <div className="absolute top-3 right-3 logo-anim-preview pointer-events-none">
+                        <img
+                          src="/sucesskart-logo.svg"
+                          alt="SucessKart"
+                          className="w-10 h-10 md:w-14 md:h-14 drop-shadow-lg"
+                          style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))' }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="text-center text-gray-400 p-8">
                     <Mic size={64} className="mx-auto mb-4 opacity-30" />
@@ -927,6 +1212,40 @@ export default function TeacherRecordClass() {
                       <span className="font-mono">{formatTime(elapsedTime)}</span>
                       {isPaused && <span className="text-yellow-100">PAUSED</span>}
                     </div>
+                  </div>
+                )}
+
+                {isPaused && modeHasScreen && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/90 text-white text-sm font-medium backdrop-blur-sm">
+                      <MonitorPlay size={14} />
+                      <span>Recording is paused</span>
+                    </div>
+                    <button
+                      onClick={changeScreenShare}
+                      disabled={changingScreen}
+                      className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-all duration-200 active:scale-95 disabled:opacity-50 shadow-lg shadow-blue-500/30"
+                    >
+                      <MonitorPlay size={18} />
+                      {changingScreen ? 'Switching...' : 'Re-share Screen'}
+                    </button>
+                  </div>
+                )}
+
+                {isRecording && !isPaused && screenShareLost && modeHasScreen && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/90 text-white text-sm font-medium backdrop-blur-sm">
+                      <MonitorOff size={14} />
+                      <span>Screen share ended</span>
+                    </div>
+                    <button
+                      onClick={changeScreenShare}
+                      disabled={changingScreen}
+                      className="flex items-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-all duration-200 active:scale-95 disabled:opacity-50 shadow-lg shadow-amber-500/30"
+                    >
+                      <MonitorPlay size={18} />
+                      {changingScreen ? 'Switching...' : 'Re-share Screen'}
+                    </button>
                   </div>
                 )}
 
@@ -970,23 +1289,47 @@ export default function TeacherRecordClass() {
                 )}
 
                 {isRecording && (
-                  <div className="flex justify-center gap-4">
+                  <div className="flex justify-center gap-4 flex-wrap">
                     {!isPaused ? (
-                      <button
-                        onClick={pauseRecording}
-                        className="flex items-center gap-2 px-6 py-3 bg-yellow-500 text-white rounded-xl font-bold hover:bg-yellow-600 transition-all duration-200 active:scale-95"
-                      >
-                        <Settings size={18} className="animate-spin" style={{ animationDuration: '3s' }} />
-                        Pause
-                      </button>
+                      <>
+                        <button
+                          onClick={pauseRecording}
+                          className="flex items-center gap-2 px-6 py-3 bg-yellow-500 text-white rounded-xl font-bold hover:bg-yellow-600 transition-all duration-200 active:scale-95"
+                        >
+                          <Settings size={18} className="animate-spin" style={{ animationDuration: '3s' }} />
+                          Pause
+                        </button>
+                        {modeHasScreen && screenShareLost && (
+                          <button
+                            onClick={changeScreenShare}
+                            disabled={changingScreen}
+                            className="flex items-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <MonitorPlay size={18} />
+                            {changingScreen ? 'Switching...' : 'Re-share Screen'}
+                          </button>
+                        )}
+                      </>
                     ) : (
-                      <button
-                        onClick={resumeRecording}
-                        className="flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all duration-200 active:scale-95"
-                      >
-                        <Circle size={18} className="fill-white" />
-                        Resume
-                      </button>
+                      <>
+                        <button
+                          onClick={resumeRecording}
+                          className="flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all duration-200 active:scale-95"
+                        >
+                          <Circle size={18} className="fill-white" />
+                          Resume
+                        </button>
+                        {modeHasScreen && (
+                          <button
+                            onClick={changeScreenShare}
+                            disabled={changingScreen}
+                            className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <MonitorPlay size={18} />
+                            {changingScreen ? 'Switching...' : 'Change Screen Share'}
+                          </button>
+                        )}
+                      </>
                     )}
                     <button
                       onClick={stopRecording}
@@ -1011,6 +1354,62 @@ export default function TeacherRecordClass() {
                       </div>
                     </div>
 
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                      <h4 className="text-sm font-bold text-gray-700">Watermark Settings</h4>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <img src="/sucesskart-logo.svg" alt="" className="w-6 h-6" />
+                          <span className="text-sm text-gray-600">Show logo on preview playback</span>
+                        </div>
+                        <button
+                          onClick={() => setShowLogoInPreview(!showLogoInPreview)}
+                          className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${showLogoInPreview ? 'bg-indigo-500' : 'bg-gray-300'}`}
+                        >
+                          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${showLogoInPreview ? 'translate-x-5' : ''}`} />
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Show logo animation while saving</span>
+                        </div>
+                        <button
+                          onClick={() => setShowLogoDuringSave(!showLogoDuringSave)}
+                          className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${showLogoDuringSave ? 'bg-indigo-500' : 'bg-gray-300'}`}
+                        >
+                          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${showLogoDuringSave ? 'translate-x-5' : ''}`} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {isSaving && showLogoDuringSave && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                        <div className="flex flex-col items-center gap-6">
+                          <div className="logo-anim-save">
+                            <img
+                              src="/sucesskart-logo.svg"
+                              alt="SucessKart"
+                              className="w-32 h-32 md:w-40 md:h-40 drop-shadow-2xl"
+                            />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-white text-xl font-bold">Saving your recording...</p>
+                            <p className="text-gray-300 text-sm mt-1">Please wait a moment</p>
+                          </div>
+                          <div className="w-48 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full saving-shimmer" style={{ width: '100%' }} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {isSaving && !showLogoDuringSave && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                          <p className="text-white text-lg font-bold">Saving...</p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex flex-col sm:flex-row gap-3">
                       <input
                         type="text"
@@ -1021,10 +1420,11 @@ export default function TeacherRecordClass() {
                       />
                       <button
                         onClick={downloadRecording}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl font-bold hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 active:scale-95"
+                        disabled={isSaving}
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl font-bold hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 active:scale-95 disabled:opacity-50"
                       >
                         <Download size={18} />
-                        Save to Device
+                        {isSaving ? 'Saving...' : 'Save to Device'}
                       </button>
                     </div>
 
