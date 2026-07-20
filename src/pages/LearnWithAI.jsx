@@ -3,6 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Bot, User, Send, Crown, AlertTriangle, Loader2, Brain, Sparkles, CheckCircle, Lightbulb, BookOpen, GraduationCap, Code, Terminal, Search, MoreVertical, Trash2 } from 'lucide-react';
 import { buildPlanCheckoutPath } from '../utils/planCheckout';
+import { useChatHistory } from '../hooks/useChatHistory';
+
+const LWA_WELCOME = 'Hi! I\'m SucessKart AI, your educational assistant. Ask me anything about learning, studies, or career guidance!';
 
 const SYSTEM_PROMPT = `You are "SucessKart AI" — a friendly, educational assistant built by the SucessKart team and trained by Sai Nani. Your purpose is to help students learn by answering academic and career-related questions.
 
@@ -159,12 +162,7 @@ const TypingIndicator = () => (
 const LearnWithAI = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem('learn_with_ai_messages');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const { messages, setMessages, addMessage, clearHistory } = useChatHistory('learn_with_ai_history', LWA_WELCOME);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const readStored = (key, fallback) => { try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; } catch { return fallback; } };
@@ -227,7 +225,7 @@ const LearnWithAI = () => {
   };
 
   const clearChat = () => {
-    setMessages([]);
+    clearHistory();
     setRemaining(null);
     setDailyRemaining(null);
     setRateLimit(10);
@@ -236,7 +234,6 @@ const LearnWithAI = () => {
     setRateLimitType(null);
     setShowMenu(false);
     try {
-      sessionStorage.removeItem('learn_with_ai_messages');
       localStorage.removeItem('ai_remaining');
       localStorage.removeItem('ai_daily_remaining');
       localStorage.removeItem('ai_rate_limit');
@@ -248,12 +245,6 @@ const LearnWithAI = () => {
 
   const premiumPlusActive = profile?.premium_plan_type === 'premium_plus' ||
     profile?.role === 'admin' || profile?.role === 'teacher';
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem('learn_with_ai_messages', JSON.stringify(messages.slice(-50)));
-    } catch {}
-  }, [messages]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -299,7 +290,7 @@ const LearnWithAI = () => {
     }));
 
     const userMsg = { role: 'user', content: userMessage, timestamp: new Date().toISOString() };
-    setMessages((prev) => [...prev, userMsg]);
+    addMessage(userMsg);
     setLoading(true);
 
     try {
@@ -325,19 +316,19 @@ const LearnWithAI = () => {
           setRateLimitType(data.type || 'minute');
           setRateLimitRetryAfter(retryAfter);
           if (data.type === 'daily') {
-            setMessages((prev) => [...prev, { role: 'assistant', content: `\u{1F31E} Daily limit reached. Try again tomorrow.`, timestamp: new Date().toISOString(), isError: true }]);
+            addMessage({ role: 'assistant', content: `\u{1F31E} Daily limit reached. Try again tomorrow.`, timestamp: new Date().toISOString(), isError: true });
           } else {
-            setMessages((prev) => [...prev, { role: 'assistant', content: `\u23F3 Rate limit reached. Please try again in ${retryAfter} seconds.`, timestamp: new Date().toISOString(), isError: true }]);
+            addMessage({ role: 'assistant', content: `\u23F3 Rate limit reached. Please try again in ${retryAfter} seconds.`, timestamp: new Date().toISOString(), isError: true });
           }
           return;
         }
         const errMsg = data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Something went wrong. Please try again.');
-        setMessages((prev) => [...prev, { role: 'assistant', content: errMsg, timestamp: new Date().toISOString(), isError: true }]);
+        addMessage({ role: 'assistant', content: errMsg, timestamp: new Date().toISOString(), isError: true });
         return;
       }
 
       if (data.isMisuse) {
-        setMessages((prev) => [...prev, { role: 'assistant', content: data.reply, timestamp: new Date().toISOString(), isError: true }]);
+        addMessage({ role: 'assistant', content: data.reply, timestamp: new Date().toISOString(), isError: true });
         return;
       }
 
@@ -355,9 +346,9 @@ const LearnWithAI = () => {
         localStorage.setItem('ai_rate_limit', JSON.stringify(newRateLimit));
         localStorage.setItem('ai_daily_limit', JSON.stringify(newDailyLimit));
       } catch {}
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply, timestamp: new Date().toISOString() }]);
+      addMessage({ role: 'assistant', content: data.reply, timestamp: new Date().toISOString() });
     } catch {
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Network error. Please check your connection.', timestamp: new Date().toISOString(), isError: true }]);
+      addMessage({ role: 'assistant', content: 'Network error. Please check your connection.', timestamp: new Date().toISOString(), isError: true });
     } finally {
       setLoading(false);
       requestAnimationFrame(() => inputRef.current?.focus());

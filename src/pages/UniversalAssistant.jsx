@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bot, Brain, Send, Sparkles, User } from 'lucide-react';
+import { Bot, Brain, Send, Sparkles, User, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateAssistantReply } from '../utils/aiAssistant';
+import { useChatHistory } from '../hooks/useChatHistory';
 
 const SUGGESTIONS = [
   'Explain time management for students',
@@ -28,16 +29,11 @@ const FALLBACK_REPLY = (question) => {
   return 'Ask a specific question and include your goal, current level, and deadline. That usually gives the most useful answer.';
 };
 
+const WELCOME_MSG = 'Ask anything: study plans, careers, skills, productivity, interviews, communication, projects, or general learning guidance.';
+
 const UniversalAssistant = () => {
   const { profile } = useAuth();
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content:
-        'Ask anything: study plans, careers, skills, productivity, interviews, communication, projects, or general learning guidance.',
-      timestamp: new Date(),
-    },
-  ]);
+  const { messages, setMessages, addMessage, clearHistory } = useChatHistory('ua_chat_history', WELCOME_MSG);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const endRef = useRef(null);
@@ -53,10 +49,9 @@ const UniversalAssistant = () => {
     const userMessage = {
       role: 'user',
       content: value,
-      timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    addMessage(userMessage);
     setInput('');
     setLoading(true);
 
@@ -75,23 +70,9 @@ If the user asks something broad, give a structured answer with actionable steps
           message: value,
         })) || FALLBACK_REPLY(value);
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: reply,
-          timestamp: new Date(),
-        },
-      ]);
+      addMessage({ role: 'assistant', content: reply });
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: FALLBACK_REPLY(value),
-          timestamp: new Date(),
-        },
-      ]);
+      addMessage({ role: 'assistant', content: FALLBACK_REPLY(value) });
     } finally {
       setLoading(false);
     }
@@ -112,8 +93,11 @@ If the user asks something broad, give a structured answer with actionable steps
               </p>
             </div>
           </div>
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-center gap-2">
             Signed in as <span className="font-semibold">{profile?.full_name || 'User'}</span>
+            <button onClick={clearHistory} className="ml-2 p-1.5 rounded-lg hover:bg-amber-100 text-amber-700 transition" title="Clear chat history">
+              <Trash2 size={14} />
+            </button>
           </div>
         </div>
 

@@ -417,7 +417,7 @@ const SkillUp = () => {
     'Instant solved ticks',
     'Live dashboard updates',
     'Beginner to Expert',
-    '50K+ generated questions',
+    '38K+ generated questions',
   ], []);
 
   if (!hasAccess) {
@@ -425,7 +425,7 @@ const SkillUp = () => {
       <PremiumPlusUpgradeGate
         profile={profile}
         title="Premium Plus Required"
-        message="SkillUp coding challenges with 50,000+ problems is a Premium Plus feature. Upgrade to unlock the full coding practice platform."
+        message="SkillUp coding challenges with 38,000+ unique problems is a Premium Plus feature. Upgrade to unlock the full coding practice platform."
         inline={true}
       />
     );
@@ -486,7 +486,7 @@ const SkillUp = () => {
                 SkillUp Rebuilt
               </div>
               <h1 className="mt-4 text-3xl md:text-5xl font-black text-white leading-tight">
-                Train from basic to expert with a clean 50K+ problem engine.
+                Train from basic to expert with a clean 38K+ problem engine.
               </h1>
               <p className="mt-3 max-w-2xl text-sm md:text-base text-slate-300">
                 Accepted submissions now update your solved tick, summary cards, and dashboard immediately, then sync back to storage without wiping your progress.

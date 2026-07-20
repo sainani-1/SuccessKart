@@ -87,6 +87,9 @@ const AdminResetPassword = lazy(() => import('./pages/AdminResetPassword'));
 const AdminUserPasswordResetPage = lazy(() => import('./pages/AdminUserPasswordResetPage'));
 const KnowYourLevel = lazy(() => import('./pages/KnowYourLevel'));
 const SkillUp = lazy(() => import('./pages/SkillUp'));
+const CompanyExamPage = lazy(() => import('./pages/CompanyExamPage'));
+const CareerRoadmapGenerator = lazy(() => import('./pages/CareerRoadmapGenerator'));
+const VerifiedSkillCredentials = lazy(() => import('./pages/VerifiedSkillCredentials'));
 const StartupIdeas = lazy(() => import('./pages/StartupIdeas'));
 const AdminStartupIdeas = lazy(() => import('./pages/AdminStartupIdeas'));
 const StartupCollaborations = lazy(() => import('./pages/StartupCollaborations'));
@@ -455,6 +458,7 @@ function App() {
           <Route path="learn-by-playing" element={<LearnByPlaying />} />
           <Route path="know-your-level" element={<KnowYourLevel />} />
           <Route path="skill-up" element={<SkillUp />} />
+          <Route path="company-exam" element={<CompanyExamPage />} />
           <Route path="courses" element={<CourseList />} />
           <Route path="daily-planner" element={<StudentDailyPlanner />} />
           <Route path="course-checklist" element={<CourseCompletionChecklist />} />
@@ -524,6 +528,8 @@ function App() {
           <Route path="resume-reviews" element={<PremiumPlusResumeReviews />} />
           <Route path="mock-interviews" element={<PremiumPlusMockInterviews />} />
           <Route path="personal-roadmap" element={<PremiumPlusRoadmap />} />
+          <Route path="career-roadmap" element={<CareerRoadmapGenerator />} />
+          <Route path="skill-credentials" element={<VerifiedSkillCredentials />} />
           <Route path="request-teacher" element={<RequestTeacher />} />
           <Route path="startup-ideas" element={<StartupIdeas />} />
           <Route path="startup-collaborations" element={<StartupCollaborations />} />

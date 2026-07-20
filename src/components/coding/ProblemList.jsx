@@ -20,6 +20,11 @@ function cleanTitle(title) {
     .trim();
 }
 
+function getVariantNumber(title) {
+  const m = title.match(/- Variant (\d+)$/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
 const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems = [] }) => {
   const [search, setSearch] = useState('');
   const [expandedSections, setExpandedSections] = useState(new Set(CURRICULUM_ORDER));
@@ -29,7 +34,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems
   const solvedIds = new Set(userProgress?.solvedIds || []);
   const level = getLevelFromXp(totalXp);
 
-  // Use pre-populated CURRICULUM data instead of filtering 50k problems
+  // Use pre-populated CURRICULUM data instead of filtering all problems
   const curriculumStats = useMemo(() => {
     const stats = {};
     for (const sectionId of CURRICULUM_ORDER) {
@@ -54,13 +59,13 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems
       const section = CURRICULUM.find(s => s.id === sectionId);
       if (!section) continue;
       const ids = section.problemIds || [];
-      map[sectionId] = ids.map(id => problemByIdMap.get(id)).filter(Boolean);
+      map[sectionId] = ids.map(id => problemByIdMap.get(id)).filter(Boolean).sort((a, b) => a.id - b.id);
     }
     return map;
   }, [problemByIdMap]);
 
   const problemStats = useMemo(() => {
-    const total = problems.length;
+    const total = CURRICULUM.reduce((sum, s) => sum + (s.problemIds?.length || 0), 0);
     const solved = solvedIds.size;
     const unlocked = problems.filter((problem) => isDifficultyUnlocked(problem.difficulty, totalXp)).length;
     return {
@@ -77,7 +82,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems
       if (section.subSections && section.id !== 'beginner') {
         section.subSections.forEach(ss => {
           const ids = ss.problems || [];
-          map[`${section.id}-${ss.topic}`] = ids.map(id => problemByIdMap.get(id)).filter(Boolean);
+          map[`${section.id}-${ss.topic}`] = ids.map(id => problemByIdMap.get(id)).filter(Boolean).sort((a, b) => a.id - b.id);
         });
       }
     });
@@ -118,7 +123,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems
     return problems.filter(p => {
       const clean = cleanTitle(p.title).toLowerCase();
       return clean.includes(q) || p.title.toLowerCase().includes(q);
-    });
+    }).slice(0, 200);
   }, [problems, search]);
 
   if (search.trim()) {
@@ -140,7 +145,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems
             </button>
           )}
         </div>
-        <div className="text-sm text-slate-500 mb-2">Search results ({results.length})</div>
+          <div className="text-sm text-slate-500 mb-2">Search results ({results.length}{results.length >= 200 ? ' (showing first 200)' : ''})</div>
         {results.length === 0 ? (
           <div className="bg-white backdrop-blur-xl border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
             <Brain size={48} className="mx-auto text-slate-400 mb-4" />
@@ -148,7 +153,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems
           </div>
         ) : (
           <div className="grid gap-2">
-            {results.slice(0, 50).map(problem => {
+            {results.map(problem => {
               const solved = solvedIds.has(problem.id);
               const unlocked = isDifficultyUnlocked(problem.difficulty, totalXp);
               const diffColor = getDifficultyBadgeColor(problem.difficulty);
@@ -168,7 +173,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems
                        <Circle size={16} className="text-slate-600" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className={`text-sm font-medium ${unlocked ? 'text-slate-900' : 'text-slate-500'}`}>{problem.id}. {cleanTitle(problem.title)}</span>
+                      <span className={`text-sm font-medium ${unlocked ? 'text-slate-900' : 'text-slate-500'}`}>{problem.id}. {problem.title}</span>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${diffColor}`}>{problem.difficulty}</span>
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -194,7 +199,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">
               <Route size={12} />
-              50K+ Question Explorer
+              {problemStats.total.toLocaleString()} Unique Questions
             </div>
             <h2 className="mt-4 text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
               A clear path from basics to expert mastery
@@ -346,7 +351,7 @@ const ProblemList = ({ problems, onSelectProblem, userProgress = {}, allProblems
                             </span>
                             <span className="text-sm text-slate-400 w-6 flex-shrink-0">{idx + 1}.</span>
                             <span className={`text-sm md:text-[15px] flex-1 min-w-0 ${solved ? 'text-emerald-700 font-medium' : 'text-slate-700 group-hover:text-slate-900'}`}>
-                              {problem.title}
+                              {cleanTitle(problem.title)}
                             </span>
                             {solved && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 font-medium">

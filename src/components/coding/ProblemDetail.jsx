@@ -20,6 +20,7 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
   const [discussion, setDiscussion] = useState([]);
   const [discussionInput, setDiscussionInput] = useState('');
   const [fullscreen, setFullscreen] = useState(false);
+  const outputRef = useRef(null);
   const [pasteWarning, setPasteWarning] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [showTabWarning, setShowTabWarning] = useState(false);
@@ -118,6 +119,12 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
     setResults(null);
   };
 
+  const scrollToOutput = () => {
+    setTimeout(() => {
+      outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
   // Run Code
   const handleRun = async () => {
     if (running) return;
@@ -138,6 +145,7 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
     }
     setRunning(false);
     setActiveTab('output');
+    scrollToOutput();
   };
 
   // Submit Code
@@ -170,6 +178,7 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
     }
     setSubmitting(false);
     setActiveTab('output');
+    scrollToOutput();
   };
 
   // Fullscreen toggle
@@ -522,7 +531,7 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
           </div>
 
           {/* Output Panel */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
+          <div ref={outputRef} className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50">
               <h3 className="text-sm font-medium text-slate-400">
                 {results ? (results.type === 'submit' ? 'Submission Results' : 'Run Results') : 'Output'}

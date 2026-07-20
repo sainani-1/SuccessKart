@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2, Bot, ScanFace, Circle } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2, Bot, ScanFace, Circle, Building2, Compass, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { useNotifications } from '../context/NotificationContext';
@@ -794,9 +794,21 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Sparkles size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Personal Roadmap</span>}
             </NavLink>
+            <NavLink to="/app/career-roadmap" className={navItemClass} title="AI Career Roadmap">
+              <Compass size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">AI Career Roadmap</span>}
+            </NavLink>
+            <NavLink to="/app/skill-credentials" className={navItemClass} title="Skill Credentials">
+              <Shield size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Skill Credentials</span>}
+            </NavLink>
             <NavLink to="/app/skill-up" className={navItemClass} title="SkillUp Yourself">
               <Trophy size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">SkillUp Yourself</span>}
+            </NavLink>
+            <NavLink to="/app/company-exam" className={navItemClass} title="Company Exams">
+              <Building2 size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Company Exams</span>}
             </NavLink>
             {premiumPlusActive && (
               <>

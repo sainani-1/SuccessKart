@@ -89,21 +89,7 @@ const BEGINNER_PROBLEMS = [
     timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
   },
   {
-    id: 5, title: 'Read Two Integers', difficulty: 'Very Easy', difficultyLevel: 1,
-    tags: ['Variables'], xpReward: 10,
-    description: 'Read two integers and print their sum.',
-    constraints: '-10^9 ≤ a, b ≤ 10^9', inputFormat: 'Two integers.', outputFormat: 'Sum of the two integers.',
-    examples: [{ input: '5 3', output: '8', explanation: '5 + 3 = 8' }],
-    testCases: [
-      { input: '5 3', output: '8', hidden: false },
-      { input: '-1 4', output: '3', hidden: false },
-      { input: '100 -200', output: '-100', hidden: true },
-    ],
-    hints: ['Read both numbers, add them, print the result.'],
-    timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
-  },
-  {
-    id: 6, title: 'Sum of Two Numbers', difficulty: 'Very Easy', difficultyLevel: 1,
+    id: 5, title: 'Sum of Two Numbers', difficulty: 'Very Easy', difficultyLevel: 1,
     tags: ['Operators'], xpReward: 10,
     description: 'Read two integers and print their sum.',
     constraints: '-10^9 ≤ a, b ≤ 10^9', inputFormat: 'Two integers.', outputFormat: 'Their sum.',
@@ -322,7 +308,7 @@ const CURRICULUM = [
     xpReward: 10,
     coinReward: 5,
     topic: 'Basics',
-    problemIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    problemIds: [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
   },
   {
     id: 'easy',
@@ -348,7 +334,7 @@ const CURRICULUM = [
   {
     id: 'medium',
     label: 'Medium',
-    difficulty: 'Medium',
+    difficulty: 'Intermediate',
     xpReward: 40,
     coinReward: 20,
     topic: 'Data Structures & Algorithms',
@@ -410,328 +396,439 @@ const CURRICULUM = [
   },
 ];
 
-const TOTAL_PROBLEMS = 50001;
-
+// ─── SEEDED RNG ───
 function mulberry32(a) {
-  return function() {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    var t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+function rngRange(rng, min, max) { return Math.floor(rng() * (max - min + 1)) + min; }
 
-const XPS = [10, 15, 20, 30, 45, 65, 90, 120, 160, 200];
+function _isPrime(n) { if (n < 2) return false; if (n < 4) return true; if (n % 2 === 0 || n % 3 === 0) return false; for (let i = 5; i * i <= n; i += 6) { if (n % i === 0 || n % (i + 2) === 0) return false; } return true; }
+function _gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a || 1; }
+function _lcm(a, b) { return Math.abs(a * b) / _gcd(a, b) || 1; }
+function _digitSum(n) { n = Math.abs(n); let s = 0; while (n > 0) { s += n % 10; n = Math.floor(n / 10); } return s; }
 
-const TOPIC_TEMPLATES = {
-  'Variables': [
-    { t: 'Swap Two Numbers', desc: 'Read two integers and swap their values.', constr: '-10^9 ≤ a, b ≤ 10^9', inFmt: 'Two integers a and b.', outFmt: 'Print a and b after swapping.', tc: [{i:'5 3',o:'3 5'},{i:'-1 4',o:'4 -1'},{i:'0 0',o:'0 0'},{i:'100 -200',o:'-200 100'},{i:'999 1',o:'1 999'}] },
-    { t: 'Variable Declaration Practice', desc: 'Read a number and print it back with a message.', constr: '-10^9 ≤ n ≤ 10^9', inFmt: 'A single integer.', outFmt: 'Print "You entered: X" where X is the number.', tc: [{i:'42',o:'You entered: 42'},{i:'-7',o:'You entered: -7'},{i:'0',o:'You entered: 0'},{i:'9999',o:'You entered: 9999'},{i:'-12345',o:'You entered: -12345'}] },
-    { t: 'Type Conversion', desc: 'Read a float and print its integer part and the original number.', constr: '-10^6 ≤ f ≤ 10^6', inFmt: 'A floating point number.', outFmt: 'Print "Integer: X Float: Y"', tc: [{i:'3.14',o:'Integer: 3 Float: 3.14'},{i:'-2.5',o:'Integer: -2 Float: -2.5'},{i:'0.0',o:'Integer: 0 Float: 0.0'},{i:'100.99',o:'Integer: 100 Float: 100.99'},{i:'-0.5',o:'Integer: 0 Float: -0.5'}] },
-    { t: 'Multiple Assignment', desc: 'Read three numbers and print them in reverse order.', constr: '-10^9 ≤ a,b,c ≤ 10^9', inFmt: 'Three integers.', outFmt: 'Three integers in reverse order.', tc: [{i:'1 2 3',o:'3 2 1'},{i:'4 5 6',o:'6 5 4'},{i:'-1 -2 -3',o:'-3 -2 -1'},{i:'0 0 0',o:'0 0 0'},{i:'100 200 300',o:'300 200 100'}] },
-  ],
-  'Operators': [
-    { t: 'Arithmetic Operations', desc: 'Read two integers and print their sum, difference, product, quotient, and remainder.', constr: '1 ≤ a,b ≤ 10^6', inFmt: 'Two integers.', outFmt: 'Five lines: sum, difference, product, quotient, remainder.', tc: [{i:'10 3',o:'13\n7\n30\n3\n1'},{i:'5 2',o:'7\n3\n10\n2\n1'},{i:'100 4',o:'104\n96\n400\n25\n0'},{i:'7 7',o:'14\n0\n49\n1\n0'},{i:'1 1',o:'2\n0\n1\n1\n0'}] },
-    { t: 'Bitwise AND', desc: 'Read two integers and print their bitwise AND.', constr: '0 ≤ a,b ≤ 10^9', inFmt: 'Two integers.', outFmt: 'Bitwise AND result.', tc: [{i:'5 3',o:'1'},{i:'8 7',o:'0'},{i:'15 10',o:'10'},{i:'0 255',o:'0'},{i:'1024 2048',o:'0'}] },
-    { t: 'Logical Operators', desc: 'Read three booleans (0/1) and print AND, OR, XOR of all three.', constr: '0 or 1', inFmt: 'Three integers (0 or 1).', outFmt: 'Three lines: AND, OR, XOR.', tc: [{i:'1 1 0',o:'0\n1\n0'},{i:'1 1 1',o:'1\n1\n1'},{i:'0 0 0',o:'0\n0\n0'},{i:'1 0 1',o:'0\n1\n0'},{i:'0 1 0',o:'0\n1\n1'}] },
-    { t: 'Modulo Master', desc: 'Read N and K. Print N modulo K.', constr: '1 ≤ N ≤ 10^9, 1 ≤ K ≤ 10^5', inFmt: 'Two integers N and K.', outFmt: 'N % K.', tc: [{i:'17 5',o:'2'},{i:'100 7',o:'2'},{i:'81 9',o:'0'},{i:'12345 100',o:'45'},{i:'0 1',o:'0'}] },
-  ],
-  'Loops': [
-    { t: 'Print 1 to N', desc: 'Print numbers from 1 to N.', constr: '1 ≤ N ≤ 1000', inFmt: 'Single integer N.', outFmt: 'Numbers from 1 to N separated by space.', tc: [{i:'5',o:'1 2 3 4 5'},{i:'3',o:'1 2 3'},{i:'1',o:'1'},{i:'10',o:'1 2 3 4 5 6 7 8 9 10'},{i:'7',o:'1 2 3 4 5 6 7'}] },
-    { t: 'Sum of N Numbers', desc: 'Read N followed by N integers. Print their sum.', constr: '1 ≤ N ≤ 1000, -10^6 ≤ each ≤ 10^6', inFmt: 'First line N. Second line N integers.', outFmt: 'Sum of the N integers.', tc: [{i:'5\n1 2 3 4 5',o:'15'},{i:'3\n-1 0 1',o:'0'},{i:'1\n42',o:'42'},{i:'4\n100 200 300 400',o:'1000'},{i:'6\n-5 -4 -3 -2 -1 0',o:'-15'}] },
-    { t: 'Multiplication Table', desc: 'Read N and print its multiplication table from 1 to 10.', constr: '1 ≤ N ≤ 100', inFmt: 'Single integer N.', outFmt: '"N x i = result" for i = 1 to 10.', tc: [{i:'5',o:'5 x 1 = 5\n5 x 2 = 10\n5 x 3 = 15\n5 x 4 = 20\n5 x 5 = 25\n5 x 6 = 30\n5 x 7 = 35\n5 x 8 = 40\n5 x 9 = 45\n5 x 10 = 50'},{i:'3',o:'3 x 1 = 3\n3 x 2 = 6\n3 x 3 = 9\n3 x 4 = 12\n3 x 5 = 15\n3 x 6 = 18\n3 x 7 = 21\n3 x 8 = 24\n3 x 9 = 27\n3 x 10 = 30'},{i:'10',o:'10 x 1 = 10\n10 x 2 = 20\n10 x 3 = 30\n10 x 4 = 40\n10 x 5 = 50\n10 x 6 = 60\n10 x 7 = 70\n10 x 8 = 80\n10 x 9 = 90\n10 x 10 = 100'},{i:'7',o:'7 x 1 = 7\n7 x 2 = 14\n7 x 3 = 21\n7 x 4 = 28\n7 x 5 = 35\n7 x 6 = 42\n7 x 7 = 49\n7 x 8 = 56\n7 x 9 = 63\n7 x 10 = 70'},{i:'1',o:'1 x 1 = 1\n1 x 2 = 2\n1 x 3 = 3\n1 x 4 = 4\n1 x 5 = 5\n1 x 6 = 6\n1 x 7 = 7\n1 x 8 = 8\n1 x 9 = 9\n1 x 10 = 10'}] },
-    { t: 'Factorial', desc: 'Read N and print N!.', constr: '1 ≤ N ≤ 20', inFmt: 'Single integer N.', outFmt: 'N!', tc: [{i:'5',o:'120'},{i:'3',o:'6'},{i:'10',o:'3628800'},{i:'1',o:'1'},{i:'7',o:'5040'}] },
-    { t: 'Count Digits', desc: 'Read an integer and count its digits.', constr: '0 ≤ N ≤ 10^9', inFmt: 'Single integer.', outFmt: 'Number of digits.', tc: [{i:'12345',o:'5'},{i:'0',o:'1'},{i:'100000',o:'6'},{i:'7',o:'1'},{i:'999999999',o:'9'}] },
-  ],
-  'If Else': [
-    { t: 'Even or Odd', desc: 'Read an integer and print "Even" or "Odd".', constr: '-10^9 ≤ N ≤ 10^9', inFmt: 'Single integer.', outFmt: '"Even" or "Odd".', tc: [{i:'4',o:'Even'},{i:'7',o:'Odd'},{i:'0',o:'Even'},{i:'-3',o:'Odd'},{i:'100',o:'Even'}] },
-    { t: 'Largest of Three', desc: 'Read three integers and print the largest.', constr: '-10^9 ≤ a,b,c ≤ 10^9', inFmt: 'Three integers.', outFmt: 'The largest integer.', tc: [{i:'3 7 5',o:'7'},{i:'10 10 10',o:'10'},{i:'-1 -5 -2',o:'-1'},{i:'100 50 75',o:'100'},{i:'0 -100 50',o:'50'}] },
-    { t: 'Leap Year', desc: 'Read a year and print "Leap" if leap year else "Not Leap".', constr: '1 ≤ year ≤ 10^5', inFmt: 'Single integer.', outFmt: '"Leap" or "Not Leap".', tc: [{i:'2024',o:'Leap'},{i:'2023',o:'Not Leap'},{i:'2000',o:'Leap'},{i:'1900',o:'Not Leap'},{i:'2400',o:'Leap'}] },
-    { t: 'Grade Calculator', desc: 'Read marks (0-100) and print grade: A(≥90), B(≥80), C(≥70), D(≥60), F(<60).', constr: '0 ≤ marks ≤ 100', inFmt: 'Single integer.', outFmt: 'Grade letter.', tc: [{i:'95',o:'A'},{i:'82',o:'B'},{i:'65',o:'D'},{i:'45',o:'F'},{i:'100',o:'A'}] },
-  ],
-  'Functions': [
-    { t: 'Add Two Numbers (Function)', desc: 'Write a function that takes two integers and returns their sum.', constr: '-10^9 ≤ a,b ≤ 10^9', inFmt: 'Two integers.', outFmt: 'Their sum.', tc: [{i:'2 3',o:'5'},{i:'-5 10',o:'5'},{i:'0 0',o:'0'},{i:'100 -100',o:'0'},{i:'999 1',o:'1000'}] },
-    { t: 'Power Function', desc: 'Read base and exponent and compute base^exponent.', constr: '1 ≤ base ≤ 10, 0 ≤ exp ≤ 10', inFmt: 'Two integers.', outFmt: 'Result of base^exp.', tc: [{i:'2 3',o:'8'},{i:'5 0',o:'1'},{i:'3 4',o:'81'},{i:'10 2',o:'100'},{i:'7 3',o:'343'}] },
-    { t: 'Is Prime?', desc: 'Write a function to check if a number is prime.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Single integer.', outFmt: '"Prime" or "Not Prime".', tc: [{i:'7',o:'Prime'},{i:'12',o:'Not Prime'},{i:'1',o:'Not Prime'},{i:'97',o:'Prime'},{i:'100',o:'Not Prime'}] },
-    { t: 'GCD Function', desc: 'Compute GCD of two numbers using a function.', constr: '1 ≤ a,b ≤ 10^6', inFmt: 'Two integers.', outFmt: 'GCD result.', tc: [{i:'12 8',o:'4'},{i:'17 5',o:'1'},{i:'100 25',o:'25'},{i:'0 5',o:'5'},{i:'36 48',o:'12'}] },
-  ],
-  'Arrays': [
-    { t: 'Array Sum', desc: 'Read N and N integers. Print their sum.', constr: '1 ≤ N ≤ 1000, -10^6 ≤ arr[i] ≤ 10^6', inFmt: 'First line N. Second line N integers.', outFmt: 'Sum of array.', tc: [{i:'5\n1 2 3 4 5',o:'15'},{i:'3\n-1 0 1',o:'0'},{i:'1\n42',o:'42'},{i:'4\n-5 -10 -15 -20',o:'-50'},{i:'6\n100 200 300 400 500 600',o:'2100'}] },
-    { t: 'Array Reverse', desc: 'Reverse an array of N integers.', constr: '1 ≤ N ≤ 1000', inFmt: 'First line N. Second line N integers.', outFmt: 'Reversed array.', tc: [{i:'5\n1 2 3 4 5',o:'5 4 3 2 1'},{i:'3\n4 5 6',o:'6 5 4'},{i:'1\n42',o:'42'},{i:'4\n-1 -2 -3 -4',o:'-4 -3 -2 -1'},{i:'6\n10 20 30 40 50 60',o:'60 50 40 30 20 10'}] },
-    { t: 'Find Maximum', desc: 'Find the maximum element in an array.', constr: '1 ≤ N ≤ 1000, -10^6 ≤ arr[i] ≤ 10^6', inFmt: 'First line N. Second line N integers.', outFmt: 'Maximum element.', tc: [{i:'5\n3 7 2 9 1',o:'9'},{i:'3\n-5 -2 -8',o:'-2'},{i:'1\n42',o:'42'},{i:'4\n100 200 50 75',o:'200'},{i:'6\n-1 -2 -3 -4 -5 0',o:'0'}] },
-    { t: 'Frequency Count', desc: 'Count frequency of each element in array.', constr: '1 ≤ N ≤ 1000, 1 ≤ arr[i] ≤ 100', inFmt: 'First line N. Second line N integers.', outFmt: 'Each unique element and its frequency.', tc: [{i:'5\n1 2 1 3 1',o:'1:3\n2:1\n3:1'},{i:'3\n4 4 4',o:'4:3'},{i:'1\n7',o:'7:1'},{i:'6\n2 2 3 3 5 5',o:'2:2\n3:2\n5:2'},{i:'4\n10 10 10 10',o:'10:4'}] },
-  ],
-  'Strings': [
-    { t: 'String Reverse', desc: 'Reverse a given string.', constr: '1 ≤ |s| ≤ 1000', inFmt: 'Single string.', outFmt: 'Reversed string.', tc: [{i:'hello',o:'olleh'},{i:'SucessKart',o:'traKssecuS'},{i:'abc',o:'cba'},{i:'racecar',o:'racecar'},{i:'A',o:'A'}] },
-    { t: 'Palindrome Check', desc: 'Check if a string is palindrome.', constr: '1 ≤ |s| ≤ 1000', inFmt: 'Single string.', outFmt: '"Palindrome" or "Not Palindrome".', tc: [{i:'racecar',o:'Palindrome'},{i:'hello',o:'Not Palindrome'},{i:'madam',o:'Palindrome'},{i:'a',o:'Palindrome'},{i:'ab',o:'Not Palindrome'}] },
-    { t: 'Vowel Count', desc: 'Count vowels (a,e,i,o,u) in a string (case-insensitive).', constr: '1 ≤ |s| ≤ 1000', inFmt: 'Single string.', outFmt: 'Number of vowels.', tc: [{i:'hello world',o:'3'},{i:'AEIOU',o:'5'},{i:'xyz',o:'0'},{i:'SucessKart',o:'3'},{i:'bcdfg',o:'0'}] },
-  ],
-  'Matrix': [
-    { t: 'Matrix Addition', desc: 'Add two matrices of same dimensions.', constr: '1 ≤ N,M ≤ 100, -10^3 ≤ val ≤ 10^3', inFmt: 'N M then N*M for each matrix.', outFmt: 'Resultant matrix.', tc: [{i:'2 2\n1 2\n3 4\n5 6\n7 8',o:'6 8\n10 12'},{i:'2 3\n1 1 1\n2 2 2\n3 3 3\n4 4 4',o:'4 4 4\n6 6 6'},{i:'1 1\n5\n10',o:'15'},{i:'3 2\n1 0\n0 1\n1 1\n1 1\n1 0\n0 1',o:'2 1\n1 1\n1 2'},{i:'2 2\n0 0\n0 0\n0 0\n0 0',o:'0 0\n0 0'}] },
-    { t: 'Matrix Transpose', desc: 'Transpose a matrix.', constr: '1 ≤ N,M ≤ 100', inFmt: 'N M then N*M integers.', outFmt: 'Transposed matrix.', tc: [{i:'2 3\n1 2 3\n4 5 6',o:'1 4\n2 5\n3 6'},{i:'1 4\n1 2 3 4',o:'1\n2\n3\n4'},{i:'3 3\n1 1 1\n2 2 2\n3 3 3',o:'1 2 3\n1 2 3\n1 2 3'},{i:'2 2\n1 2\n3 4',o:'1 3\n2 4'},{i:'4 1\n1\n2\n3\n4',o:'1 2 3 4'}] },
-  ],
-  'Patterns': [
-    { t: 'Right Triangle Star', desc: 'Print a right-angled triangle pattern of *.', constr: '1 ≤ N ≤ 100', inFmt: 'Single integer N.', outFmt: 'N rows of stars.', tc: [{i:'3',o:'*\n**\n***'},{i:'5',o:'*\n**\n***\n****\n*****'},{i:'1',o:'*'},{i:'4',o:'*\n**\n***\n****'},{i:'2',o:'*\n**'}] },
-    { t: 'Pyramid Pattern', desc: 'Print a centered pyramid of *.', constr: '1 ≤ N ≤ 50', inFmt: 'Single integer N.', outFmt: 'Pyramid pattern.', tc: [{i:'3',o:'  *\n ***\n*****'},{i:'5',o:'    *\n   ***\n  *****\n *******\n*********'},{i:'1',o:'*'},{i:'2',o:' *\n***'},{i:'4',o:'   *\n  ***\n *****\n*******'}] },
-    { t: 'Diamond Pattern', desc: 'Print a diamond pattern of *.', constr: '1 ≤ N ≤ 50', inFmt: 'Single integer N.', outFmt: 'Diamond pattern.', tc: [{i:'3',o:'  *\n ***\n*****\n ***\n  *'},{i:'5',o:'    *\n   ***\n  *****\n *******\n*********\n *******\n  *****\n   ***\n    *'},{i:'1',o:'*'},{i:'2',o:' *\n***\n *'},{i:'4',o:'   *\n  ***\n *****\n*******\n *****\n  ***\n   *'}] },
-    { t: 'Number Pattern', desc: 'Print pattern: 1, 12, 123... for N rows.', constr: '1 ≤ N ≤ 9', inFmt: 'Single integer N.', outFmt: 'Number pattern.', tc: [{i:'3',o:'1\n12\n123'},{i:'5',o:'1\n12\n123\n1234\n12345'},{i:'1',o:'1'},{i:'4',o:'1\n12\n123\n1234'},{i:'2',o:'1\n12'}] },
-  ],
-  'Searching': [
-    { t: 'Linear Search', desc: 'Find index of first occurrence of K in array.', constr: '1 ≤ N ≤ 1000', inFmt: 'Line1: N K. Line2: N integers.', outFmt: 'Index (0-based) or -1.', tc: [{i:'5 3\n1 2 3 4 5',o:'2'},{i:'4 10\n1 2 3 4',o:'-1'},{i:'3 5\n5 5 5',o:'0'},{i:'1 42\n42',o:'0'},{i:'6 0\n-1 0 2 -5 0 3',o:'1'}] },
-    { t: 'Binary Search', desc: 'Find K in sorted array using binary search.', constr: '1 ≤ N ≤ 10^5, sorted ascending', inFmt: 'Line1: N K. Line2: N sorted ints.', outFmt: 'Index or -1.', tc: [{i:'5 3\n1 2 3 4 5',o:'2'},{i:'4 10\n1 2 3 4',o:'-1'},{i:'6 7\n1 3 5 7 9 11',o:'3'},{i:'1 42\n42',o:'0'},{i:'8 25\n10 15 20 25 30 35 40 45',o:'3'}] },
-    { t: 'First and Last Occurrence', desc: 'Find first and last index of K in sorted array.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N K. Line2: N sorted ints.', outFmt: 'First Last or -1 -1.', tc: [{i:'8 3\n1 2 3 3 3 4 5 6',o:'2 4'},{i:'5 10\n1 2 3 4 5',o:'-1 -1'},{i:'8 5\n1 2 3 4 5 5 5 6',o:'4 6'},{i:'3 1\n1 1 1',o:'0 2'},{i:'1 7\n7',o:'0 0'}] },
-  ],
-  'Sorting': [
-    { t: 'Bubble Sort', desc: 'Sort an array using bubble sort.', constr: '1 ≤ N ≤ 1000', inFmt: 'Line1: N. Line2: N ints.', outFmt: 'Sorted array.', tc: [{i:'5\n5 4 3 2 1',o:'1 2 3 4 5'},{i:'3\n3 1 2',o:'1 2 3'},{i:'1\n42',o:'42'},{i:'4\n-1 -5 0 3',o:'-5 -1 0 3'},{i:'6\n9 8 7 6 5 4',o:'4 5 6 7 8 9'}] },
-    { t: 'Selection Sort', desc: 'Sort using selection sort and print each pass.', constr: '1 ≤ N ≤ 100', inFmt: 'Line1: N. Line2: N ints.', outFmt: 'Array after each selection.', tc: [{i:'4\n4 3 2 1',o:'1 3 2 4\n1 2 3 4\n1 2 3 4'},{i:'3\n3 1 2',o:'1 3 2\n1 2 3'},{i:'5\n5 4 3 2 1',o:'1 4 3 2 5\n1 2 3 4 5\n1 2 3 4 5\n1 2 3 4 5'},{i:'2\n2 1',o:'1 2'},{i:'1\n7',o:'7'}] },
-    { t: 'Merge Sort', desc: 'Sort array using merge sort.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Line2: N ints.', outFmt: 'Sorted array.', tc: [{i:'5\n5 4 3 2 1',o:'1 2 3 4 5'},{i:'3\n3 1 2',o:'1 2 3'},{i:'8\n8 7 6 5 4 3 2 1',o:'1 2 3 4 5 6 7 8'},{i:'4\n-1 -5 3 0',o:'-5 -1 0 3'},{i:'6\n1 1 1 1 1 1',o:'1 1 1 1 1 1'}] },
-    { t: 'Quick Sort', desc: 'Sort using quicksort.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Line2: N ints.', outFmt: 'Sorted array.', tc: [{i:'5\n3 1 4 1 5',o:'1 1 3 4 5'},{i:'3\n3 2 1',o:'1 2 3'},{i:'6\n6 5 4 3 2 1',o:'1 2 3 4 5 6'},{i:'2\n2 1',o:'1 2'},{i:'7\n7 7 7 7 7 7 7',o:'7 7 7 7 7 7 7'}] },
-  ],
-  'Recursion': [
-    { t: 'Fibonacci (Recursive)', desc: 'Print Nth Fibonacci number using recursion.', constr: '0 ≤ N ≤ 30', inFmt: 'Single integer N.', outFmt: 'Nth Fibonacci number.', tc: [{i:'5',o:'5'},{i:'0',o:'0'},{i:'10',o:'55'},{i:'1',o:'1'},{i:'20',o:'6765'}] },
-    { t: 'Tower of Hanoi', desc: 'Print moves to solve Tower of Hanoi for N disks.', constr: '1 ≤ N ≤ 10', inFmt: 'Single integer N.', outFmt: 'Each move as "Move disk X from A to B".', tc: [{i:'1',o:'Move disk 1 from A to C'},{i:'2',o:'Move disk 1 from A to B\nMove disk 2 from A to C\nMove disk 1 from B to C'},{i:'3',o:'Move disk 1 from A to C\nMove disk 2 from A to B\nMove disk 1 from C to B\nMove disk 3 from A to C\nMove disk 1 from B to A\nMove disk 2 from B to C\nMove disk 1 from A to C'}] },
-    { t: 'Sum of Digits (Recursive)', desc: 'Find sum of digits of N using recursion.', constr: '0 ≤ N ≤ 10^9', inFmt: 'Single integer.', outFmt: 'Sum of digits.', tc: [{i:'123',o:'6'},{i:'0',o:'0'},{i:'9999',o:'36'},{i:'1024',o:'7'},{i:'55555',o:'25'}] },
-    { t: 'Power (Recursive)', desc: 'Compute a^b using recursion.', constr: '1 ≤ a ≤ 10, 0 ≤ b ≤ 15', inFmt: 'Two integers.', outFmt: 'Result.', tc: [{i:'2 3',o:'8'},{i:'3 4',o:'81'},{i:'5 0',o:'1'},{i:'10 3',o:'1000'},{i:'7 2',o:'49'}] },
-  ],
-  'Linked List': [
-    { t: 'Reverse Linked List', desc: 'Reverse a singly linked list.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Line2: N integers.', outFmt: 'Reversed list.', tc: [{i:'5\n1 2 3 4 5',o:'5 4 3 2 1'},{i:'3\n4 5 6',o:'6 5 4'},{i:'1\n42',o:'42'},{i:'4\n-1 -2 -3 -4',o:'-4 -3 -2 -1'},{i:'2\n10 20',o:'20 10'}] },
-    { t: 'Detect Cycle', desc: 'Detect if linked list has a cycle.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Line2: N ints. Line3: cycle position (-1 for none).', outFmt: '"Cycle" or "No Cycle".', tc: [{i:'3\n1 2 3\n0',o:'Cycle'},{i:'4\n1 2 3 4\n-1',o:'No Cycle'},{i:'1\n5\n0',o:'Cycle'},{i:'5\n1 2 3 4 5\n-1',o:'No Cycle'},{i:'2\n7 8\n0',o:'Cycle'}] },
-  ],
-  'Stack': [
-    { t: 'Stack Operations', desc: 'Implement stack with push, pop, top, isEmpty.', constr: '1 ≤ Q ≤ 1000', inFmt: 'Q operations: "push x", "pop", "top", "empty".', outFmt: 'Result of top/empty.', tc: [{i:'5\npush 1\npush 2\ntop\npop\ntop',o:'2\n1'},{i:'4\npush 5\npush 10\npop\ntop',o:'5'},{i:'3\nempty\npush 1\nempty',o:'true\nfalse'},{i:'6\npush 1\npush 2\npush 3\npop\npop\ntop',o:'1'},{i:'2\npush 42\ntop',o:'42'}] },
-    { t: 'Balanced Parentheses', desc: 'Check if parentheses string is balanced.', constr: '1 ≤ |s| ≤ 1000', inFmt: 'Single string of (){}[].', outFmt: '"Balanced" or "Not Balanced".', tc: [{i:'({[]})',o:'Balanced'},{i:'(]',o:'Not Balanced'},{i:'{[()]}',o:'Balanced'},{i:'((()))',o:'Balanced'},{i:'(',o:'Not Balanced'}] },
-  ],
-  'Queue': [
-    { t: 'Queue Operations', desc: 'Implement queue with enqueue, dequeue, front.', constr: '1 ≤ Q ≤ 1000', inFmt: 'Q operations: "enqueue x", "dequeue", "front".', outFmt: 'Result of front/dequeue.', tc: [{i:'5\nenqueue 1\nenqueue 2\nfront\ndequeue\nfront',o:'1\n2'},{i:'4\nenqueue 10\nenqueue 20\ndequeue\ndequeue',o:''},{i:'6\nenqueue 5\nenqueue 15\nenqueue 25\nfront\ndequeue\nfront',o:'5\n15'},{i:'3\nenqueue 42\nfront\nfront',o:'42\n42'},{i:'4\nenqueue 1\ndequeue\nenqueue 2\nfront',o:'2'}] },
-  ],
-  'Tree': [
-    { t: 'Binary Tree Inorder', desc: 'Print inorder traversal of binary tree.', constr: '1 ≤ N ≤ 1000', inFmt: 'Line1: N. Line2: values. Line3: left children indices (-1 for null). Line4: right children indices.', outFmt: 'Inorder traversal.', tc: [{i:'3\n1 2 3\n-1 -1 0\n-1 -1 -1',o:'2 1 3'},{i:'1\n42\n-1\n-1',o:'42'},{i:'5\n1 2 3 4 5\n-1 0 -1 -1 2\n-1 -1 1 4 -1',o:'2 4 5 3 1'}] },
-    { t: 'Binary Search Tree', desc: 'Insert N numbers into BST and print inorder.', constr: '1 ≤ N ≤ 1000', inFmt: 'Line1: N. Line2: N ints.', outFmt: 'Inorder traversal of BST.', tc: [{i:'5\n5 3 7 2 4',o:'2 3 4 5 7'},{i:'4\n10 5 15 3',o:'3 5 10 15'},{i:'6\n1 2 3 4 5 6',o:'1 2 3 4 5 6'},{i:'3\n3 2 1',o:'1 2 3'},{i:'7\n8 3 10 1 6 14 4',o:'1 3 4 6 8 10 14'}] },
-    { t: 'Tree Height', desc: 'Find height of a binary tree.', constr: '1 ≤ N ≤ 1000', inFmt: 'Same as binary tree input format.', outFmt: 'Height of tree.', tc: [{i:'3\n1 2 3\n-1 -1 0\n-1 -1 -1',o:'2'},{i:'1\n42\n-1\n-1',o:'1'},{i:'7\n1 2 3 4 5 6 7\n-1 -1 0 2 -1 -1 -1\n-1 -1 1 -1 3 5 6',o:'4'}] },
-  ],
-  'Graph': [
-    { t: 'BFS Traversal', desc: 'Print BFS traversal of graph starting from node 0.', constr: '1 ≤ N ≤ 1000', inFmt: 'Line1: N M. Next M lines: u v edge.', outFmt: 'BFS order.', tc: [{i:'4 3\n0 1\n1 2\n2 3',o:'0 1 2 3'},{i:'5 4\n0 1\n0 2\n1 3\n1 4',o:'0 1 2 3 4'},{i:'3 2\n0 1\n1 2',o:'0 1 2'},{i:'1 0',o:'0'},{i:'4 3\n0 2\n2 1\n1 3',o:'0 2 1 3'}] },
-    { t: 'DFS Traversal', desc: 'Print DFS traversal of graph from node 0.', constr: '1 ≤ N ≤ 1000', inFmt: 'Same as BFS format.', outFmt: 'DFS order.', tc: [{i:'4 3\n0 1\n1 2\n2 3',o:'0 1 2 3'},{i:'5 4\n0 1\n0 2\n1 3\n1 4',o:'0 1 3 4 2'},{i:'3 2\n0 1\n1 2',o:'0 1 2'},{i:'1 0',o:'0'},{i:'4 3\n0 2\n2 1\n1 3',o:'0 2 1 3'}] },
-    { t: 'Shortest Path (Unweighted)', desc: 'Find shortest path distance from source to all nodes (BFS).', constr: '1 ≤ N ≤ 1000', inFmt: 'Line1: N M S. Next M lines: edges.', outFmt: 'Distances from S to each node.', tc: [{i:'4 3 0\n0 1\n1 2\n2 3',o:'0 1 2 3'},{i:'5 4 0\n0 1\n0 2\n1 3\n1 4',o:'0 1 1 2 2'},{i:'3 1 2\n1 2',o:'-1 -1 0'}] },
-  ],
-  'Dynamic Programming': [
-    { t: '0/1 Knapsack', desc: 'Find max value with weight capacity W.', constr: '1 ≤ N ≤ 100, 1 ≤ W ≤ 1000', inFmt: 'Line1: N W. Line2: values. Line3: weights.', outFmt: 'Maximum value.', tc: [{i:'3 50\n60 100 120\n10 20 30',o:'220'},{i:'4 10\n10 40 30 50\n5 4 6 3',o:'90'},{i:'2 5\n10 20\n1 2',o:'30'},{i:'3 8\n10 40 50\n3 4 5',o:'90'},{i:'5 100\n500 400 300 200 100\n50 40 30 20 10',o:'1500'}] },
-    { t: 'Longest Common Subsequence', desc: 'Find LCS length of two strings.', constr: '1 ≤ |a|,|b| ≤ 1000', inFmt: 'Two strings.', outFmt: 'LCS length.', tc: [{i:'ABCD\nACDF',o:'3'},{i:'AGGTAB\nGXTXAYB',o:'4'},{i:'ABC\nDEF',o:'0'},{i:'AAAA\nAAAA',o:'4'},{i:'ABCDEF\nABCDEF',o:'6'}] },
-    { t: 'Coin Change', desc: 'Find minimum coins needed for amount.', constr: '1 ≤ N ≤ 100, 0 ≤ amount ≤ 10000', inFmt: 'Line1: N amount. Line2: coin denominations.', outFmt: 'Minimum coins or -1.', tc: [{i:'3 11\n1 2 5',o:'3'},{i:'3 3\n2 5 10',o:'-1'},{i:'4 0\n1 2 5 10',o:'0'},{i:'3 7\n1 5 10',o:'3'},{i:'4 15\n1 3 5 7',o:'3'}] },
-    { t: 'Longest Increasing Subsequence', desc: 'Find LIS length.', constr: '1 ≤ N ≤ 1000', inFmt: 'Line1: N. Line2: array.', outFmt: 'LIS length.', tc: [{i:'8\n10 9 2 5 3 7 101 18',o:'4'},{i:'6\n0 1 0 3 2 3',o:'4'},{i:'1\n42',o:'1'},{i:'5\n5 4 3 2 1',o:'1'},{i:'7\n3 10 2 1 20 30 25',o:'4'}] },
-    { t: 'Edit Distance', desc: 'Find min operations to convert s1 to s2.', constr: '1 ≤ |a|,|b| ≤ 500', inFmt: 'Two strings.', outFmt: 'Edit distance.', tc: [{i:'CAT\nCAR',o:'1'},{i:'SUNDAY\nSATURDAY',o:'3'},{i:'ABC\nABC',o:'0'},{i:'DOG\nCAT',o:'3'},{i:'abcdef\nazced',o:'3'}] },
-    { t: 'Rod Cutting', desc: 'Max profit from cutting rod of length N.', constr: '1 ≤ N ≤ 100', inFmt: 'Line1: N. Line2: prices for each length (1..N).', outFmt: 'Max profit.', tc: [{i:'8\n1 5 8 9 10 17 17 20',o:'22'},{i:'4\n2 5 7 8',o:'10'},{i:'5\n1 2 3 4 5',o:'5'},{i:'3\n3 5 8',o:'8'},{i:'6\n1 3 4 5 7 9',o:'10'}] },
-    { t: 'Maximum Subarray Sum', desc: 'Find contiguous subarray with max sum (Kadane).', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Line2: array.', outFmt: 'Maximum subarray sum.', tc: [{i:'9\n-2 1 -3 4 -1 2 1 -5 4',o:'6'},{i:'5\n1 2 3 4 5',o:'15'},{i:'5\n-1 -2 -3 -4 -5',o:'-1'},{i:'4\n-2 1 -3 4',o:'4'},{i:'6\n5 -2 3 -1 2 -4',o:'7'}] },
-    { t: 'Unique Paths', desc: 'Count unique paths from top-left to bottom-right in grid.', constr: '1 ≤ M,N ≤ 100', inFmt: 'Two integers M N.', outFmt: 'Number of unique paths.', tc: [{i:'3 7',o:'28'},{i:'3 2',o:'3'},{i:'7 3',o:'28'},{i:'3 3',o:'6'},{i:'1 1',o:'1'}] },
-    { t: 'Minimum Path Sum', desc: 'Find min sum path from top-left to bottom-right.', constr: '1 ≤ M,N ≤ 200', inFmt: 'M N then grid values.', outFmt: 'Minimum path sum.', tc: [{i:'3 3\n1 3 1\n1 5 1\n4 2 1',o:'7'},{i:'2 3\n1 2 3\n4 5 6',o:'12'},{i:'1 3\n1 2 3',o:'6'},{i:'3 1\n1\n2\n3',o:'6'},{i:'2 2\n1 2\n3 4',o:'7'}] },
-    { t: 'House Robber', desc: 'Max money you can rob without adjacent houses.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Line2: values.', outFmt: 'Maximum amount.', tc: [{i:'5\n2 7 9 3 1',o:'12'},{i:'4\n1 2 3 1',o:'4'},{i:'3\n2 1 1',o:'3'},{i:'1\n5',o:'5'},{i:'6\n5 5 10 100 10 5',o:'110'}] },
-    { t: 'Subset Sum', desc: 'Check if subset with given sum exists.', constr: '1 ≤ N ≤ 200, 0 ≤ sum ≤ 10^5', inFmt: 'Line1: N sum. Line2: array.', outFmt: '"Yes" or "No".', tc: [{i:'5 11\n1 5 3 7 4',o:'Yes'},{i:'4 30\n5 10 15 20',o:'No'},{i:'3 6\n1 2 3',o:'Yes'},{i:'2 0\n1 2',o:'Yes'},{i:'6 100\n10 20 30 40 50 60',o:'Yes'}] },
-    { t: 'Palindromic Substrings', desc: 'Count palindromic substrings in a string.', constr: '1 ≤ N ≤ 1000', inFmt: 'Single string.', outFmt: 'Count.', tc: [{i:'abc',o:'3'},{i:'aaa',o:'6'},{i:'aba',o:'4'},{i:'a',o:'1'},{i:'abba',o:'6'}] },
-    { t: 'Jump Game', desc: 'Check if you can reach last index.', constr: '1 ≤ N ≤ 10^4', inFmt: 'Line1: N. Line2: jump array.', outFmt: '"Yes" or "No".', tc: [{i:'5\n2 3 1 1 4',o:'Yes'},{i:'5\n3 2 1 0 4',o:'No'},{i:'3\n1 1 1',o:'Yes'},{i:'1\n0',o:'Yes'},{i:'6\n2 0 0 0 0 5',o:'No'}] },
-    { t: 'Decode Ways', desc: 'Count ways to decode digit string (A=1...Z=26).', constr: '1 ≤ |s| ≤ 100', inFmt: 'String of digits.', outFmt: 'Number of ways.', tc: [{i:'12',o:'2'},{i:'226',o:'3'},{i:'0',o:'0'},{i:'06',o:'0'},{i:'11106',o:'2'}] },
-  ],
-  'Greedy': [
-    { t: 'Activity Selection', desc: 'Maximum number of non-overlapping activities.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Next N lines: start end.', outFmt: 'Maximum activities count.', tc: [{i:'4\n1 3\n2 4\n3 5\n5 6',o:'3'},{i:'3\n1 2\n2 3\n3 4',o:'3'},{i:'2\n1 4\n2 3',o:'1'},{i:'1\n5 10',o:'1'},{i:'5\n1 2\n3 4\n0 6\n5 7\n8 9',o:'4'}] },
-    { t: 'Fractional Knapsack', desc: 'Max value with fractional items allowed.', constr: '1 ≤ N ≤ 1000', inFmt: 'Line1: N W. Next N lines: value weight.', outFmt: 'Max value (2 decimal).', tc: [{i:'3 50\n60 10\n100 20\n120 30',o:'240.00'},{i:'2 10\n10 5\n20 10',o:'25.00'},{i:'3 15\n10 5\n20 10\n30 15',o:'45.00'},{i:'1 10\n100 5',o:'100.00'},{i:'4 20\n20 5\n30 10\n40 15\n50 20',o:'86.67'}] },
-    { t: 'Minimum Coins (Greedy)', desc: 'Minimum coins for amount using greedy (Indian currency).', constr: '1 ≤ amount ≤ 10^5', inFmt: 'Single integer.', outFmt: 'Minimum coins.', tc: [{i:'93',o:'5'},{i:'100',o:'1'},{i:'30',o:'3'},{i:'578',o:'10'},{i:'1',o:'1'}] },
-    { t: 'Job Sequencing', desc: 'Max profit from jobs with deadlines.', constr: '1 ≤ N ≤ 1000', inFmt: 'Line1: N. Next N lines: id deadline profit.', outFmt: 'Maximum profit.', tc: [{i:'4\n1 4 20\n2 1 10\n3 1 40\n4 1 30',o:'60'},{i:'5\n1 2 100\n2 1 19\n3 2 27\n4 1 25\n5 3 15',o:'142'},{i:'3\n1 2 50\n2 1 60\n3 2 40',o:'110'}] },
-  ],
-  'Hashing': [
-    { t: 'Two Sum', desc: 'Find indices of two numbers that sum to target.', constr: '2 ≤ N ≤ 10^5', inFmt: 'Line1: N target. Line2: array.', outFmt: 'Two indices (0-based).', tc: [{i:'4 9\n2 7 11 15',o:'0 1'},{i:'3 6\n3 2 4',o:'1 2'},{i:'2 3\n3 3',o:'0 1'},{i:'5 10\n1 2 3 4 5',o:'3 4'},{i:'3 0\n-1 0 1',o:'0 2'}] },
-    { t: 'Subarray Sum Equals K', desc: 'Count subarrays with sum equal to K.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N K. Line2: array.', outFmt: 'Count.', tc: [{i:'5 3\n1 2 3 -2 3',o:'4'},{i:'3 2\n1 1 1',o:'2'},{i:'4 -2\n-1 -1 1 1',o:'2'},{i:'2 0\n0 0',o:'3'},{i:'5 7\n3 4 7 2 -3 1 4 2',o:'4'}] },
-    { t: 'First Non-Repeating Character', desc: 'Find first non-repeating character index.', constr: '1 ≤ |s| ≤ 10^5', inFmt: 'Single string.', outFmt: 'Index (0-based) or -1.', tc: [{i:'leetcode',o:'0'},{i:'loveleetcode',o:'2'},{i:'aabb',o:'-1'},{i:'abcabc',o:'-1'},{i:'sucesskart',o:'1'}] },
-    { t: 'Group Anagrams', desc: 'Group anagram strings together. Print group sizes.', constr: '1 ≤ N ≤ 1000', inFmt: 'Line1: N. Next N lines: strings.', outFmt: 'Group sizes sorted.', tc: [{i:'6\nate\nbat\ntea\nate\ntan\nnat',o:'2 2 2'},{i:'3\nabc\ndef\nghi',o:'1 1 1'},{i:'4\nab\nba\nabc\ncba',o:'2 2'},{i:'2\nhello\nhello',o:'2'},{i:'5\ncar\narc\ncat\ntac\nact',o:'3 2'}] },
-  ],
-  'Bit Manipulation': [
-    { t: 'Count Set Bits', desc: 'Count set bits (1s) in binary representation.', constr: '0 ≤ N ≤ 10^9', inFmt: 'Single integer.', outFmt: 'Set bit count.', tc: [{i:'7',o:'3'},{i:'10',o:'2'},{i:'0',o:'0'},{i:'255',o:'8'},{i:'1024',o:'1'}] },
-    { t: 'Power of Two', desc: 'Check if N is a power of 2.', constr: '-10^9 ≤ N ≤ 10^9', inFmt: 'Single integer.', outFmt: '"Yes" or "No".', tc: [{i:'16',o:'Yes'},{i:'18',o:'No'},{i:'1',o:'Yes'},{i:'0',o:'No'},{i:'1024',o:'Yes'}] },
-    { t: 'Single Number', desc: 'Find element that appears once (others twice).', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Line2: array.', outFmt: 'The single element.', tc: [{i:'5\n2 2 1 3 1',o:'3'},{i:'3\n4 1 2 1 2',o:'4'},{i:'1\n42',o:'42'},{i:'7\n1 1 2 2 3 3 4',o:'4'},{i:'5\n-1 -1 0 2 2',o:'0'}] },
-    { t: 'Bit Manipulation: Find Missing Number', desc: 'Find the missing number in 0..N.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Line2: N numbers (0..N missing one).', outFmt: 'Missing number.', tc: [{i:'3\n3 0 1',o:'2'},{i:'2\n0 1',o:'2'},{i:'5\n0 1 2 3 5',o:'4'},{i:'1\n1',o:'0'},{i:'4\n4 3 2 1',o:'0'}] },
-  ],
-  'Mathematics': [
-    { t: 'Armstrong Number', desc: 'Check if N is an Armstrong number.', constr: '1 ≤ N ≤ 10^6', inFmt: 'Single integer.', outFmt: '"Armstrong" or "Not Armstrong".', tc: [{i:'153',o:'Armstrong'},{i:'123',o:'Not Armstrong'},{i:'370',o:'Armstrong'},{i:'1',o:'Armstrong'},{i:'9474',o:'Armstrong'}] },
-    { t: 'Perfect Number', desc: 'Check if N is a perfect number.', constr: '1 ≤ N ≤ 10^8', inFmt: 'Single integer.', outFmt: '"Perfect" or "Not Perfect".', tc: [{i:'28',o:'Perfect'},{i:'12',o:'Not Perfect'},{i:'6',o:'Perfect'},{i:'496',o:'Perfect'},{i:'100',o:'Not Perfect'}] },
-    { t: 'Sieve of Eratosthenes', desc: 'Print all primes up to N using sieve.', constr: '2 ≤ N ≤ 10^5', inFmt: 'Single integer.', outFmt: 'Space-separated primes.', tc: [{i:'10',o:'2 3 5 7'},{i:'20',o:'2 3 5 7 11 13 17 19'},{i:'5',o:'2 3 5'},{i:'2',o:'2'},{i:'30',o:'2 3 5 7 11 13 17 19 23 29'}] },
-    { t: 'LCM of Two Numbers', desc: 'Find LCM of two integers.', constr: '1 ≤ a,b ≤ 10^6', inFmt: 'Two integers.', outFmt: 'LCM.', tc: [{i:'12 18',o:'36'},{i:'7 5',o:'35'},{i:'4 6',o:'12'},{i:'1 10',o:'10'},{i:'100 75',o:'300'}] },
-    { t: 'Prime Factors', desc: 'Print prime factors of N.', constr: '2 ≤ N ≤ 10^6', inFmt: 'Single integer.', outFmt: 'Space-separated prime factors.', tc: [{i:'12',o:'2 2 3'},{i:'100',o:'2 2 5 5'},{i:'17',o:'17'},{i:'36',o:'2 2 3 3'},{i:'315',o:'3 3 5 7'}] },
-  ],
-  'Sliding Window': [
-    { t: 'Maximum Sum Subarray of Size K', desc: 'Find max sum of any subarray of size K.', constr: '1 ≤ K ≤ N ≤ 10^5', inFmt: 'Line1: N K. Line2: array.', outFmt: 'Maximum sum.', tc: [{i:'6 3\n2 3 5 2 9 1',o:'16'},{i:'5 2\n-1 2 3 1 -4',o:'4'},{i:'4 4\n1 2 3 4',o:'10'},{i:'7 3\n1 2 3 4 5 6 7',o:'18'},{i:'3 1\n5 3 8',o:'8'}] },
-    { t: 'Longest Substring Without Repeating', desc: 'Find length of longest substring without repeating chars.', constr: '1 ≤ |s| ≤ 10^5', inFmt: 'Single string.', outFmt: 'Length.', tc: [{i:'abcabcbb',o:'3'},{i:'bbbbb',o:'1'},{i:'pwwkew',o:'3'},{i:'',o:'0'},{i:'dvdf',o:'3'}] },
-    { t: 'Minimum Window Substring', desc: 'Find min window containing all chars of pattern.', constr: '1 ≤ |s|,|p| ≤ 10^5', inFmt: 'Two strings: s and p.', outFmt: 'Minimum window substring.', tc: [{i:'ADOBECODEBANC\nABC',o:'BANC'},{i:'a\na',o:'a'},{i:'a\naa',o:''},{i:'ab\nb',o:'b'},{i:'abcdef\nfed',o:'def'}] },
-  ],
-  'Prefix Sum': [
-    { t: 'Range Sum Query', desc: 'Answer Q range sum queries on array.', constr: '1 ≤ N,Q ≤ 10^5', inFmt: 'Line1: N Q. Line2: array. Next Q: L R.', outFmt: 'Sum for each query.', tc: [{i:'5 2\n1 2 3 4 5\n0 2\n1 4',o:'6\n14'},{i:'3 3\n10 20 30\n0 0\n1 2\n0 2',o:'10\n50\n60'},{i:'4 1\n-1 0 1 2\n0 3',o:'2'},{i:'2 2\n5 5\n0 1\n0 0',o:'10\n5'},{i:'6 3\n1 1 1 1 1 1\n0 5\n2 4\n3 3',o:'6\n3\n1'}] },
-    { t: 'Equilibrium Index', desc: 'Find index where left sum equals right sum.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Line2: array.', outFmt: 'Equilibrium index or -1.', tc: [{i:'6\n1 7 3 6 5 6',o:'3'},{i:'3\n1 2 3',o:'-1'},{i:'4\n2 1 -1 2',o:'1'},{i:'1\n42',o:'0'},{i:'5\n1 2 3 4 5',o:'-1'}] },
-  ],
-  'Binary Search': [
-    { t: 'Search in Rotated Array', desc: 'Find K in rotated sorted array.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N K. Line2: rotated array.', outFmt: 'Index or -1.', tc: [{i:'7 0\n4 5 6 7 0 1 2',o:'4'},{i:'7 3\n4 5 6 7 0 1 2',o:'-1'},{i:'5 2\n3 4 5 1 2',o:'4'},{i:'1 1\n1',o:'0'},{i:'6 9\n7 8 9 1 2 3',o:'2'}] },
-    { t: 'Peak Element', desc: 'Find a peak element (greater than neighbors).', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N. Line2: array.', outFmt: 'Peak element value.', tc: [{i:'7\n1 2 3 1 2 3 4',o:'3'},{i:'5\n1 2 1 3 5',o:'2'},{i:'1\n42',o:'42'},{i:'3\n1 2 3',o:'3'},{i:'4\n5 4 3 2',o:'5'}] },
-  ],
-  'Backtracking': [
-    { t: 'Generate Permutations', desc: 'Generate all permutations of first N natural numbers.', constr: '1 ≤ N ≤ 8', inFmt: 'Single integer N.', outFmt: 'All permutations, one per line.', tc: [{i:'3',o:'1 2 3\n1 3 2\n2 1 3\n2 3 1\n3 1 2\n3 2 1'},{i:'2',o:'1 2\n2 1'},{i:'1',o:'1'},{i:'4',o:'1 2 3 4\n1 2 4 3\n1 3 2 4\n1 3 4 2\n1 4 2 3\n1 4 3 2\n2 1 3 4\n2 1 4 3\n2 3 1 4\n2 3 4 1\n2 4 1 3\n2 4 3 1\n3 1 2 4\n3 1 4 2\n3 2 1 4\n3 2 4 1\n3 4 1 2\n3 4 2 1\n4 1 2 3\n4 1 3 2\n4 2 1 3\n4 2 3 1\n4 3 1 2\n4 3 2 1'}] },
-    { t: 'N-Queens Count', desc: 'Count ways to place N queens on NxN board.', constr: '1 ≤ N ≤ 12', inFmt: 'Single integer N.', outFmt: 'Number of solutions.', tc: [{i:'4',o:'2'},{i:'1',o:'1'},{i:'8',o:'92'},{i:'5',o:'10'},{i:'6',o:'4'}] },
-    { t: 'Subset Sum (Backtracking)', desc: 'Find all subsets that sum to target.', constr: '1 ≤ N ≤ 20', inFmt: 'Line1: N target. Line2: array.', outFmt: 'Number of subsets.', tc: [{i:'4 5\n1 2 3 4',o:'2'},{i:'5 10\n2 3 5 6 8',o:'3'},{i:'3 6\n1 2 3',o:'2'},{i:'4 0\n1 2 3 4',o:'1'},{i:'6 15\n1 2 3 4 5 6',o:'4'}] },
-    { t: 'Combination Sum', desc: 'Find all unique combinations summing to target.', constr: '1 ≤ N ≤ 30, candidates ≤ 40', inFmt: 'Line1: N target. Line2: candidates.', outFmt: 'Number of combinations.', tc: [{i:'4 7\n2 3 6 7',o:'2'},{i:'3 8\n2 3 5',o:'3'},{i:'4 1\n1 2 3 4',o:'1'},{i:'3 5\n1 2 3',o:'3'},{i:'5 10\n2 5 3 6 7',o:'4'}] },
-  ],
-  'Heap': [
-    { t: 'Kth Largest Element', desc: 'Find Kth largest element in array.', constr: '1 ≤ N ≤ 10^5, 1 ≤ K ≤ N', inFmt: 'Line1: N K. Line2: array.', outFmt: 'Kth largest.', tc: [{i:'6 2\n3 2 1 5 6 4',o:'5'},{i:'9 4\n3 2 3 1 2 4 5 5 6',o:'4'},{i:'1 1\n42',o:'42'},{i:'5 3\n1 2 3 4 5',o:'3'},{i:'7 1\n7 6 5 4 3 2 1',o:'7'}] },
-    { t: 'Merge K Sorted Arrays', desc: 'Merge K sorted arrays into one sorted array.', constr: '1 ≤ K ≤ 100, total N ≤ 10^5', inFmt: 'Line1: K. Next: for each array, line with count N then N ints.', outFmt: 'Merged sorted array.', tc: [{i:'2\n3 1 3 5\n3 2 4 6',o:'1 2 3 4 5 6'},{i:'3\n2 1 4\n3 2 5 7\n2 0 6',o:'0 1 2 4 5 6 7'},{i:'1\n3 3 2 1',o:'1 2 3'},{i:'2\n1 10\n1 20',o:'10 20'},{i:'3\n2 1 8\n2 3 5\n2 2 4',o:'1 2 3 4 5 8'}] },
-    { t: 'Top K Frequent Elements', desc: 'Find K most frequent elements.', constr: '1 ≤ N ≤ 10^5', inFmt: 'Line1: N K. Line2: array.', outFmt: 'K most frequent elements.', tc: [{i:'6 2\n1 1 1 2 2 3',o:'1 2'},{i:'4 1\n1 1 1 2',o:'1'},{i:'8 3\n1 2 2 3 3 3 4 4',o:'3 2 4'},{i:'1 1\n42',o:'42'},{i:'5 2\n1 2 2 3 3',o:'2 3'}] },
-  ],
-  'Number Theory': [
-    { t: 'Modular Exponentiation', desc: 'Compute (a^b) % m efficiently.', constr: '1 ≤ a,m ≤ 10^9, 0 ≤ b ≤ 10^9', inFmt: 'Three integers a b m.', outFmt: '(a^b) % m.', tc: [{i:'2 10 1000',o:'24'},{i:'3 5 100',o:'43'},{i:'10 0 7',o:'1'},{i:'5 3 13',o:'8'},{i:'123 456 789',o:'699'}] },
-    { t: 'Euler Totient', desc: 'Compute Euler totient φ(N).', constr: '1 ≤ N ≤ 10^6', inFmt: 'Single integer.', outFmt: 'φ(N).', tc: [{i:'10',o:'4'},{i:'7',o:'6'},{i:'12',o:'4'},{i:'1',o:'1'},{i:'100',o:'40'}] },
-    { t: 'Extended Euclidean', desc: 'Find GCD and coefficients x,y for ax+by=GCD(a,b).', constr: '1 ≤ a,b ≤ 10^6', inFmt: 'Two integers.', outFmt: 'GCD x y.', tc: [{i:'30 20',o:'10 1 -1'},{i:'17 5',o:'1 1 -3'},{i:'100 25',o:'25 0 1'},{i:'99 78',o:'3 -11 14'},{i:'24 36',o:'12 -1 1'}] },
-  ],
-  'Multithreading': [
-    { t: 'Print in Order', desc: 'Print numbers 1,2,3 in order using threading primitives.', constr: '', inFmt: 'No input.', outFmt: '1 2 3 in order.', tc: [{i:'',o:'1 2 3'}] },
-    { t: 'Producer Consumer', desc: 'Simulate producer-consumer with buffer size N.', constr: '1 ≤ N ≤ 100', inFmt: 'N items to produce.', outFmt: 'Items consumed in order.', tc: [{i:'3',o:'Produced: 1\nConsumed: 1\nProduced: 2\nConsumed: 2\nProduced: 3\nConsumed: 3'},{i:'2',o:'Produced: 1\nConsumed: 1\nProduced: 2\nConsumed: 2'},{i:'1',o:'Produced: 1\nConsumed: 1'}] },
-    { t: 'FizzBuzz Multithreaded', desc: 'Print FizzBuzz using 4 threads.', constr: '1 ≤ N ≤ 50', inFmt: 'Single integer.', outFmt: 'Output sequence with Fizz/Buzz/FizzBuzz.', tc: [{i:'15',o:'1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz'},{i:'5',o:'1 2 Fizz 4 Buzz'},{i:'3',o:'1 2 Fizz'}] },
-  ],
-  'File Handling': [
-    { t: 'Read and Sum', desc: 'Read integers from input (file/stdin) and print their sum.', constr: '1 ≤ N ≤ 1000', inFmt: 'N integers.', outFmt: 'Sum.', tc: [{i:'10 20 30',o:'60'},{i:'1 2 3 4 5',o:'15'},{i:'100 200',o:'300'},{i:'-5 5 10',o:'10'},{i:'0 0 0',o:'0'}] },
-    { t: 'Word Count', desc: 'Count words in a paragraph.', constr: '1 ≤ |s| ≤ 10000', inFmt: 'A line of text.', outFmt: 'Word count.', tc: [{i:'Hello World',o:'2'},{i:'This is a test',o:'4'},{i:'Coding',o:'1'},{i:'A quick brown fox jumps over the lazy dog',o:'9'},{i:'Spaces   between    words',o:'3'}] },
-  ],
-  'OOP': [
-    { t: 'Rectangle Class', desc: 'Create a Rectangle class with area() and perimeter() methods.', constr: '1 ≤ l,w ≤ 1000', inFmt: 'Length and width.', outFmt: 'Area and perimeter.', tc: [{i:'5 3',o:'15 16'},{i:'10 10',o:'100 40'},{i:'7 2',o:'14 18'},{i:'1 1',o:'1 4'},{i:'100 1',o:'100 202'}] },
-    { t: 'Bank Account', desc: 'Implement BankAccount with deposit, withdraw, getBalance.', constr: '1 ≤ Q ≤ 100', inFmt: 'Operations: deposit x, withdraw x, balance.', outFmt: 'Balance after each balance query.', tc: [{i:'4\ndeposit 100\nwithdraw 30\nbalance\ndeposit 50',o:'70'},{i:'5\ndeposit 500\nbalance\nwithdraw 600\nwithdraw 100\nbalance',o:'400'},{i:'3\nbalance\ndeposit 100\nbalance',o:'0\n100'}] },
-    { t: 'Student Class', desc: 'Create Student class with name, marks, and grade calculation.', constr: '1 ≤ marks ≤ 100', inFmt: 'Name and 5 subject marks.', outFmt: 'Name, total, and grade.', tc: [{i:'John 85 90 78 92 88',o:'John 433 A'},{i:'Alice 60 65 70 68 72',o:'Alice 335 B'},{i:'Bob 45 50 48 52 40',o:'Bob 235 D'}] },
-  ],
-};
+// ─── MASSIVE PROBLEM GENERATOR ───
+// Each operation + filter + inputType combination = one unique problem with a unique title.
 
-const ALL_TOPICS = Object.keys(TOPIC_TEMPLATES);
-const LEVEL_TOPIC_MAP = {
-  1: ['Variables', 'Operators'],
-  2: ['Loops', 'If Else'],
-  3: ['Functions', 'Mathematics'],
-  4: ['Arrays', 'Strings'],
-  5: ['Patterns', 'Searching', 'Sorting'],
-  6: ['Matrix', 'Recursion', 'Linked List', 'Stack', 'Queue'],
-  7: ['Tree', 'Hashing', 'Bit Manipulation', 'Prefix Sum'],
-  8: ['Graph', 'Greedy', 'Binary Search', 'Sliding Window', 'Heap'],
-  9: ['Dynamic Programming', 'Backtracking', 'Number Theory'],
-  10: ['Multithreading', 'File Handling', 'OOP'],
-};
-
-function seededRandom(seed) {
-  const rng = mulberry32(seed);
-  return rng;
-}
-
-const TITLE_VARIATIONS = [
-  (t, id) => `${t} ${id}`,
-  (t, id) => `${t} - Variant ${Math.floor(id / 7) + 1}`,
-  (t, id) => `${t} Challenge ${Math.floor(id / 5) + 1}`,
-  (t, id) => `${t} [Practice ${Math.floor(id / 11) + 1}]`,
-  (t, id) => `${t} (Level ${Math.floor(id / 13) + 1})`,
-  (t, id) => `Solve ${t}`,
-  (t, id) => `Problem: ${t}`,
-  (t, id) => `${t} #${id}`,
-  (t, id) => `Task: ${t}`,
-  (t, id) => `${t} Exercise ${id}`,
+const MOPS = [
+  { n: 'Sum', f: a => a.reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Product', f: a => a.reduce((s, x) => s * x, 1), o: 'a single integer' },
+  { n: 'Maximum', f: a => Math.max(...a), o: 'a single integer' },
+  { n: 'Minimum', f: a => Math.min(...a), o: 'a single integer' },
+  { n: 'Range', f: a => a.length > 1 ? Math.max(...a) - Math.min(...a) : 0, o: 'a single integer' },
+  { n: 'Average', f: a => { const s = a.reduce((t, x) => t + x, 0); return Math.round((s / a.length) * 100) / 100; }, o: 'a decimal number' },
+  { n: 'Count of Even Numbers', f: a => a.filter(x => x % 2 === 0).length, o: 'a single integer' },
+  { n: 'Count of Odd Numbers', f: a => a.filter(x => x % 2 !== 0).length, o: 'a single integer' },
+  { n: 'Count of Positive Numbers', f: a => a.filter(x => x > 0).length, o: 'a single integer' },
+  { n: 'Count of Negative Numbers', f: a => a.filter(x => x < 0).length, o: 'a single integer' },
+  { n: 'Count of Zeroes', f: a => a.filter(x => x === 0).length, o: 'a single integer' },
+  { n: 'Sum of Squares', f: a => a.reduce((s, x) => s + x * x, 0), o: 'a single integer' },
+  { n: 'Sum of Absolute Values', f: a => a.reduce((s, x) => s + Math.abs(x), 0), o: 'a single integer' },
+  { n: 'XOR of All Elements', f: a => a.reduce((s, x) => s ^ x, 0), o: 'a single integer' },
+  { n: 'Bitwise AND of All Elements', f: a => a.reduce((s, x) => s & x), o: 'a single integer' },
+  { n: 'Bitwise OR of All Elements', f: a => a.reduce((s, x) => s | x, 0), o: 'a single integer' },
+  { n: 'Second Largest', f: a => { const u = [...new Set(a)].sort((x, y) => y - x); return u.length >= 2 ? u[1] : u[0]; }, o: 'a single integer' },
+  { n: 'Second Smallest', f: a => { const u = [...new Set(a)].sort((x, y) => x - y); return u.length >= 2 ? u[1] : u[0]; }, o: 'a single integer' },
+  { n: 'Median', f: a => { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }, o: 'a number' },
+  { n: 'Sum of Digits', f: a => a.reduce((s, x) => s + _digitSum(Math.abs(x)), 0), o: 'a single integer' },
+  { n: 'Count of Distinct Elements', f: a => new Set(a).size, o: 'a single integer' },
+  { n: 'Maximum Adjacent Difference', f: a => { let m = 0; for (let i = 1; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - a[i - 1])); return m; }, o: 'a single integer' },
+  { n: 'Count of Prime Numbers', f: a => a.filter(x => _isPrime(Math.abs(x))).length, o: 'a single integer' },
+  { n: 'Sum of Prime Numbers', f: a => a.filter(x => _isPrime(Math.abs(x))).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Largest Even Number', f: a => { const e = a.filter(x => x % 2 === 0); return e.length ? Math.max(...e) : -1; }, o: 'a single integer' },
+  { n: 'Largest Odd Number', f: a => { const o = a.filter(x => x % 2 !== 0); return o.length ? Math.max(...o) : -1; }, o: 'a single integer' },
+  { n: 'Smallest Positive Number', f: a => { const p = a.filter(x => x > 0); return p.length ? Math.min(...p) : 0; }, o: 'a single integer' },
+  { n: 'Smallest Even Number', f: a => { const e = a.filter(x => x % 2 === 0); return e.length ? Math.min(...e) : -1; }, o: 'a single integer' },
+  { n: 'Count of Perfect Squares', f: a => a.filter(x => x > 0 && Math.sqrt(x) === Math.floor(Math.sqrt(x))).length, o: 'a single integer' },
+  { n: 'Sum of Non-Zero Elements', f: a => a.filter(x => x !== 0).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'GCD of All Elements', f: a => a.reduce((g, x) => _gcd(g, Math.abs(x))), o: 'a single integer' },
+  { n: 'Count of Numbers Divisible by 3', f: a => a.filter(x => x % 3 === 0).length, o: 'a single integer' },
+  { n: 'Count of Numbers Divisible by 5', f: a => a.filter(x => x % 5 === 0).length, o: 'a single integer' },
+  { n: 'Sum of Multiples of 3 or 5', f: a => a.filter(x => x % 3 === 0 || x % 5 === 0).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Single Digit Numbers', f: a => a.filter(x => Math.abs(x) <= 9).length, o: 'a single integer' },
+  { n: 'Count of Double Digit Numbers', f: a => a.filter(x => Math.abs(x) >= 10 && Math.abs(x) <= 99).length, o: 'a single integer' },
+  { n: 'Count of Triple Digit Numbers', f: a => a.filter(x => Math.abs(x) >= 100 && Math.abs(x) <= 999).length, o: 'a single integer' },
+  { n: 'Sum of Numbers Greater Than 50', f: a => a.filter(x => x > 50).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers Between 10 and 100', f: a => a.filter(x => x >= 10 && x <= 100).length, o: 'a single integer' },
+  { n: 'Product of Even Numbers', f: a => { const e = a.filter(x => x % 2 === 0); return e.length ? e.reduce((s, x) => s * x, 1) : 0; }, o: 'a single integer' },
+  { n: 'Product of Odd Numbers', f: a => { const o = a.filter(x => x % 2 !== 0); return o.length ? o.reduce((s, x) => s * x, 1) : 0; }, o: 'a single integer' },
+  { n: 'Element with Maximum Digit Sum', f: a => a.length ? a.reduce((b, x) => _digitSum(Math.abs(x)) > _digitSum(Math.abs(b)) ? x : b) : 0, o: 'a single integer' },
+  { n: 'Sum of Multiples of 7', f: a => a.filter(x => x % 7 === 0).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers Divisible by 9', f: a => a.filter(x => x % 9 === 0).length, o: 'a single integer' },
+  { n: 'Sum of Negative Numbers', f: a => a.filter(x => x < 0).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Maximum Absolute Value', f: a => a.length ? Math.max(...a.map(x => Math.abs(x))) : 0, o: 'a single integer' },
+  { n: 'Minimum Absolute Value', f: a => a.length ? Math.min(...a.map(x => Math.abs(x))) : 0, o: 'a single integer' },
+  { n: 'Sum of Multiples of 4', f: a => a.filter(x => x % 4 === 0).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Multiples of 6', f: a => a.filter(x => x % 6 === 0).length, o: 'a single integer' },
+  { n: 'Sum of Numbers Less Than 0', f: a => a.filter(x => x < 0).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Largest Three Digit Number', f: a => { const t = a.filter(x => Math.abs(x) >= 100 && Math.abs(x) <= 999); return t.length ? Math.max(...t) : -1; }, o: 'a single integer' },
+  { n: 'Count of Numbers Greater Than Average', f: a => { const avg = a.reduce((s, x) => s + x, 0) / a.length; return a.filter(x => x > avg).length; }, o: 'a single integer' },
+  { n: 'Sum of Numbers Below Median', f: a => { const s = [...a].sort((x, y) => x - y); const med = s[s.length >> 1]; return s.filter(x => x < med).reduce((t, x) => t + x, 0); }, o: 'a single integer' },
+  { n: 'Count of Palindromic Numbers', f: a => a.filter(x => { const s = Math.abs(x).toString(); return s === [...s].reverse().join(''); }).length, o: 'a single integer' },
+  { n: 'Sum of Numbers With No Repeated Digits', f: a => a.filter(x => { const s = Math.abs(x).toString(); return new Set(s).size === s.length; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Armstrong Numbers', f: a => a.filter(x => { const d = Math.abs(x).toString().split('').map(Number); const p = d.length; return d.reduce((s, v) => s + Math.pow(v, p), 0) === Math.abs(x); }).length, o: 'a single integer' },
+  { n: 'Sum of Factorials of Digits', f: a => a.map(x => { let f = 1; for (let i = 2; i <= Math.abs(x); i++) f *= i; return f; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Fibonacci Numbers', f: a => a.filter(x => { const n = Math.abs(x); if (n <= 1) return true; let a0 = 0, a1 = 1; while (a1 < n) { [a0, a1] = [a1, a0 + a1]; } return a1 === n; }).length, o: 'a single integer' },
+  { n: 'Sum of Reversed Numbers', f: a => a.reduce((s, x) => { const r = parseInt(Math.abs(x).toString().split('').reverse().join('')) * Math.sign(x); return s + r; }, 0), o: 'a single integer' },
+  { n: 'Count of Perfect Numbers', f: a => a.filter(x => { const n = Math.abs(x); if (n < 2) return false; let s = 1; for (let i = 2; i * i <= n; i++) { if (n % i === 0) { s += i; if (i !== n / i) s += n / i; } } return s === n && n > 1; }).length, o: 'a single integer' },
+  { n: 'Sum of Harshad Numbers', f: a => a.filter(x => { const n = Math.abs(x); if (n === 0) return false; const ds = _digitSum(n); return ds > 0 && n % ds === 0; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Duck Numbers', f: a => a.filter(x => Math.abs(x).toString().includes('0')).length, o: 'a single integer' },
+  { n: 'Sum of Spy Numbers', f: a => a.filter(x => { const d = Math.abs(x).toString().split('').map(Number); return d.reduce((p, v) => p * v, 1) === d.reduce((s, v) => s + v, 0); }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Tech Numbers', f: a => a.filter(x => { const s = Math.abs(x).toString(); if (s.length !== 4) return false; const l = parseInt(s.slice(0, 2)), r = parseInt(s.slice(2)); return (l + r) * (l + r) === Math.abs(x); }).length, o: 'a single integer' },
+  { n: 'Sum of Numbers With Even Digit Count', f: a => a.filter(x => Math.abs(x).toString().length % 2 === 0).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers With All Same Digits', f: a => a.filter(x => new Set(Math.abs(x).toString()).size === 1).length, o: 'a single integer' },
+  { n: 'Sum of Digits Product', f: a => a.reduce((s, x) => { let p = 1; Math.abs(x).toString().split('').forEach(d => p *= parseInt(d)); return s + p; }, 0), o: 'a single integer' },
+  { n: 'Count of Numbers With Increasing Digits', f: a => a.filter(x => { const d = Math.abs(x).toString(); for (let i = 1; i < d.length; i++) if (d[i] <= d[i - 1]) return false; return true; }).length, o: 'a single integer' },
+  { n: 'Sum of Numbers Divisible by Their Digit Sum', f: a => a.filter(x => { const n = Math.abs(x); const ds = _digitSum(n); return ds > 0 && n % ds === 0; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers With Decreasing Digits', f: a => a.filter(x => { const d = Math.abs(x).toString(); for (let i = 1; i < d.length; i++) if (d[i] >= d[i - 1]) return false; return true; }).length, o: 'a single integer' },
+  { n: 'Sum of Binary Representations as Integers', f: a => a.reduce((s, x) => s + parseInt(Math.abs(x).toString(2), 10), 0), o: 'a single integer' },
+  { n: 'Count of Numbers With Prime Digit Sum', f: a => a.filter(x => _isPrime(_digitSum(Math.abs(x)))).length, o: 'a single integer' },
+  { n: 'Sum of Numbers With Odd Digit Count', f: a => a.filter(x => Math.abs(x).toString().length % 2 === 1).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Largest Number With All Unique Digits', f: a => { const valid = a.filter(x => new Set(Math.abs(x).toString()).size === Math.abs(x).toString().length); return valid.length ? Math.max(...valid) : -1; }, o: 'a single integer' },
+  { n: 'Sum of Lucas Numbers in Range', f: a => a.filter(x => { const n = Math.abs(x); if (n <= 1) return n === 1 || n === 2; let l0 = 2, l1 = 1; while (l1 < n) { [l0, l1] = [l1, l0 + l1]; } return l1 === n; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Abundant Numbers', f: a => a.filter(x => { const n = Math.abs(x); if (n < 2) return false; let s = 1; for (let i = 2; i * i <= n; i++) { if (n % i === 0) { s += i; if (i !== n / i) s += n / i; } } return s > n; }).length, o: 'a single integer' },
+  { n: 'Sum of Deficient Numbers', f: a => a.filter(x => { const n = Math.abs(x); if (n < 2) return true; let s = 1; for (let i = 2; i * i <= n; i++) { if (n % i === 0) { s += i; if (i !== n / i) s += n / i; } } return s < n; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Happy Numbers', f: a => { const happy = (n) => { const seen = new Set(); while (n !== 1 && !seen.has(n)) { seen.add(n); n = n.toString().split('').reduce((s, d) => s + parseInt(d) ** 2, 0); } return n === 1; }; return a.filter(x => happy(Math.abs(x))).length; }, o: 'a single integer' },
+  { n: 'Sum of Sad Numbers', f: a => { const happy = (n) => { const seen = new Set(); while (n !== 1 && !seen.has(n)) { seen.add(n); n = n.toString().split('').reduce((s, d) => s + parseInt(d) ** 2, 0); } return n === 1; }; return a.filter(x => !happy(Math.abs(x))).reduce((s, x) => s + x, 0); }, o: 'a single integer' },
+  { n: 'Count of Pronic Numbers', f: a => a.filter(x => { const n = Math.abs(x); for (let i = 0; i * (i + 1) <= n; i++) { if (i * (i + 1) === n) return true; } return false; }).length, o: 'a single integer' },
+  { n: 'Sum of Automorphic Numbers', f: a => a.filter(x => { const n = Math.abs(x); const sq = n * n; return sq.toString().endsWith(n.toString()); }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Neon Numbers', f: a => a.filter(x => { const n = Math.abs(x); return n * n === _digitSum(n * n) * 1 ? n * n === _digitSum(n) * _digitSum(n) : false; }).length, o: 'a single integer' },
+  { n: 'Sum of Peterson Numbers', f: a => a.filter(x => { const n = Math.abs(x); const d = n.toString().split('').map(Number); const f = [1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880]; const s = d.reduce((acc, digit, i) => acc + digit * (f[d.length - 1 - i] || 1), 0); return s === n; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Sum of Numbers With All Same Digits', f: a => a.filter(x => new Set(Math.abs(x).toString()).size === 1).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers Divisible by Sum of Digits', f: a => a.filter(x => { const n = Math.abs(x); const ds = _digitSum(n); return ds > 0 && n % ds === 0; }).length, o: 'a single integer' },
+  { n: 'Sum of Numbers Divisible by Product of Digits', f: a => a.filter(x => { const n = Math.abs(x); let p = 1; n.toString().split('').forEach(d => p *= parseInt(d)); return p > 0 && n % p === 0; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers With at Least One Digit 5', f: a => a.filter(x => Math.abs(x).toString().includes('5')).length, o: 'a single integer' },
+  { n: 'Sum of Numbers That Are Multiples of Their Reverse', f: a => a.filter(x => { const n = Math.abs(x); const r = parseInt(n.toString().split('').reverse().join('')); return r > 0 && n % r === 0; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Largest Factor of Elements Sum', f: a => { const s = Math.abs(a.reduce((t, x) => t + x, 0)); for (let i = s; i >= 1; i--) if (s % i === 0) return i; return 1; }, o: 'a single integer' },
+  { n: 'Sum of Numbers Whose Square Ends With the Number', f: a => a.filter(x => { const n = Math.abs(x); return (n * n).toString().endsWith(n.toString()); }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers With Digits in Ascending Order', f: a => a.filter(x => { const d = Math.abs(x).toString(); for (let i = 1; i < d.length; i++) { if (d[i] < d[i - 1]) return false; } return true; }).length, o: 'a single integer' },
+  { n: 'Sum of Numbers With Digits in Strictly Ascending Order', f: a => a.filter(x => { const d = Math.abs(x).toString(); for (let i = 1; i < d.length; i++) { if (d[i] <= d[i - 1]) return false; } return true; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers With All Even Digits', f: a => a.filter(x => Math.abs(x).toString().split('').every(d => parseInt(d) % 2 === 0)).length, o: 'a single integer' },
+  { n: 'Sum of Numbers With All Odd Digits', f: a => a.filter(x => Math.abs(x).toString().split('').every(d => parseInt(d) % 2 === 1)).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers With Exactly Two Distinct Digits', f: a => a.filter(x => new Set(Math.abs(x).toString()).size === 2).length, o: 'a single integer' },
+  { n: 'Sum of Numbers With Exactly Three Digits', f: a => a.filter(x => Math.abs(x) >= 100 && Math.abs(x) <= 999).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers Whose Digit Product Is Even', f: a => a.filter(x => { let p = 1; Math.abs(x).toString().split('').forEach(d => p *= parseInt(d)); return p % 2 === 0; }).length, o: 'a single integer' },
+  { n: 'Sum of Numbers Whose Digit Product Is Odd', f: a => a.filter(x => { let p = 1; Math.abs(x).toString().split('').forEach(d => p *= parseInt(d)); return p % 2 === 1; }).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Largest Element Divisible by 3', f: a => { const d = a.filter(x => x % 3 === 0); return d.length ? Math.max(...d) : -1; }, o: 'a single integer' },
+  { n: 'Smallest Element Divisible by 5', f: a => { const d = a.filter(x => x % 5 === 0 && x !== 0); return d.length ? Math.min(...d) : -1; }, o: 'a single integer' },
+  { n: 'Count of Numbers Between Two Given Elements', f: a => { if (a.length < 2) return 0; const lo = Math.min(...a), hi = Math.max(...a); return a.filter(x => x > lo && x < hi).length; }, o: 'a single integer' },
+  { n: 'Sum of Numbers That Appear More Than Once', f: a => { const freq = {}; a.forEach(x => { freq[x] = (freq[x] || 0) + 1; }); return a.filter(x => freq[x] > 1).reduce((s, x) => s + x, 0); }, o: 'a single integer' },
+  { n: 'Count of Numbers That Appear Exactly Once', f: a => { const freq = {}; a.forEach(x => { freq[x] = (freq[x] || 0) + 1; }); return a.filter(x => freq[x] === 1).length; }, o: 'a single integer' },
+  { n: 'Sum of First and Last Elements', f: a => a.length ? a[0] + a[a.length - 1] : 0, o: 'a single integer' },
+  { n: 'Difference Between Largest and Smallest Two Elements', f: a => { if (a.length < 2) return 0; const s = [...a].sort((x, y) => y - x); return s[0] - s[1]; }, o: 'a single integer' },
+  { n: 'Sum of Elements at Even Indices', f: a => a.filter((_, i) => i % 2 === 0).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Sum of Elements at Odd Indices', f: a => a.filter((_, i) => i % 2 === 1).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Product of Elements at Even Indices', f: a => a.filter((_, i) => i % 2 === 0).reduce((s, x) => s * x, 1), o: 'a single integer' },
+  { n: 'Maximum Difference Between Consecutive Elements', f: a => { let m = 0; for (let i = 1; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - a[i - 1])); return m; }, o: 'a single integer' },
+  { n: 'Count of Local Maxima', f: a => a.filter((x, i) => (i === 0 || x > a[i - 1]) && (i === a.length - 1 || x > a[i + 1])).length, o: 'a single integer' },
+  { n: 'Count of Local Minima', f: a => a.filter((x, i) => (i === 0 || x < a[i - 1]) && (i === a.length - 1 || x < a[i + 1])).length, o: 'a single integer' },
+  { n: 'Sum of Differences Between Consecutive Elements', f: a => { let s = 0; for (let i = 1; i < a.length; i++) s += Math.abs(a[i] - a[i - 1]); return s; }, o: 'a single integer' },
+  { n: 'Count of Number Pairs That Sum to Even', f: a => { let c = 0; for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) if ((a[i] + a[j]) % 2 === 0) c++; return c; }, o: 'a single integer' },
+  { n: 'Count of Number Pairs That Sum to Odd', f: a => { let c = 0; for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) if ((a[i] + a[j]) % 2 === 1) c++; return c; }, o: 'a single integer' },
+  { n: 'Sum of All Pairwise Differences', f: a => { let s = 0; for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) s += Math.abs(a[i] - a[j]); return s; }, o: 'a single integer' },
+  { n: 'Count of Prime Pairs', f: a => { let c = 0; for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) if (_isPrime(a[i] + a[j])) c++; return c; }, o: 'a single integer' },
+  { n: 'Sum of Maximum Pairwise Product', f: a => { if (a.length < 2) return 0; const s = [...a].sort((x, y) => y - x); return s[0] * s[1]; }, o: 'a single integer' },
+  { n: 'Sum of Minimum Pairwise Product', f: a => { if (a.length < 2) return 0; const s = [...a].sort((x, y) => x - y); return s[0] * s[1]; }, o: 'a single integer' },
+  { n: 'Count of Numbers Divisible by 11', f: a => a.filter(x => x % 11 === 0).length, o: 'a single integer' },
+  { n: 'Sum of Numbers Divisible by 13', f: a => a.filter(x => x % 13 === 0).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers Divisible by Both 3 and 5', f: a => a.filter(x => x % 15 === 0).length, o: 'a single integer' },
+  { n: 'Sum of Numbers Divisible by Both 2 and 3', f: a => a.filter(x => x % 6 === 0).reduce((s, x) => s + x, 0), o: 'a single integer' },
+  { n: 'Count of Numbers Greater Than All Others', f: a => { const mx = Math.max(...a); return a.filter(x => x === mx).length; }, o: 'a single integer' },
+  { n: 'Sum of Numbers Less Than All Others', f: a => { const mn = Math.min(...a); return a.filter(x => x === mn).reduce((s, x) => s + x, 0); }, o: 'a single integer' },
+  { n: 'Count of Numbers With Increasing Digit Sum', f: a => { let c = 0; for (let i = 1; i < a.length; i++) { if (_digitSum(Math.abs(a[i])) > _digitSum(Math.abs(a[i - 1]))) c++; } return c; }, o: 'a single integer' },
+  { n: 'Sum of Numbers With Decreasing Digit Sum', f: a => { let s = 0; for (let i = 1; i < a.length; i++) { if (_digitSum(Math.abs(a[i])) < _digitSum(Math.abs(a[i - 1]))) s += a[i]; } return s; }, o: 'a single integer' },
 ];
 
-function generateProblem(globalId, shiftedId) {
-  const rng = seededRandom(shiftedId + 42);
-  const diffLevels = DIFFICULTY_LEVELS;
-  
-  let diffIdx = 0;
-  if (shiftedId <= 5000) diffIdx = 0;
-  else if (shiftedId <= 10000) diffIdx = 1;
-  else if (shiftedId <= 15000) diffIdx = 2;
-  else if (shiftedId <= 20000) diffIdx = 3;
-  else if (shiftedId <= 25000) diffIdx = 4;
-  else if (shiftedId <= 30000) diffIdx = 5;
-  else if (shiftedId <= 35000) diffIdx = 6;
-  else if (shiftedId <= 40000) diffIdx = 7;
-  else if (shiftedId <= 45000) diffIdx = 8;
-  else diffIdx = 9;
+const MFILTERS = [
+  { n: 'All Elements', f: () => true, d: 'all' },
+  { n: 'Even Numbers', f: x => x % 2 === 0, d: 'even' },
+  { n: 'Odd Numbers', f: x => x % 2 !== 0, d: 'odd' },
+  { n: 'Positive Numbers', f: x => x > 0, d: 'positive' },
+  { n: 'Negative Numbers', f: x => x < 0, d: 'negative' },
+  { n: 'Non-Zero Numbers', f: x => x !== 0, d: 'non-zero' },
+  { n: 'Numbers Divisible by 3', f: x => x % 3 === 0, d: 'divisible by 3' },
+  { n: 'Numbers Divisible by 5', f: x => x % 5 === 0, d: 'divisible by 5' },
+  { n: 'Numbers Divisible by 7', f: x => x % 7 === 0, d: 'divisible by 7' },
+  { n: 'Numbers Greater Than 50', f: x => x > 50, d: 'greater than 50' },
+  { n: 'Numbers Less Than -50', f: x => x < -50, d: 'less than -50' },
+  { n: 'Prime Numbers', f: x => _isPrime(Math.abs(x)), d: 'prime' },
+  { n: 'Single Digit Numbers', f: x => Math.abs(x) >= 0 && Math.abs(x) <= 9, d: 'single digit' },
+  { n: 'Double Digit Numbers', f: x => Math.abs(x) >= 10 && Math.abs(x) <= 99, d: 'double digit' },
+  { n: 'Numbers Divisible by 4', f: x => x % 4 === 0, d: 'divisible by 4' },
+  { n: 'Multiples of 6', f: x => x % 6 === 0, d: 'multiples of 6' },
+  { n: 'Numbers Greater Than 0 and Less Than 100', f: x => x > 0 && x < 100, d: 'between 0 and 100' },
+  { n: 'Numbers Greater Than -100 and Less Than 0', f: x => x > -100 && x < 0, d: 'between -100 and 0' },
+  { n: 'Perfect Square Numbers', f: x => x > 0 && Math.sqrt(x) === Math.floor(Math.sqrt(x)), d: 'perfect squares' },
+  { n: 'Numbers Greater Than 100', f: x => x > 100, d: 'greater than 100' },
+  { n: 'Numbers Less Than 10', f: x => x < 10, d: 'less than 10' },
+  { n: 'Numbers Greater Than or Equal to 50', f: x => x >= 50, d: 'at least 50' },
+  { n: 'Numbers Less Than or Equal to -50', f: x => x <= -50, d: 'at most -50' },
+  { n: 'Multiples of 8', f: x => x % 8 === 0, d: 'multiples of 8' },
+  { n: 'Numbers Between 20 and 200', f: x => x > 20 && x < 200, d: 'between 20 and 200' },
+  { n: 'Numbers Divisible by 11', f: x => x % 11 === 0, d: 'divisible by 11' },
+  { n: 'Numbers Divisible by 13', f: x => x % 13 === 0, d: 'divisible by 13' },
+  { n: 'Numbers Greater Than 200', f: x => x > 200, d: 'greater than 200' },
+  { n: 'Numbers Less Than -200', f: x => x < -200, d: 'less than -200' },
+  { n: 'Numbers Between -50 and 50', f: x => x > -50 && x < 50, d: 'between -50 and 50' },
+  { n: 'Numbers Divisible by 6 and Greater Than 10', f: x => x % 6 === 0 && x > 10, d: 'divisible by 6 and greater than 10' },
+  { n: 'Numbers With All Same Digits', f: x => new Set(Math.abs(x).toString()).size === 1, d: 'with all same digits' },
+  { n: 'Numbers With at Least Two Digits', f: x => Math.abs(x) >= 10, d: 'with at least two digits' },
+  { n: 'Numbers Divisible by 17', f: x => x % 17 === 0, d: 'divisible by 17' },
+  { n: 'Numbers Between -1000 and 1000', f: x => x > -1000 && x < 1000, d: 'between -1000 and 1000' },
+  { n: 'Numbers Greater Than or Equal to 0', f: x => x >= 0, d: 'non-negative' },
+  { n: 'Numbers Less Than or Equal to 0', f: x => x <= 0, d: 'non-positive' },
+  { n: 'Numbers Divisible by 12', f: x => x % 12 === 0, d: 'divisible by 12' },
+];
 
-  const diff = diffLevels[diffIdx];
-  const topics = LEVEL_TOPIC_MAP[diff.id] || ALL_TOPICS;
-  const globalOffsetInTier = (shiftedId - 1) - (diffIdx * 5000);
-  const numTopics = topics.length;
-  const topicIndex = globalOffsetInTier % numTopics;
-  const topic = topics[topicIndex];
-  const templates = TOPIC_TEMPLATES[topic];
-  const tmplIndex = Math.floor(globalOffsetInTier / numTopics) % templates.length;
-  const tmpl = templates[tmplIndex];
-  const titleFn = TITLE_VARIATIONS[Math.floor(rng() * TITLE_VARIATIONS.length)];
-  const varNum = Math.floor(rng() * 9000) + 1000;
+const MINPUTS = [
+  {
+    n: 'Array of Integers',
+    gen: (rng, sz) => {
+      const arr = Array.from({ length: sz }, () => rngRange(rng, -100, 100));
+      return { line: `${sz}\n${arr.join(' ')}`, arr };
+    },
+    fmt: 'Line 1: N. Line 2: N integers.',
+    c: sz => `1 ≤ N ≤ ${sz}, |arr[i]| ≤ 100`,
+    d: 'given array', szR: [5, 8, 10, 15, 20],
+  },
+  {
+    n: 'Array of Positive Integers',
+    gen: (rng, sz) => {
+      const arr = Array.from({ length: sz }, () => rngRange(rng, 1, 500));
+      return { line: `${sz}\n${arr.join(' ')}`, arr };
+    },
+    fmt: 'Line 1: N. Line 2: N positive integers.',
+    c: sz => `1 ≤ N ≤ ${sz}, 1 ≤ arr[i] ≤ 500`,
+    d: 'given array of positive integers', szR: [5, 8, 10, 15, 20],
+  },
+  {
+    n: 'Array of Large Integers',
+    gen: (rng, sz) => {
+      const arr = Array.from({ length: sz }, () => rngRange(rng, -100000, 100000));
+      return { line: `${sz}\n${arr.join(' ')}`, arr };
+    },
+    fmt: 'Line 1: N. Line 2: N integers.',
+    c: sz => `1 ≤ N ≤ ${sz}, |arr[i]| ≤ 10^5`,
+    d: 'given array', szR: [5, 8, 10, 15],
+  },
+  {
+    n: 'Array of Small Integers',
+    gen: (rng, sz) => {
+      const arr = Array.from({ length: sz }, () => rngRange(rng, -10, 10));
+      return { line: `${sz}\n${arr.join(' ')}`, arr };
+    },
+    fmt: 'Line 1: N. Line 2: N integers.',
+    c: sz => `1 ≤ N ≤ ${sz}, |arr[i]| ≤ 10`,
+    d: 'given array of small integers', szR: [8, 10, 15, 20, 30],
+  },
+  {
+    n: 'Sorted Array of Integers',
+    gen: (rng, sz) => {
+      const arr = Array.from({ length: sz }, () => rngRange(rng, -50, 100)).sort((a, b) => a - b);
+      return { line: `${sz}\n${arr.join(' ')}`, arr };
+    },
+    fmt: 'Line 1: N. Line 2: N sorted integers.',
+    c: sz => `1 ≤ N ≤ ${sz}, sorted in non-decreasing order`,
+    d: 'given sorted array', szR: [5, 10, 15, 20, 30],
+  },
+  {
+    n: 'Array of Digits',
+    gen: (rng, sz) => {
+      const arr = Array.from({ length: sz }, () => rngRange(rng, 0, 9));
+      return { line: `${sz}\n${arr.join(' ')}`, arr };
+    },
+    fmt: 'Line 1: N. Line 2: N single digits (0-9).',
+    c: sz => `1 ≤ N ≤ ${sz}, 0 ≤ arr[i] ≤ 9`,
+    d: 'given array of digits', szR: [10, 15, 20, 30, 50],
+  },
+  {
+    n: 'Two Arrays of Integers',
+    gen: (rng, sz) => {
+      const n = Math.min(sz, 10);
+      const a = Array.from({ length: n }, () => rngRange(rng, -50, 50));
+      const b = Array.from({ length: n }, () => rngRange(rng, -50, 50));
+      return { line: `${n}\n${a.join(' ')}\n${b.join(' ')}`, arr: [...a, ...b] };
+    },
+    fmt: 'Line 1: N. Line 2: first array. Line 3: second array.',
+    c: sz => `1 ≤ N ≤ ${Math.min(sz, 10)}, |arr[i]| ≤ 50`,
+    d: 'concatenation of both arrays', szR: [5, 8, 10],
+  },
+  {
+    n: 'String of Characters',
+    gen: (rng, sz) => {
+      const len = rngRange(rng, 5, Math.min(sz, 20));
+      const s = Array.from({ length: len }, () => String.fromCharCode(rngRange(rng, 97, 122))).join('');
+      const arr = s.split('').map(c => c.charCodeAt(0));
+      return { line: s, arr };
+    },
+    fmt: 'A single string of lowercase letters.',
+    c: sz => `1 ≤ |S| ≤ ${Math.min(sz, 20)}`,
+    d: 'given string', szR: [5, 8, 10, 15],
+  },
+];
 
-  const xp = [10, 15, 20, 30, 45, 65, 90, 120, 160, 200][diffIdx];
-  const complexity = ['O(1)', 'O(n)', 'O(n)', 'O(n log n)', 'O(n log n)', 'O(n²)', 'O(n²)', 'O(2^n)', 'O(n * 2^n)', 'O(n!)'][diffIdx];
-  const spaceComplexity = ['O(1)', 'O(1)', 'O(n)', 'O(n)', 'O(n)', 'O(n²)', 'O(n²)', 'O(n)', 'O(n²)', 'O(n!)'][diffIdx];
-
-  const hints = [
-    `Think about the ${topic.toLowerCase()} concepts involved.`,
-    `Try breaking the problem into smaller sub-problems.`,
-    `Consider the edge cases and constraints.`,
-  ];
-
-  return {
-    id: globalId,
-    title: titleFn(tmpl.t || 'Coding Problem', varNum),
-    difficulty: diff.name,
-    difficultyLevel: diff.id,
-    tags: [topic, ...(diffIdx > 4 ? ['Algorithm'] : [])],
-    description: tmpl.desc || 'Solve this programming challenge.',
-    constraints: tmpl.constr || 'Standard input/output constraints apply.',
-    inputFormat: tmpl.inFmt || 'Read input from stdin.',
-    outputFormat: tmpl.outFmt || 'Print output to stdout.',
-    examples: (tmpl.tc || []).slice(0, 2).map((tc, i) => ({
-      input: tc.i,
-      output: tc.o,
-      explanation: i === 0 ? `Follow the ${topic.toLowerCase()} logic.` : 'Apply the same approach.',
-    })),
-    testCases: (tmpl.tc || []).map((tc, i) => ({
-      input: tc.i,
-      output: tc.o,
-      hidden: i >= (tmpl.tc || []).length - 1,
-    })),
-    hints: hints,
-    timeComplexity: complexity,
-    spaceComplexity: spaceComplexity,
-    xpReward: xp,
-  };
+function _fmtTitle(op, filter, input) {
+  if (filter.n === 'All Elements') return `${op.n} of ${input.n}`;
+  return `${op.n} of ${filter.n} in ${input.n}`;
 }
 
-const CODING_PROBLEMS = [...BEGINNER_PROBLEMS];
-for (let i = 21; i <= TOTAL_PROBLEMS; i++) {
-  CODING_PROBLEMS.push(generateProblem(i, i - 20));
+function _fmtDesc(op, filter, input) {
+  if (filter.n === 'All Elements') return `Given ${input.d}, compute the ${op.n.toLowerCase()} of all elements.`;
+  return `Given ${input.d}, compute the ${op.n.toLowerCase()} of all ${filter.d}.`;
 }
 
-function populateCurriculum() {
-  const problemById = {};
-  CODING_PROBLEMS.forEach(p => { problemById[p.id] = p; });
+const _DIFFICULTIES = [
+  { l: 'Very Easy', n: 1, x: 10 },
+  { l: 'Easy', n: 2, x: 20 },
+  { l: 'Basic', n: 3, x: 30 },
+  { l: 'Beginner', n: 4, x: 30 },
+  { l: 'Intermediate', n: 5, x: 40 },
+  { l: 'Advanced', n: 6, x: 55 },
+  { l: 'Hard', n: 7, x: 70 },
+  { l: 'Expert', n: 8, x: 85 },
+];
 
-  const tagToSubSection = {};
-  CURRICULUM.forEach(section => {
-    if (section.subSections) {
-      section.subSections.forEach(ss => {
-        const lower = ss.topic.toLowerCase();
-        tagToSubSection[lower] = { section: section.id, subSection: ss };
-      });
-    }
-  });
+const _TOPICS_EASY = ['Variables', 'Operators', 'Bitwise Basics', 'Logical Operators', 'If-Else', 'Nested If', 'Loops', 'Patterns', 'Basic Arrays', 'Strings Basics'];
+const _TOPICS_MEDIUM = ['Functions', 'Recursion', 'Searching', 'Sorting', 'Prefix Sum', 'Two Pointers', 'Sliding Window', 'Stack', 'Queue', 'Linked List', 'HashMap'];
+const _TOPICS_HARD = ['Trees', 'BST', 'Heap', 'Graph Basics', 'DFS', 'BFS', 'Dynamic Programming Basics', 'Greedy', 'Binary Search on Answer'];
+const _TOPICS_EXPERT = ['Advanced DP', 'Segment Trees', 'Fenwick Tree', 'Tries', 'Union Find', 'Shortest Path', 'Topological Sort', 'Backtracking', 'Advanced Graphs', 'Competitive Programming Challenges'];
 
-  CODING_PROBLEMS.forEach(p => {
-    if (p.id <= 20) return;
-    const pTags = (p.tags || []).map(t => t.toLowerCase());
-    for (const [tagKey, mapping] of Object.entries(tagToSubSection)) {
-      if (pTags.some(t => t.includes(tagKey) || tagKey.includes(t))) {
-        if (!mapping.subSection.problems.includes(p.id)) {
-          mapping.subSection.problems.push(p.id);
+function _getDiff(inputIdx, opIdx) {
+  const complexity = inputIdx * MOPS.length + opIdx;
+  const total = MOPS.length * MINPUTS.length;
+  const ratio = complexity / total;
+  if (ratio < 0.25) return _DIFFICULTIES[1];
+  if (ratio < 0.50) return _DIFFICULTIES[4];
+  if (ratio < 0.75) return _DIFFICULTIES[6];
+  return _DIFFICULTIES[7];
+}
+
+function _getTopic(opIdx, inputIdx) {
+  const diff = _getDiff(inputIdx, opIdx);
+  if (diff.l === 'Easy') return _TOPICS_EASY[(opIdx + inputIdx * 3) % _TOPICS_EASY.length];
+  if (diff.l === 'Intermediate') return _TOPICS_MEDIUM[(opIdx + inputIdx * 5) % _TOPICS_MEDIUM.length];
+  if (diff.l === 'Hard') return _TOPICS_HARD[(opIdx + inputIdx * 2) % _TOPICS_HARD.length];
+  return _TOPICS_EXPERT[(opIdx + inputIdx * 7) % _TOPICS_EXPERT.length];
+}
+
+function generateMassiveProblemSet() {
+  const problems = [];
+  const seenTitles = new Set();
+  let id = Math.max(...BEGINNER_PROBLEMS.map(p => p.id)) + 1;
+  const topicFirstId = {};
+
+  for (let oi = 0; oi < MOPS.length; oi++) {
+    const op = MOPS[oi];
+    for (let fi = 0; fi < MFILTERS.length; fi++) {
+      const filter = MFILTERS[fi];
+      for (let ii = 0; ii < MINPUTS.length; ii++) {
+        const input = MINPUTS[ii];
+        for (const sz of input.szR) {
+          const title = _fmtTitle(op, filter, input);
+          if (seenTitles.has(title)) continue;
+          seenTitles.add(title);
+
+          const rng = mulberry32(id * 7919 + oi * 313 + fi * 17 + ii * 5);
+          const diff = _getDiff(ii, oi);
+          const tag = _getTopic(oi, ii);
+
+          const testCases = [];
+          const examples = [];
+          for (let t = 0; t < 5; t++) {
+            const { line, arr } = input.gen(rng, sz);
+            const filtered = arr.filter(filter.f);
+            let output;
+            if (filtered.length === 0) {
+              output = op.n.includes('Count') || op.n.includes('Sum') || op.n.includes('Product') ? '0' : '-1';
+            } else {
+              const raw = op.f(filtered);
+              output = Number.isInteger(raw) ? raw.toString() : raw.toString();
+            }
+            const tc = { input: line, output, hidden: t >= 3 };
+            testCases.push(tc);
+            if (t < 2) examples.push({ input: line, output, explanation: `Apply ${op.n.toLowerCase()} on ${filter.d}.` });
+          }
+
+          problems.push({
+            id,
+            title,
+            difficulty: diff.l,
+            difficultyLevel: diff.n,
+            tags: [tag],
+            xpReward: diff.x,
+            description: _fmtDesc(op, filter, input),
+            constraints: input.c(sz),
+            inputFormat: input.fmt,
+            outputFormat: `Output ${op.o}.`,
+            examples,
+            testCases,
+            hints: [`Identify the ${filter.d} in the input.`, `Apply the ${op.n.toLowerCase()} operation.`],
+            timeComplexity: 'O(n)',
+            spaceComplexity: 'O(1)',
+          });
+
+          if (!topicFirstId[tag]) topicFirstId[tag] = [];
+          topicFirstId[tag].push(id);
+          id++;
         }
-        const section = CURRICULUM.find(s => s.id === mapping.section);
-        if (section && !section.problemIds.includes(p.id)) {
-          section.problemIds.push(p.id);
-        }
-        break;
       }
     }
-  });
+  }
+
+  return { problems, topicFirstId };
+}
+
+const { problems: GENERATED_PROBLEMS, topicFirstId: topicProblemIds } = generateMassiveProblemSet();
+const CODING_PROBLEMS = [...BEGINNER_PROBLEMS, ...GENERATED_PROBLEMS];
+const TOTAL_PROBLEMS = CODING_PROBLEMS.length;
+
+function populateCurriculum() {
+  const beginnerIds = BEGINNER_PROBLEMS.map(p => p.id);
+  CURRICULUM[0].problemIds = beginnerIds;
+
+  const problemById = new Map(GENERATED_PROBLEMS.map(p => [p.id, p]));
+
+  const tagByDiff = {};
+  for (const [tag, ids] of Object.entries(topicProblemIds)) {
+    for (const pid of ids) {
+      const p = problemById.get(pid);
+      if (!p) continue;
+      const key = `${tag}::${p.difficulty}`;
+      if (!tagByDiff[key]) tagByDiff[key] = [];
+      tagByDiff[key].push(pid);
+    }
+  }
+
+  for (let s = 1; s < CURRICULUM.length; s++) {
+    const section = CURRICULUM[s];
+    const sectionProblemIds = [];
+    if (section.subSections) {
+      for (let si = 0; si < section.subSections.length; si++) {
+        const ss = section.subSections[si];
+        const key = `${ss.topic}::${section.difficulty}`;
+        const ids = tagByDiff[key] || [];
+        if (ids.length === 0) {
+          const diffSuffix = `::${section.difficulty}`;
+          const diffPool = [];
+          for (const [k, v] of Object.entries(tagByDiff)) {
+            if (k.endsWith(diffSuffix)) diffPool.push(...v);
+          }
+          const perSS = Math.ceil(diffPool.length / section.subSections.length);
+          const start = si * perSS;
+          ss.problems = diffPool.slice(start, start + perSS);
+        } else {
+          ss.problems = ids;
+        }
+        sectionProblemIds.push(...ss.problems);
+      }
+    }
+    section.problemIds = sectionProblemIds;
+  }
 }
 
 populateCurriculum();
@@ -739,7 +836,7 @@ populateCurriculum();
 export { CODING_PROBLEMS, TOTAL_PROBLEMS, CURRICULUM };
 
 export function getProblem(id) {
-  return CODING_PROBLEMS[id - 1];
+  return CODING_PROBLEMS.find(p => p.id === id) || null;
 }
 
 export function getProblemsSlice(start, count) {

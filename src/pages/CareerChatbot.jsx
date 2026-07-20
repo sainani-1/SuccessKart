@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Send, Bot, User, Crown, Lock } from 'lucide-react';
+import { MessageCircle, Send, Bot, User, Crown, Lock, Trash2 } from 'lucide-react';
 import { generateAssistantReply } from '../utils/aiAssistant';
+import { useChatHistory } from '../hooks/useChatHistory';
+
+const CAREER_WELCOME = '👋 Hello! I\'m your Career Guidance AI Assistant. I can help you with:\n\n• Career path suggestions\n• Skills to learn for your dream job\n• Interview preparation tips\n• Resume building advice\n• Industry trends and insights\n\nWhat would you like to know?';
 
 const CareerChatbot = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState([]);
+  const { messages, setMessages, addMessage, clearHistory } = useChatHistory('career_chat_history', CAREER_WELCOME);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -27,18 +30,6 @@ Use plain text with short paragraphs or simple bullet points when helpful.
       navigate('/app');
     }
   }, [profile, navigate]);
-
-  useEffect(() => {
-    if (isPremium && messages.length === 0) {
-      setMessages([
-        {
-          role: 'assistant',
-          content: '👋 Hello! I\'m your Career Guidance AI Assistant. I can help you with:\n\n• Career path suggestions\n• Skills to learn for your dream job\n• Interview preparation tips\n• Resume building advice\n• Industry trends and insights\n\nWhat would you like to know?',
-          timestamp: new Date()
-        }
-      ]);
-    }
-  }, [isPremium]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -221,7 +212,7 @@ Use plain text with short paragraphs or simple bullet points when helpful.
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    addMessage(userMessage);
     setInput('');
     setLoading(true);
 
@@ -238,14 +229,14 @@ Use plain text with short paragraphs or simple bullet points when helpful.
         content: assistantText,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, aiResponse]);
+      addMessage(aiResponse);
     } catch (error) {
       const aiResponse = {
         role: 'assistant',
         content: getCareerGuidanceResponse(input),
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, aiResponse]);
+      addMessage(aiResponse);
     } finally {
       setLoading(false);
     }
@@ -308,9 +299,14 @@ Use plain text with short paragraphs or simple bullet points when helpful.
               <p className="text-sm text-gray-500">Your personal career advisor</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-semibold">
-            <Crown size={16} />
-            Premium
+          <div className="flex items-center gap-2">
+            <button onClick={clearHistory} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition" title="Clear chat history">
+              <Trash2 size={18} />
+            </button>
+            <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-semibold">
+              <Crown size={16} />
+              Premium
+            </div>
           </div>
         </div>
       </div>
