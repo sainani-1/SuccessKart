@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { setContestQuestions, weeklyContest } from './contestModel';
+import { setContestQuestions, weeklyContest, getWeekKey } from './contestModel';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { logError } from '../utils/errorLogger';
 import { generateAllQuestions, DIFFICULTY_CONFIG } from './generateQuestions';
+import { triggerAutoPublish, getSchedulerStatus } from './autoPublishScheduler';
 
 const DIFFICULTY_OPTIONS = ['basic', 'intermediate', 'advanced', 'expert'];
 
@@ -315,6 +316,13 @@ export default function AdminContestSetup() {
   const [startTime, setStartTime] = useState(weeklyContest.startTime);
   const [endTime, setEndTime] = useState(weeklyContest.endTime);
 
+  // Auto-publish settings
+  const [autoPublishEnabled, setAutoPublishEnabled] = useState(false);
+  const [publishBeforeMinutes, setPublishBeforeMinutes] = useState(10);
+  const [schedulerStatus, setSchedulerStatus] = useState(null);
+  const [autoGenerating, setAutoGenerating] = useState(false);
+  const [lastGeneratedWeek, setLastGeneratedWeek] = useState(null);
+
   useEffect(() => {
     let mounted = true;
     const loadContestConfig = async () => {
@@ -325,6 +333,12 @@ export default function AdminContestSetup() {
         setStartTime(weeklyContest.startTime);
         setEndTime(weeklyContest.endTime);
         setQuestions(weeklyContest.questions || []);
+        // Load auto-publish settings
+        setAutoPublishEnabled(weeklyContest.autoPublish.enabled);
+        setPublishBeforeMinutes(weeklyContest.autoPublish.publishBeforeMinutes);
+        setLastGeneratedWeek(weeklyContest.lastGeneratedWeek);
+        // Load scheduler status
+        setSchedulerStatus(getSchedulerStatus());
       } catch (e) {
         if (!mounted) return;
         setError((e && e.message) ? e.message : 'Failed to load contest config');
@@ -377,6 +391,7 @@ export default function AdminContestSetup() {
     setError(null);
     setContestQuestions(questions);
     weeklyContest.setSchedule(day, startTime, endTime);
+    weeklyContest.setAutoPublish(autoPublishEnabled, publishBeforeMinutes);
     let didTimeout = false;
     const timeout = setTimeout(() => {
       didTimeout = true;
@@ -391,6 +406,7 @@ export default function AdminContestSetup() {
         setLoading(false);
         alert('Questions and schedule saved for weekly contest!');
         weeklyContest.load();
+        setSchedulerStatus(getSchedulerStatus());
         window.dispatchEvent(new Event('weeklyContestUpdated'));
       })
       .catch(e => {
@@ -419,6 +435,28 @@ export default function AdminContestSetup() {
   function handleClearAll() {
     if (!confirm('Clear all questions? This cannot be undone.')) return;
     setQuestions([]);
+  }
+
+  async function handleManualAutoPublish() {
+    if (!confirm('Generate new questions automatically? This will create 8 new questions (2 basic, 2 intermediate, 2 advanced, 2 expert).')) return;
+    setAutoGenerating(true);
+    setError(null);
+    try {
+      const result = await triggerAutoPublish();
+      if (result.success) {
+        setQuestions(result.questions);
+        setLastGeneratedWeek(getWeekKey(new Date()));
+        setSchedulerStatus(getSchedulerStatus());
+        alert('Questions generated successfully! You can now edit them before saving.');
+      } else {
+        setError(result.reason === 'already_generated' ? 'Questions already generated for this week.' : 'Failed to generate questions.');
+      }
+    } catch (e) {
+      setError((e && e.message) ? e.message : 'Failed to generate questions');
+      logError({ message: 'Manual auto-publish failed', source: 'AdminContestSetup', details: e });
+    } finally {
+      setAutoGenerating(false);
+    }
   }
 
   if (initialLoading) {
@@ -485,6 +523,139 @@ export default function AdminContestSetup() {
             <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={{ fontSize: '1rem', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1' }} />
           </div>
         </div>
+      </div>
+
+      {/* Auto-Publish Settings */}
+      <div style={{
+        marginBottom: '2rem',
+        background: autoPublishEnabled ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' : '#fff',
+        borderRadius: '1rem',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        padding: '1.5rem',
+        border: `2px solid ${autoPublishEnabled ? '#10b981' : '#e2e8f0'}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1.2rem', color: autoPublishEnabled ? '#059669' : '#6366f1', fontWeight: 'bold' }}>
+            Auto-Publish Questions
+          </h3>
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            cursor: 'pointer',
+          }}>
+            <span style={{ fontSize: '0.9rem', color: '#64748b' }}>
+              {autoPublishEnabled ? 'Enabled' : 'Disabled'}
+            </span>
+            <div
+              onClick={() => setAutoPublishEnabled(!autoPublishEnabled)}
+              style={{
+                width: '48px',
+                height: '26px',
+                background: autoPublishEnabled ? '#10b981' : '#cbd5e1',
+                borderRadius: '13px',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'background 0.3s',
+              }}
+            >
+              <div style={{
+                width: '22px',
+                height: '22px',
+                background: '#fff',
+                borderRadius: '50%',
+                position: 'absolute',
+                top: '2px',
+                left: autoPublishEnabled ? '24px' : '2px',
+                transition: 'left 0.3s',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+              }} />
+            </div>
+          </label>
+        </div>
+
+        {autoPublishEnabled && (
+          <div style={{ background: '#f0fdf4', borderRadius: '0.5rem', padding: '1rem' }}>
+            <p style={{ color: '#374151', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              <strong>How it works:</strong> New questions (2 basic, 2 intermediate, 2 advanced, 2 expert) will be automatically generated and published before the contest starts each week. You can edit them after generation.
+            </p>
+
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 'bold', color: '#334155', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
+                  Publish Before (minutes)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={publishBeforeMinutes}
+                  onChange={e => setPublishBeforeMinutes(Math.max(1, Math.min(60, parseInt(e.target.value) || 10)))}
+                  style={{ fontSize: '1rem', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1', width: '80px' }}
+                />
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontWeight: 'bold', color: '#334155', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
+                  Scheduler Status
+                </label>
+                <div style={{ fontSize: '0.9rem', color: '#374151' }}>
+                  {schedulerStatus?.isRunning ? '✓ Running' : '○ Not running'}
+                  {schedulerStatus?.lastGeneratedWeek && (
+                    <span style={{ marginLeft: '0.5rem', color: '#6b7280' }}>
+                      | Last generated: {schedulerStatus.lastGeneratedWeek}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={handleManualAutoPublish}
+                disabled={autoGenerating}
+                style={{
+                  background: autoGenerating ? '#94a3b8' : '#10b981',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  padding: '0.6rem 1.2rem',
+                  fontSize: '0.95rem',
+                  cursor: autoGenerating ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                {autoGenerating ? (
+                  <>
+                    <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    Generating...
+                  </>
+                ) : (
+                  <>Generate Now</>
+                )}
+              </button>
+
+              <button
+                onClick={() => setSchedulerStatus(getSchedulerStatus())}
+                style={{
+                  background: '#6366f1',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  padding: '0.6rem 1.2rem',
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Refresh Status
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Generate Automatically Section */}

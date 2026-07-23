@@ -259,7 +259,6 @@ const CompleteGoogleProfile = () => {
         auth_provider: existingProfile?.auth_provider || 'google',
         terms_accepted: true,
         terms_accepted_at: new Date().toISOString(),
-        google_profile_completed: false,
         updated_at: new Date().toISOString()
       };
 

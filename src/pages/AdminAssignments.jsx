@@ -10,7 +10,7 @@ const AdminAssignments = () => {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('list');
-  const [createForm, setCreateForm] = useState({ title: '', description: '', course_id: '', due_date: '', max_marks: 100, created_by: '' });
+  const [createForm, setCreateForm] = useState({ title: '', description: '', course_id: '', due_date: '', max_marks: 100 });
   const [editingAssignment, setEditingAssignment] = useState(null);
   const [creating, setCreating] = useState(false);
   const [gradingSubmission, setGradingSubmission] = useState(null);
@@ -39,7 +39,7 @@ const AdminAssignments = () => {
 
       const { data: assignmentList } = await supabase
         .from('assignments')
-        .select('*, courses!assignments_course_id_fkey(id, title), profiles!assignments_created_by_fkey(id, full_name)')
+        .select('*, courses!assignments_course_id_fkey(id, title)')
         .order('created_at', { ascending: false });
       setAssignments(assignmentList || []);
 
@@ -78,8 +78,6 @@ const AdminAssignments = () => {
         course_id: createForm.course_id,
         due_date: createForm.due_date || null,
         max_marks: createForm.max_marks || null,
-        created_by: createForm.created_by || null,
-        is_active: true,
       });
       if (error) throw error;
       setAlert({ show: true, title: 'Created', message: 'Assignment created successfully.', type: 'success' });
@@ -106,7 +104,6 @@ const AdminAssignments = () => {
           course_id: createForm.course_id,
           due_date: createForm.due_date || null,
           max_marks: createForm.max_marks || null,
-          is_active: createForm.is_active ?? true,
         })
         .eq('id', editingAssignment.id);
       if (error) throw error;
@@ -174,7 +171,7 @@ const AdminAssignments = () => {
   };
 
   const resetForm = () => {
-    setCreateForm({ title: '', description: '', course_id: '', due_date: '', max_marks: 100, created_by: '' });
+    setCreateForm({ title: '', description: '', course_id: '', due_date: '', max_marks: 100 });
   };
 
   const openEdit = (assignment) => {
@@ -185,8 +182,6 @@ const AdminAssignments = () => {
       course_id: assignment.course_id || '',
       due_date: assignment.due_date ? assignment.due_date.slice(0, 16) : '',
       max_marks: assignment.max_marks ?? 100,
-      is_active: assignment.is_active ?? true,
-      created_by: assignment.created_by || '',
     });
     setActiveTab('create');
   };
@@ -322,32 +317,7 @@ const AdminAssignments = () => {
                   className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Created By</label>
-                <select
-                  value={createForm.created_by}
-                  onChange={(e) => setCreateForm({ ...createForm, created_by: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Admin (You)</option>
-                  {teachers.map((t) => (
-                    <option key={t.id} value={t.id}>{t.full_name}</option>
-                  ))}
-                </select>
-              </div>
             </div>
-            {editingAssignment && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={createForm.is_active ?? true}
-                  onChange={(e) => setCreateForm({ ...createForm, is_active: e.target.checked })}
-                  className="rounded"
-                />
-                <label htmlFor="is_active" className="text-sm font-semibold text-slate-700">Active</label>
-              </div>
-            )}
             <div className="flex gap-3">
               <button
                 type="submit"
@@ -409,11 +379,7 @@ const AdminAssignments = () => {
                           <td className="px-4 py-3 text-slate-600">{a.max_marks ?? '-'}</td>
                           <td className="px-4 py-3 text-slate-600">{subCount} ({gradedCount} graded)</td>
                           <td className="px-4 py-3">
-                            {a.is_active ? (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Active</span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Inactive</span>
-                            )}
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Active</span>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">

@@ -1,7 +1,8 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import { Bell, Menu, Search } from 'lucide-react';
+import FeatureGrid from './FeatureGrid';
+import { Bell, Menu, Search, Grid3X3 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import AvatarImage from './AvatarImage';
@@ -14,8 +15,10 @@ import { readBrowserState, writeBrowserState } from '../utils/browserState';
 import ChatOverlay from './ChatOverlay';
 import { logError } from '../utils/errorLogger';
 import { onExamModeChange } from '../data/examMode';
+import { LayoutProvider } from '../context/LayoutContext';
 
-const SIDEBAR_COLLAPSED_KEY = 'layout_sidebar_collapsed';
+const NAV_MODE_KEY = 'layout_nav_mode';
+const MENU_VISIBLE_KEY = 'layout_menu_visible';
 const LAST_OPENED_PAGE_KEY = 'layout_last_opened_page';
 const EXAM_REMINDER_SENT_KEY = 'exam_reminders_sent';
 
@@ -47,9 +50,10 @@ const Layout = () => {
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth < 768 : false
   );
+  const [navMode, setNavMode] = useState(() => readBrowserState(NAV_MODE_KEY, 'clean'));
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  // Sidebar width: 16rem (w-64) when open, 5rem (w-20) when collapsed
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => readBrowserState(SIDEBAR_COLLAPSED_KEY, false));
+  const [menuVisible, setMenuVisible] = useState(() => readBrowserState(MENU_VISIBLE_KEY, false));
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
   const [examReminderPopup, setExamReminderPopup] = useState({ open: false, title: '', message: '' });
   const [takeoverNotice, setTakeoverNotice] = useState(null);
@@ -84,28 +88,18 @@ const Layout = () => {
   }, []);
 
   useEffect(() => {
+    writeBrowserState(MENU_VISIBLE_KEY, menuVisible);
+  }, [menuVisible]);
+
+  useEffect(() => {
+    writeBrowserState(NAV_MODE_KEY, navMode);
+  }, [navMode]);
+
+  useEffect(() => {
     if (!isMobileViewport) {
       setMobileSidebarOpen(false);
     }
   }, [isMobileViewport]);
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const sidebar = document.querySelector('aside');
-      if (sidebar) {
-        const collapsed = sidebar.classList.contains('w-20');
-        setSidebarCollapsed(collapsed);
-        writeBrowserState(SIDEBAR_COLLAPSED_KEY, collapsed);
-      }
-    });
-
-    const sidebar = document.querySelector('aside');
-    if (sidebar) {
-      observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
-    }
-
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     const saved = readBrowserState(LAST_OPENED_PAGE_KEY);
@@ -697,34 +691,28 @@ const Layout = () => {
     };
   }, [profile?.id, profile?.role, incrementUnreadNotifications]);
 
-  // Sidebar width: 16rem (256px) when open, 5rem (80px) when collapsed
-  // We'll use a state to track the sidebar width for margin
-  const [sidebarWidth, setSidebarWidth] = useState(256);
   const [examModeActive, setExamModeActive] = useState(false);
 
   useEffect(() => {
     return onExamModeChange(setExamModeActive);
   }, []);
 
+  const [sidebarWidth, setSidebarWidth] = useState(256);
   useEffect(() => {
+    if (navMode !== 'classic') return;
     const observer = new MutationObserver(() => {
       const sidebar = document.querySelector('aside');
       if (sidebar) {
-        if (sidebar.classList.contains('w-20')) {
-          setSidebarWidth(80);
-        } else {
-          setSidebarWidth(256);
-        }
+        setSidebarWidth(sidebar.classList.contains('w-20') ? 80 : 256);
       }
     });
     const sidebar = document.querySelector('aside');
-    if (sidebar) {
-      observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
-    }
+    if (sidebar) observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
-  }, []);
+  }, [navMode]);
 
   return (
+    <LayoutProvider value={{ menuVisible, setMenuVisible, navMode, setNavMode }}>
     <div className="bg-slate-50 min-h-screen">
       {/* Maintenance mode: show maintenance page for non-admin users */}
       {maintenanceSettings.enabled && profile?.role !== 'admin' ? (
@@ -785,7 +773,7 @@ const Layout = () => {
           </div>
         </div>
       ) : null}
-      {!examModeActive && (
+      {!examModeActive && navMode === 'classic' && (
       <Sidebar
         isMobile={isMobileViewport}
         mobileOpen={mobileSidebarOpen}
@@ -793,24 +781,38 @@ const Layout = () => {
         onRequestNavigation={requestPageSwitch}
       />
       )}
+      {!examModeActive && navMode === 'clean' && (
+      <FeatureGrid open={menuVisible} onClose={() => setMenuVisible(false)} />
+      )}
       {!examModeActive && <ChatOverlay />}
       <div
         className="flex flex-col transition-all duration-300"
-        style={{ marginLeft: examModeActive ? 0 : isMobileViewport ? 0 : sidebarWidth, minHeight: '100vh' }}
+        style={{ marginLeft: (!examModeActive && navMode === 'classic' && !isMobileViewport) ? sidebarWidth : 0, minHeight: '100vh' }}
       >
         {!examModeActive && (
         <header className="bg-white shadow-sm h-16 flex items-center justify-between px-3 md:px-8 sticky top-0 z-10">
           <div className="flex items-center gap-3 w-full">
-            {isMobileViewport ? (
-              <button
-                type="button"
-                onClick={() => setMobileSidebarOpen(true)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700"
-                aria-label="Open menu"
-              >
-                <Menu size={20} />
-              </button>
-            ) : null}
+            {!examModeActive && navMode === 'clean' && !menuVisible && (
+            <button
+              type="button"
+              onClick={() => setMenuVisible(true)}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 px-4 text-white hover:from-blue-600 hover:to-indigo-700 transition-all shadow-sm font-semibold text-sm"
+              aria-label="Open menu"
+            >
+              <Grid3X3 size={18} />
+              <span className="hidden sm:inline">Go To Menu</span>
+            </button>
+            )}
+            {!examModeActive && navMode === 'classic' && isMobileViewport && (
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700"
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
+            )}
             <div className="relative w-full max-w-md">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -934,6 +936,7 @@ const Layout = () => {
         </>
       )}
     </div>
+    </LayoutProvider>
   );
 };
 

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { Link } from 'react-router-dom';
-import { PlayCircle, Clock, Award, Zap, Calendar, MessageCircle, CheckCircle, AlertCircle, RotateCcw, FileText, Copy, Share2, ExternalLink, Trophy, User } from 'lucide-react';
+import { PlayCircle, Clock, Award, Zap, Calendar, MessageCircle, CheckCircle, AlertCircle, RotateCcw, FileText, Copy, Share2, ExternalLink, Trophy, User, Compass } from 'lucide-react';
 import { useChatOverlay } from '../context/ChatOverlayContext';
+import { useLayout } from '../context/LayoutContext';
 import { format, addDays } from 'date-fns';
 import PremiumGiftCelebration from '../components/PremiumGiftCelebration';
 import StudentExperienceHub from '../components/StudentExperienceHub';
@@ -27,6 +28,7 @@ const StudentDashboard = () => {
   const { profile, isPremium } = useAuth();
   const safeProfile = profile || { id: '', full_name: 'Student', premium_until: null };
   const { openChat } = useChatOverlay();
+  const { menuVisible, setMenuVisible } = useLayout();
   const [courses, setCourses] = useState([]);
   const [teacher, setTeacher] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -210,9 +212,13 @@ const StudentDashboard = () => {
 
     // Merge and deduplicate offers
     const allOffers = [...assignedOffers, ...(globalOffers || [])];
-    const uniqueOffers = allOffers.filter((offer, idx, arr) =>
-      offer && offer.is_listed !== false && arr.findIndex(o => o.id === offer.id) === idx
-    );
+    const now = new Date();
+    const uniqueOffers = allOffers.filter((offer, idx, arr) => {
+      if (!offer || offer.is_listed === false) return false;
+      if (arr.findIndex(o => o.id === offer.id) !== idx) return false;
+      if (offer.valid_until && new Date(offer.valid_until) < now) return false;
+      return true;
+    });
     setOffers(uniqueOffers);
     setRedeemedOfferIds(new Set((redemptions || []).filter(r => r.status === 'redeemed').map(r => r.offer_id)));
     if (uniqueOffers.length > 0) setShowOfferCongrats(true);
@@ -426,6 +432,25 @@ const StudentDashboard = () => {
           <p className="text-slate-200">Certificates Earned</p>
         </div>
       </div>
+
+      {!menuVisible && (
+        <button
+          type="button"
+          onClick={() => setMenuVisible(true)}
+          className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white flex items-center justify-between hover:from-blue-600 hover:to-indigo-700 transition-all shadow-lg cursor-pointer"
+        >
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 p-3 rounded-xl">
+              <Compass size={28} />
+            </div>
+            <div className="text-left">
+              <h2 className="text-xl font-bold">Explore All Features</h2>
+              <p className="text-blue-100 text-sm mt-1">Browse courses, AI tools, career support, and more</p>
+            </div>
+          </div>
+          <ExternalLink size={24} className="text-blue-200" />
+        </button>
+      )}
 
       <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-slate-50 p-5 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

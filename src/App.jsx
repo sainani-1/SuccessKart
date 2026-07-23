@@ -18,6 +18,7 @@ const LogicBuildingContest = lazy(() => import('./logicBuilding/LogicBuildingCon
 const AdminChangeCourse = lazy(() => import('./pages/AdminChangeCourse'));
 const AdminScoreboard = lazy(() => import('./logicBuilding/AdminScoreboard'));
 const LogicBuildingLeaderboard = lazy(() => import('./logicBuilding/LogicBuildingLeaderboard'));
+const LiveContestMonitor = lazy(() => import('./logicBuilding/LiveContestMonitor'));
 const AdminMFASetup = lazy(() => import("./pages/AdminMFASetup"));
 const AdminMFAVerify = lazy(() => import("./pages/AdminMFAVerify"));
 const AdminAuthChoice = lazy(() => import("./pages/AdminAuthChoice"));
@@ -34,6 +35,7 @@ const Exam = lazy(() => import('./pages/Exam'));
 const TestExam = lazy(() => import('./pages/TestExam'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
+const DesignPage = lazy(() => import('./pages/DesignPage'));
 const VerifyCertificate = lazy(() => import('./pages/VerifyCertificate'));
 const RegisterAdmin = lazy(() => import('./pages/RegisterAdmin'));
 const RegisterTeacher = lazy(() => import('./pages/RegisterTeacher'));
@@ -450,7 +452,8 @@ function App() {
 
         {/* Protected Routes */}
         <Route path="/app" element={<ProtectedRoute><RequireAdminMFA><RequireConfiguredSensitiveAdminMFA><Layout /></RequireConfiguredSensitiveAdminMFA></RequireAdminMFA></ProtectedRoute>}>
-                              <Route path="admin/logic-building-setup" element={<AdminRoute><AdminContestSetup /></AdminRoute>} />
+                               <Route path="admin/logic-building-setup" element={<AdminRoute><AdminContestSetup /></AdminRoute>} />
+                               <Route path="admin/live-contest-monitor" element={<AdminRoute><LiveContestMonitor /></AdminRoute>} />
                     <Route path="logic-building-contest" element={<LogicBuildingContest />} />
                     <Route path="logic-building-leaderboard" element={<LogicBuildingLeaderboard />} />
           <Route path="admin/exam-settings" element={<AdminRoute><AdminExamSettings /></AdminRoute>} />
@@ -472,6 +475,7 @@ function App() {
           <Route path="course/:courseId" element={<CourseDetail />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="design" element={<DesignPage />} />
           <Route path="face-auth" element={<FaceAuthSettings />} />
           <Route path="face-register" element={<FaceRegister />} />
           <Route path="payment" element={<Payment />} />

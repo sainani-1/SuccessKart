@@ -34,6 +34,7 @@ import {
   Users,
   Video,
   VideoOff,
+  Circle,
   Volume2,
   X,
 } from 'lucide-react';
@@ -239,57 +240,42 @@ const FullscreenButton = ({ containerRef }) => {
   );
 };
 
-const LiveKitControls = ({ onLeave, onEndSession, canEndSession, containerRef, audioRestricted, videoRestricted }) => {
+const LiveKitControls = ({ onLeave, onEndSession, canEndSession, containerRef, audioRestricted, videoRestricted, onToggleRecording, isRecording, recordingDuration, canRecord }) => {
   const room = useRoomContext();
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
-  const [actionLoading, setActionLoading] = useState('');
+  const [busy, setBusy] = useState('');
 
-  const toggleMicrophone = async () => {
+  const toggleMicrophone = () => {
     if (audioRestricted) return;
-    setActionLoading('mic');
-    try {
-      await localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled);
-    } finally {
-      setActionLoading('');
-    }
+    localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled).catch(() => {});
   };
 
-  const toggleCamera = async () => {
+  const toggleCamera = () => {
     if (videoRestricted) return;
-    setActionLoading('camera');
-    try {
-      await localParticipant.setCameraEnabled(!isCameraEnabled);
-    } finally {
-      setActionLoading('');
-    }
+    localParticipant.setCameraEnabled(!isCameraEnabled).catch(() => {});
   };
 
-  const toggleScreenShare = async () => {
-    setActionLoading('screen');
-    try {
-      await localParticipant.setScreenShareEnabled(!isScreenShareEnabled);
-    } finally {
-      setActionLoading('');
-    }
+  const toggleScreenShare = () => {
+    localParticipant.setScreenShareEnabled(!isScreenShareEnabled).catch(() => {});
   };
 
   const leaveRoom = async () => {
-    setActionLoading('leave');
+    if (busy) return;
+    setBusy('leave');
     try {
       await room.disconnect();
     } finally {
-      setActionLoading('');
       onLeave?.();
     }
   };
 
   const endSessionForAll = async () => {
-    if (!canEndSession || !onEndSession) return;
-    setActionLoading('end');
+    if (!canEndSession || !onEndSession || busy) return;
+    setBusy('end');
     try {
       await onEndSession();
     } finally {
-      setActionLoading('');
+      onLeave?.();
     }
   };
 
@@ -302,29 +288,37 @@ const LiveKitControls = ({ onLeave, onEndSession, canEndSession, containerRef, a
           : 'bg-white/8 text-white hover:bg-white/14'
     }`;
 
+  const formatRec = (secs) => `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
+
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-2 z-30 px-3 pb-3 sm:bottom-3 sm:px-5 sm:pb-5">
       <div className="pointer-events-auto mx-auto flex w-full max-w-5xl flex-wrap items-center justify-center gap-2 rounded-2xl border border-white/10 bg-slate-950/88 px-3 py-3 shadow-[0_20px_70px_rgba(2,8,23,0.48)] backdrop-blur-xl sm:gap-3 sm:px-4">
-        <button type="button" onClick={toggleMicrophone} disabled={actionLoading === 'mic'} className={controlClass(isMicrophoneEnabled)}>
+        <button type="button" onClick={toggleMicrophone} className={controlClass(isMicrophoneEnabled)}>
           {isMicrophoneEnabled ? <Mic size={18} /> : <MicOff size={18} />}
           <span>{audioRestricted ? 'Mic Locked' : isMicrophoneEnabled ? 'Mute' : 'Unmute'}</span>
         </button>
-        <button type="button" onClick={toggleCamera} disabled={actionLoading === 'camera'} className={controlClass(isCameraEnabled)}>
+        <button type="button" onClick={toggleCamera} className={controlClass(isCameraEnabled)}>
           {isCameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}
           <span>{videoRestricted ? 'Camera Locked' : isCameraEnabled ? 'Camera On' : 'Camera Off'}</span>
         </button>
-        <button type="button" onClick={toggleScreenShare} disabled={actionLoading === 'screen'} className={controlClass(isScreenShareEnabled)}>
+        <button type="button" onClick={toggleScreenShare} className={controlClass(isScreenShareEnabled)}>
           {isScreenShareEnabled ? <ScreenShare size={18} /> : <MonitorUp size={18} />}
           <span>{isScreenShareEnabled ? 'Stop Share' : 'Share Screen'}</span>
         </button>
         <FullscreenButton containerRef={containerRef} />
+        {canRecord ? (
+          <button type="button" onClick={onToggleRecording} className={isRecording ? 'inline-flex min-w-[128px] items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition bg-rose-500 text-white hover:bg-rose-600' : controlClass(false)}>
+            <Circle size={18} className={isRecording ? 'fill-white animate-pulse' : ''} />
+            <span>{isRecording ? `REC ${formatRec(recordingDuration)}` : 'Record'}</span>
+          </button>
+        ) : null}
         {canEndSession ? (
-          <button type="button" onClick={endSessionForAll} disabled={actionLoading === 'end'} className={controlClass(false, true)}>
+          <button type="button" onClick={endSessionForAll} disabled={!!busy} className={controlClass(false, true)}>
             <PhoneOff size={18} />
             <span>End Session for All</span>
           </button>
         ) : null}
-        <button type="button" onClick={leaveRoom} disabled={actionLoading === 'leave'} className={controlClass(false, true)}>
+        <button type="button" onClick={leaveRoom} disabled={!!busy} className={controlClass(false, true)}>
           <PhoneOff size={18} />
           <span>Leave Class</span>
         </button>
@@ -1409,10 +1403,11 @@ const ParticipantsPopup = ({
   );
 };
 
-const ClassroomLayout = ({ sessionId, currentRole, currentUserProfile, classSession, containerRef, onToast }) => {
+const ClassroomLayout = ({ sessionId, currentRole, currentUserProfile, classSession, containerRef, onToast, onLeave, onEndSession }) => {
   const cameraTracks = useTracks([{ source: Track.Source.Camera, withPlaceholder: true }]);
   const shareTracks = useTracks([{ source: Track.Source.ScreenShare, withPlaceholder: false }]);
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
+  const room = useRoomContext();
   const [participantsPopupOpen, setParticipantsPopupOpen] = useState(false);
   const [profilesByUserId, setProfilesByUserId] = useState({});
   const [chatDraft, setChatDraft] = useState('');
@@ -1448,6 +1443,27 @@ const ClassroomLayout = ({ sessionId, currentRole, currentUserProfile, classSess
   const screenShareStateRef = useRef({ active: false, startedAt: 0 });
   const focusLostRef = useRef(false);
   const previousCohostStateRef = useRef(null);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingRef = useRef({
+    canvas: null,
+    ctx: null,
+    mediaRecorder: null,
+    chunks: [],
+    animFrameId: 0,
+    startTime: 0,
+    logoImage: null,
+    audioContext: null,
+    connectedAudioTracks: new Set(),
+    durationIntervalId: 0,
+    audioCheckIntervalId: 0,
+    videoRefreshIntervalId: 0,
+    videoElements: new Map(),
+    localSSTrack: null,
+    localCamTrack: null,
+    remoteTracks: [],
+  });
 
   const controls = classSession?.livekit_controls || {};
   const cohostUserIds = Array.isArray(controls?.cohost_user_ids) ? controls.cohost_user_ids.map(String) : [];
@@ -2031,6 +2047,21 @@ const ClassroomLayout = ({ sessionId, currentRole, currentUserProfile, classSess
     onToast?.(`Breakout broadcast: ${breakout.broadcast_message}`);
   }, [breakout?.broadcast_at]);
 
+  useEffect(() => {
+    return () => {
+      const rec = recordingRef.current;
+      if (rec.mediaRecorder && rec.mediaRecorder.state !== 'inactive') {
+        cancelAnimationFrame(rec.animFrameId);
+        clearInterval(rec.durationIntervalId);
+        clearInterval(rec.audioCheckIntervalId);
+        clearInterval(rec.videoRefreshIntervalId);
+        try { rec.mediaRecorder.stop(); } catch (_) {}
+        if (rec.audioContext && rec.audioContext.state !== 'closed') rec.audioContext.close().catch(() => {});
+        rec.videoElements.forEach((v) => { v.pause(); v.srcObject = null; });
+      }
+    };
+  }, []);
+
   const handleAction = async (action, target = {}) => {
     if (!canManageParticipants) return;
     try {
@@ -2412,53 +2443,320 @@ const ClassroomLayout = ({ sessionId, currentRole, currentUserProfile, classSess
 
   const handleToggleRecording = async () => {
     if (!canManageParticipants) return;
-    const activeRecordings = recordings.filter((entry) => entry.status === 'recording');
-    const activeRecording = activeRecordings[0];
-
-    if (activeRecording) {
-      const stoppedAt = new Date().toISOString();
-      setRecordings((current) =>
-        current.map((entry) =>
-          entry.status === 'recording'
-            ? { ...entry, status: 'completed', stopped_at: stoppedAt, stopped_by: currentUserProfile.id, updated_at: stoppedAt }
-            : entry,
-        ),
-      );
-      const { error } = await supabase
-        .from('class_session_recordings')
-        .update({
-          status: 'completed',
-          stopped_at: stoppedAt,
-          stopped_by: currentUserProfile.id,
-          updated_at: stoppedAt,
-        })
-        .eq('session_id', sessionId)
-        .eq('status', 'recording');
-      if (error) {
-        onToast?.(error.message || 'Could not stop recording log.');
-        loadEngagement();
-        return;
-      }
-      await logActivityEvent('recording_stopped');
-      onToast?.('Recording log stopped.');
-      return;
+    if (isRecording) {
+      await stopRecording();
+    } else {
+      await startRecording();
     }
+  };
 
-    const startedAt = new Date().toISOString();
-    const { error } = await supabase.from('class_session_recordings').insert({
-      session_id: sessionId,
-      started_by: currentUserProfile.id,
-      status: 'recording',
-      recording_mode: 'session-log',
-      started_at: startedAt,
-      updated_at: startedAt,
+  const startRecording = async () => {
+    if (!canManageParticipants) return;
+    const rec = recordingRef.current;
+    if (rec.mediaRecorder && rec.mediaRecorder.state !== 'inactive') return;
+
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1920;
+      canvas.height = 1080;
+      rec.canvas = canvas;
+      rec.ctx = canvas.getContext('2d');
+
+      const logoImg = new Image();
+      logoImg.src = '/sucesskart-logo.svg';
+      await new Promise((r) => { logoImg.onload = r; logoImg.onerror = r; });
+      rec.logoImage = logoImg;
+
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const dest = audioCtx.createMediaStreamDestination();
+      rec.audioContext = audioCtx;
+
+      const connectAudio = (track) => {
+        if (!track || track.kind !== 'audio' || rec.connectedAudioTracks.has(track.id)) return;
+        try {
+          const src = audioCtx.createMediaStreamSource(new MediaStream([track]));
+          src.connect(dest);
+          rec.connectedAudioTracks.add(track.id);
+        } catch (_) {}
+      };
+
+      const micPub = localParticipant.getTrackPublication(Track.Source.Microphone);
+      if (micPub?.track?.mediaStreamTrack) connectAudio(micPub.track.mediaStreamTrack);
+
+      const getAllParticipants = () => {
+        if (!room?.participants) return [];
+        const p = room.participants;
+        return p instanceof Map ? Array.from(p.values()) : Array.isArray(p) ? p : [];
+      };
+
+      const connectAllAudio = () => {
+        getAllParticipants().forEach((p) => {
+          const pub = p.getTrackPublication(Track.Source.Microphone);
+          if (pub?.track?.mediaStreamTrack) connectAudio(pub.track.mediaStreamTrack);
+          const screenPub = p.getTrackPublication(Track.Source.ScreenShare);
+          if (screenPub?.track?.mediaStreamTrack) connectAudio(screenPub.track.mediaStreamTrack);
+        });
+      };
+      connectAllAudio();
+      rec.audioCheckIntervalId = setInterval(connectAllAudio, 2000);
+
+      const getOrCreateVideo = (track) => {
+        if (!track) return null;
+        if (!rec.videoElements.has(track.id)) {
+          const vid = document.createElement('video');
+          vid.srcObject = new MediaStream([track]);
+          vid.muted = true;
+          vid.playsInline = true;
+          vid.play().catch(() => {});
+          const onEnded = () => { vid.pause(); vid.srcObject = null; rec.videoElements.delete(track.id); };
+          track.addEventListener('ended', onEnded, { once: true });
+          rec.videoElements.set(track.id, vid);
+        }
+        return rec.videoElements.get(track.id);
+      };
+
+      const canDraw = (vid, track) =>
+        vid && track && track.readyState === 'live' && track.enabled !== false && vid.readyState >= 2;
+
+      const refreshTracks = () => {
+        const ssPub = localParticipant.getTrackPublication(Track.Source.ScreenShare);
+        const camPub = localParticipant.getTrackPublication(Track.Source.Camera);
+        rec.localSSTrack = ssPub?.track?.mediaStreamTrack || null;
+        rec.localCamTrack = camPub?.track?.mediaStreamTrack || null;
+        const remoteTracks = [];
+        getAllParticipants().forEach((p) => {
+          const ss = p.getTrackPublication(Track.Source.ScreenShare);
+          const cam = p.getTrackPublication(Track.Source.Camera);
+          if (ss?.track?.mediaStreamTrack) remoteTracks.push({ source: 'screen', track: ss.track.mediaStreamTrack });
+          if (cam?.track?.mediaStreamTrack) remoteTracks.push({ source: 'camera', track: cam.track.mediaStreamTrack });
+        });
+        rec.remoteTracks = remoteTracks;
+      };
+      refreshTracks();
+      rec.videoRefreshIntervalId = setInterval(refreshTracks, 1500);
+
+      const canvasStream = canvas.captureStream(30);
+      const mediaTracks = [...canvasStream.getVideoTracks()];
+      if (dest.stream.getAudioTracks().length) mediaTracks.push(...dest.stream.getAudioTracks());
+      const combined = new MediaStream(mediaTracks);
+
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+        ? 'video/webm;codecs=vp9,opus'
+        : MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+          ? 'video/webm;codecs=vp8,opus'
+          : 'video/webm';
+
+      const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 5000000 });
+      rec.chunks = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) rec.chunks.push(e.data); };
+      recorder.start(1000);
+      rec.mediaRecorder = recorder;
+
+      rec.startTime = Date.now();
+      setIsRecording(true);
+      setRecordingDuration(0);
+      rec.durationIntervalId = setInterval(() => {
+        setRecordingDuration(Math.floor((Date.now() - rec.startTime) / 1000));
+      }, 1000);
+
+      await supabase.from('class_session_recordings').insert({
+        session_id: sessionId,
+        started_by: currentUserProfile.id,
+        status: 'recording',
+        recording_mode: 'teacher-capture',
+        started_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      await logActivityEvent('recording_started');
+
+      const drawRoundedPip = (ctx, x, y, w, h, radius) => {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+      };
+
+      const drawFrame = () => {
+        if (!rec.canvas || !rec.ctx) return;
+        const ctx = rec.ctx;
+        const w = canvas.width;
+        const h = canvas.height;
+        refreshTracks();
+
+        const ssVid = rec.localSSTrack ? getOrCreateVideo(rec.localSSTrack) : null;
+        const camVid = rec.localCamTrack ? getOrCreateVideo(rec.localCamTrack) : null;
+
+        let remoteSSVid = null;
+        let remoteSSTrack = null;
+        let remoteCamVid = null;
+        let remoteCamTrack = null;
+        if (rec.remoteTracks) {
+          const rss = rec.remoteTracks.find((t) => t.source === 'screen');
+          if (rss) { remoteSSVid = getOrCreateVideo(rss.track); remoteSSTrack = rss.track; }
+          const rc = rec.remoteTracks.find((t) => t.source === 'camera');
+          if (rc) { remoteCamVid = getOrCreateVideo(rc.track); remoteCamTrack = rc.track; }
+        }
+
+        const ssLive = canDraw(ssVid, rec.localSSTrack);
+        const camLive = canDraw(camVid, rec.localCamTrack);
+        const remoteSSLive = canDraw(remoteSSVid, remoteSSTrack);
+        const remoteCamLive = canDraw(remoteCamVid, remoteCamTrack);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, w, h);
+
+        const hasScreenShare = ssLive || remoteSSLive;
+        const screenVideo = ssLive ? ssVid : remoteSSVid;
+        const hasCamera = camLive || remoteCamLive;
+        const cameraVideo = camLive ? camVid : remoteCamVid;
+
+        if (hasScreenShare) {
+          try { ctx.drawImage(screenVideo, 0, 0, w, h); } catch (_) {}
+          if (hasCamera) {
+            const pipW = w * 0.22;
+            const aspect = (cameraVideo.videoHeight || 720) / (cameraVideo.videoWidth || 1280) || 0.5625;
+            const pipH = pipW * aspect;
+            const pipX = w - pipW - 24;
+            const pipY = h - pipH - 24;
+            ctx.save();
+            drawRoundedPip(ctx, pipX, pipY, pipW, pipH, 12);
+            ctx.clip();
+            try { ctx.drawImage(cameraVideo, pipX, pipY, pipW, pipH); } catch (_) {}
+            ctx.restore();
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+            ctx.lineWidth = 2;
+            drawRoundedPip(ctx, pipX, pipY, pipW, pipH, 12);
+            ctx.stroke();
+          }
+        } else if (hasCamera) {
+          try { ctx.drawImage(cameraVideo, 0, 0, w, h); } catch (_) {}
+        } else if (rec.logoImage) {
+          const img = rec.logoImage;
+          const scale = Math.min(w / (img.naturalWidth || img.width || 1200), h / (img.naturalHeight || img.height || 1200)) * 0.45;
+          const iw = (img.naturalWidth || img.width) * scale;
+          const ih = (img.naturalHeight || img.height) * scale;
+          try { ctx.drawImage(img, (w - iw) / 2, (h - ih) / 2, iw, ih); } catch (_) {}
+        }
+
+        ctx.fillStyle = 'rgba(239,68,68,0.9)';
+        ctx.beginPath();
+        ctx.arc(44, 44, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = 'bold 14px Arial';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('REC', 62, 49);
+
+        const elapsed = Math.floor((Date.now() - rec.startTime) / 1000);
+        const dm = Math.floor(elapsed / 60);
+        const ds = elapsed % 60;
+        const durText = `${String(dm).padStart(2, '0')}:${String(ds).padStart(2, '0')}`;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.beginPath();
+        ctx.moveTo(w - 98, 24);
+        ctx.arcTo(w - 24, 24, w - 24, 56, 8);
+        ctx.arcTo(w - 24, 56, w - 98, 56, 8);
+        ctx.arcTo(w - 98, 56, w - 98, 24, 8);
+        ctx.arcTo(w - 98, 24, w - 24, 24, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 16px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(durText, w - 30, 46);
+        ctx.textAlign = 'left';
+
+        rec.animFrameId = requestAnimationFrame(drawFrame);
+      };
+
+      rec.animFrameId = requestAnimationFrame(drawFrame);
+      onToast?.('Recording started — capturing screen, camera, and audio.');
+    } catch (err) {
+      onToast?.(err.message || 'Failed to start recording.');
+      cleanupRecording(false);
+    }
+  };
+
+  const stopRecording = async () => {
+    const rec = recordingRef.current;
+    const blob = await new Promise((resolve) => {
+      if (!rec.mediaRecorder || rec.mediaRecorder.state === 'inactive') { resolve(null); return; }
+      rec.mediaRecorder.onstop = () => {
+        resolve(new Blob(rec.chunks, { type: rec.mediaRecorder.mimeType || 'video/webm' }));
+      };
+      rec.mediaRecorder.stop();
     });
-    if (error) {
-      onToast?.(error.message || 'Could not start recording log.');
+
+    cleanupRecording(true);
+
+    if (!blob || blob.size === 0) {
+      onToast?.('Recording stopped but no data was captured.');
       return;
     }
-    await logActivityEvent('recording_started');
-    onToast?.('Recording log started.');
+
+    const stoppedAt = new Date().toISOString();
+    setRecordings((current) =>
+      current.map((entry) =>
+        entry.status === 'recording'
+          ? { ...entry, status: 'completed', stopped_at: stoppedAt, stopped_by: currentUserProfile.id, updated_at: stoppedAt }
+          : entry,
+      ),
+    );
+    await supabase
+      .from('class_session_recordings')
+      .update({ status: 'completed', stopped_at: stoppedAt, stopped_by: currentUserProfile.id, updated_at: stoppedAt })
+      .eq('session_id', sessionId)
+      .eq('status', 'recording');
+    await logActivityEvent('recording_stopped');
+
+    try {
+      if (window.showSaveFilePicker) {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: `class-recording-${new Date().toISOString().slice(0, 10)}.webm`,
+          types: [{ description: 'WebM Video', accept: { 'video/webm': ['.webm'] } }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        onToast?.('Recording saved successfully.');
+      } else {
+        throw new Error('fallback-download');
+      }
+    } catch (err) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `class-recording-${new Date().toISOString().slice(0, 10)}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      onToast?.('Recording downloaded.');
+    }
+  };
+
+  const cleanupRecording = (updateState) => {
+    const rec = recordingRef.current;
+    if (rec.animFrameId) { cancelAnimationFrame(rec.animFrameId); rec.animFrameId = 0; }
+    if (rec.durationIntervalId) { clearInterval(rec.durationIntervalId); rec.durationIntervalId = 0; }
+    if (rec.audioCheckIntervalId) { clearInterval(rec.audioCheckIntervalId); rec.audioCheckIntervalId = 0; }
+    if (rec.videoRefreshIntervalId) { clearInterval(rec.videoRefreshIntervalId); rec.videoRefreshIntervalId = 0; }
+    if (rec.audioContext && rec.audioContext.state !== 'closed') { rec.audioContext.close().catch(() => {}); }
+    rec.audioContext = null;
+    rec.connectedAudioTracks.clear();
+    rec.videoElements.forEach((v) => { v.pause(); v.srcObject = null; });
+    rec.videoElements.clear();
+    rec.canvas = null;
+    rec.ctx = null;
+    rec.mediaRecorder = null;
+    rec.chunks = [];
+    rec.logoImage = null;
+    rec.localSSTrack = null;
+    rec.localCamTrack = null;
+    rec.remoteTracks = [];
+    if (updateState) { setIsRecording(false); setRecordingDuration(0); }
   };
 
   const railTabs = [
@@ -2532,6 +2830,12 @@ const ClassroomLayout = ({ sessionId, currentRole, currentUserProfile, classSess
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-300 animate-pulse" />
                 <span>{roomLocked ? 'Live | Room Locked' : 'Class live'}</span>
               </div>
+              {isRecording ? (
+                <div className="flex items-center gap-2 rounded-full border border-rose-300/40 bg-rose-400/15 px-4 py-2 text-sm font-semibold text-rose-200">
+                  <Circle size={14} className="fill-rose-400 animate-pulse" />
+                  <span>Recording {`${String(Math.floor(recordingDuration / 60)).padStart(2, '0')}:${String(recordingDuration % 60).padStart(2, '0')}`}</span>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -2819,17 +3123,24 @@ const ClassroomLayout = ({ sessionId, currentRole, currentUserProfile, classSess
           </div>
         </aside>
       </div>
+      <LiveKitControls
+        onLeave={onLeave}
+        onEndSession={onEndSession}
+        canEndSession={currentRole === 'teacher' || currentRole === 'admin'}
+        containerRef={containerRef}
+        audioRestricted={audioRestricted}
+        videoRestricted={videoRestricted}
+        onToggleRecording={handleToggleRecording}
+        isRecording={isRecording}
+        recordingDuration={recordingDuration}
+        canRecord={canManageParticipants}
+      />
     </div>
   );
 };
 
 const LiveKitClassSession = ({ token, serverUrl, sessionId, currentRole, currentUserProfile, classSession, onLeave, onEndSession, onToast }) => {
   const containerRef = useRef(null);
-  const controls = classSession?.livekit_controls || {};
-  const restrictedAudioUserIds = Array.isArray(controls?.restricted_audio_user_ids) ? controls.restricted_audio_user_ids.map(String) : [];
-  const restrictedVideoUserIds = Array.isArray(controls?.restricted_video_user_ids) ? controls.restricted_video_user_ids.map(String) : [];
-  const audioRestricted = restrictedAudioUserIds.includes(currentUserProfile?.id);
-  const videoRestricted = restrictedVideoUserIds.includes(currentUserProfile?.id);
 
   if (!token || !serverUrl) {
     return null;
@@ -2854,14 +3165,8 @@ const LiveKitClassSession = ({ token, serverUrl, sessionId, currentRole, current
           classSession={classSession}
           containerRef={containerRef}
           onToast={onToast}
-        />
-        <LiveKitControls
           onLeave={onLeave}
           onEndSession={onEndSession}
-          canEndSession={currentRole === 'teacher' || currentRole === 'admin'}
-          containerRef={containerRef}
-          audioRestricted={audioRestricted}
-          videoRestricted={videoRestricted}
         />
       </LiveKitRoom>
     </div>

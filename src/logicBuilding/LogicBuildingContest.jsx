@@ -12,6 +12,7 @@ import Toast from '../components/Toast';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { estimateCodeComplexity } from './leaderboardUtils';
 import { logError } from '../utils/errorLogger';
+import { startAutoPublishScheduler, stopAutoPublishScheduler } from './autoPublishScheduler';
 
 export default function LogicBuildingContest() {
         // State for inline while loop suggestion
@@ -90,6 +91,10 @@ export default function LogicBuildingContest() {
         setQuestions(weeklyContest.questions);
         const active = await isContestActive();
         setContestActive(active);
+        // Start auto-publish scheduler if enabled
+        if (weeklyContest.autoPublish.enabled) {
+          startAutoPublishScheduler();
+        }
       } finally {
         setContestConfigLoading(false);
       }
@@ -99,8 +104,26 @@ export default function LogicBuildingContest() {
       setQuestions(weeklyContest.questions);
       const active = await isContestActive();
       setContestActive(active);
+      // Restart scheduler if auto-publish setting changed
+      if (weeklyContest.autoPublish.enabled) {
+        startAutoPublishScheduler();
+      } else {
+        stopAutoPublishScheduler();
+      }
     });
-    return () => unsubscribe && unsubscribe();
+
+    // Listen for auto-publish completion events
+    const handleAutoPublishComplete = async () => {
+      await weeklyContest.load();
+      setQuestions(weeklyContest.questions);
+    };
+    window.addEventListener('autoPublishComplete', handleAutoPublishComplete);
+
+    return () => {
+      unsubscribe && unsubscribe();
+      stopAutoPublishScheduler();
+      window.removeEventListener('autoPublishComplete', handleAutoPublishComplete);
+    };
   }, []);
 
   async function handleRun() {

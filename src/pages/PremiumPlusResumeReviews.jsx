@@ -361,6 +361,7 @@ const PremiumPlusResumeReviews = () => {
         profile={profile}
         title="Unlock Resume Reviews"
         message="Resume reviews are available with Premium Plus. Upgrade to submit 1 AI-reviewed resume every calendar month."
+        inline={true}
       />
     );
   }

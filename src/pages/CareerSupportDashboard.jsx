@@ -151,7 +151,7 @@ const CareerSupportDashboard = () => {
   };
 
   if (loading) return <LoadingSpinner message="Loading career support dashboard..." />;
-  if (!allowed) return <PremiumPlusUpgradeGate profile={profile} title="Unlock Career Support Dashboard" message="Premium Plus unlocks your complete career support dashboard." />;
+  if (!allowed) return <PremiumPlusUpgradeGate profile={profile} title="Unlock Career Support Dashboard" message="Premium Plus unlocks your complete career support dashboard." inline={true} />;
 
   return (
     <div className="space-y-6">

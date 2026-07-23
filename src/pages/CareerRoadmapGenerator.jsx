@@ -131,9 +131,9 @@ const generateRoadmapLocally = (goal, level) => {
 };
 
 const CareerRoadmapGenerator = () => {
-  const { profile } = useAuth();
+  const { profile, isPremiumPlus } = useAuth();
   const navigate = useNavigate();
-  const isPremium = profile?.premium_until && new Date(profile.premium_until) > new Date();
+  const isPp = isPremiumPlus(profile);
   const [step, setStep] = useState('form'); // form | loading | result
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState(null);
@@ -141,7 +141,7 @@ const CareerRoadmapGenerator = () => {
   const [roadmap, setRoadmap] = useState(null);
   const [expandedPhase, setExpandedPhase] = useState(0);
 
-  if (!isPremium) {
+  if (!isPp) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
@@ -149,9 +149,9 @@ const CareerRoadmapGenerator = () => {
             <Lock className="text-white" size={40} />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Premium Feature</h2>
-          <p className="text-gray-600 mb-6">AI Career Roadmap Generator is available for Premium members.</p>
+          <p className="text-gray-600 mb-6">AI Career Roadmap Generator is available for Premium Plus members.</p>
           <button onClick={() => navigate('/app/payment')} className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-indigo-600 hover:to-blue-600 transition">
-            Upgrade to Premium
+            Upgrade to Premium Plus
           </button>
         </div>
       </div>

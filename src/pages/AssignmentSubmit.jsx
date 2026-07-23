@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
-import { Upload, FileText, CheckCircle, Clock, AlertCircle, Eye, Download } from 'lucide-react';
+import { Upload, FileText, CheckCircle, Clock, AlertCircle, Eye, Download, Lock } from 'lucide-react';
 import AlertModal from '../components/AlertModal';
+import { buildPlanCheckoutPath } from '../utils/planCheckout';
 
 const ACCEPTED_TYPES = '.pdf,.doc,.docx,.txt,.zip';
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 const AssignmentSubmit = () => {
-  const { user } = useAuth();
+  const { user, profile, isPremium } = useAuth();
+  const premiumActive = isPremium(profile);
   const [assignments, setAssignments] = useState([]);
   const [submissions, setSubmissions] = useState({});
   const [courses, setCourses] = useState([]);
@@ -42,7 +44,6 @@ const AssignmentSubmit = () => {
         .from('assignments')
         .select('*, courses!assignments_course_id_fkey(id, title)')
         .in('course_id', courseIds.length ? courseIds : [-1])
-        .eq('is_active', true)
         .order('due_date', { ascending: true });
       setAssignments(assignmentList || []);
 
@@ -145,6 +146,26 @@ const AssignmentSubmit = () => {
           <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-slate-500 font-semibold">Loading assignments...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!premiumActive) {
+    return (
+      <div className="mx-auto max-w-2xl rounded-3xl border border-blue-200 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+          <Lock size={24} />
+        </div>
+        <h1 className="mt-4 text-2xl font-bold text-slate-900">Premium Required</h1>
+        <p className="mt-3 text-sm text-slate-600">
+          Assignments are available only for Premium and Premium Plus members. Upgrade to access assignments.
+        </p>
+        <a
+          href={buildPlanCheckoutPath('premium')}
+          className="mt-5 inline-flex rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          Upgrade to Premium
+        </a>
       </div>
     );
   }

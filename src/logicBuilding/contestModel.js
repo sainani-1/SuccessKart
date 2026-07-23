@@ -7,6 +7,11 @@ export const weeklyContest = {
   startTime: '20:00',
   endTime: '22:00',
   questions: [],
+  autoPublish: {
+    enabled: false,
+    publishBeforeMinutes: 10,
+  },
+  lastGeneratedWeek: null,
   async load() {
     const docRef = doc(db, 'logicBuilding', 'weeklyContest');
     const snap = await getDoc(docRef);
@@ -16,6 +21,13 @@ export const weeklyContest = {
       this.startTime = data.startTime;
       this.endTime = data.endTime;
       this.questions = data.questions || [];
+      if (data.autoPublish) {
+        this.autoPublish = {
+          enabled: data.autoPublish.enabled || false,
+          publishBeforeMinutes: data.autoPublish.publishBeforeMinutes || 10,
+        };
+      }
+      this.lastGeneratedWeek = data.lastGeneratedWeek || null;
     }
   },
   async save() {
@@ -25,6 +37,8 @@ export const weeklyContest = {
       startTime: this.startTime,
       endTime: this.endTime,
       questions: this.questions,
+      autoPublish: this.autoPublish,
+      lastGeneratedWeek: this.lastGeneratedWeek,
     });
   },
   subscribe(callback) {
@@ -36,6 +50,13 @@ export const weeklyContest = {
         this.startTime = data.startTime;
         this.endTime = data.endTime;
         this.questions = data.questions || [];
+        if (data.autoPublish) {
+          this.autoPublish = {
+            enabled: data.autoPublish.enabled || false,
+            publishBeforeMinutes: data.autoPublish.publishBeforeMinutes || 10,
+          };
+        }
+        this.lastGeneratedWeek = data.lastGeneratedWeek || null;
         callback();
       }
     });
@@ -47,6 +68,15 @@ export const weeklyContest = {
   },
   setQuestions(questions) {
     this.questions = questions;
+  },
+  setAutoPublish(enabled, publishBeforeMinutes) {
+    this.autoPublish = {
+      enabled,
+      publishBeforeMinutes: publishBeforeMinutes || 10,
+    };
+  },
+  setLastGeneratedWeek(weekKey) {
+    this.lastGeneratedWeek = weekKey;
   },
 };
 
@@ -119,4 +149,40 @@ export function getContestQuestions() {
 
 export function setContestQuestions(questions) {
   weeklyContest.setQuestions(questions);
+}
+
+// Get ISO week key (YYYY-Wxx) for tracking weekly generation
+export function getWeekKey(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  const week1 = new Date(d.getFullYear(), 0, 4);
+  const weekNum = 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+  return `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+}
+
+// Check if questions need to be regenerated for a new week
+export function needsWeeklyGeneration() {
+  const currentWeek = getWeekKey(new Date());
+  return weeklyContest.lastGeneratedWeek !== currentWeek;
+}
+
+// Get the scheduled contest datetime for comparison
+export function getNextContestDateTime() {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const now = new Date();
+  const targetDay = days.indexOf(weeklyContest.day);
+  const [startHour, startMin] = weeklyContest.startTime.split(':').map(Number);
+
+  const contestDate = new Date(now);
+  contestDate.setHours(startHour, startMin, 0, 0);
+
+  const currentDay = now.getDay();
+  let daysUntilContest = (targetDay - currentDay + 7) % 7;
+  if (daysUntilContest === 0 && contestDate <= now) {
+    daysUntilContest = 7;
+  }
+  contestDate.setDate(contestDate.getDate() + daysUntilContest);
+
+  return contestDate;
 }

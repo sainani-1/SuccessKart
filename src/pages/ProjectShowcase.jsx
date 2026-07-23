@@ -289,7 +289,7 @@ const ProjectShowcase = () => {
           profile={profile}
           title="Premium Plus Required"
           message="Only Premium Plus members can showcase projects. Upgrade to share your work with the community."
-          onClose={() => setShowGate(false)}
+          inline={true}
         />
       )}
 

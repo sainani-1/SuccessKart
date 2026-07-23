@@ -181,6 +181,7 @@ const PremiumPlusMockInterviews = () => {
         profile={profile}
         title="Unlock Mock Interviews"
         message="Mock interviews are available with Premium Plus. Upgrade to request 1 teacher-led mock interview every calendar month."
+        inline={true}
       />
     );
   }

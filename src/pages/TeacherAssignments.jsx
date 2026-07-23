@@ -74,8 +74,6 @@ const TeacherAssignments = () => {
         course_id: createForm.course_id,
         due_date: createForm.due_date || null,
         max_marks: createForm.max_marks || null,
-        created_by: user.id,
-        is_active: true,
       });
       if (error) throw error;
       setAlert({ show: true, title: 'Created', message: 'Assignment created successfully.', type: 'success' });
@@ -286,11 +284,7 @@ const TeacherAssignments = () => {
                           <td className="px-4 py-3 text-slate-600">{a.max_marks ?? '-'}</td>
                           <td className="px-4 py-3 text-slate-600">{subCount} ({gradedCount} graded)</td>
                           <td className="px-4 py-3">
-                            {a.is_active ? (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Active</span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Inactive</span>
-                            )}
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Active</span>
                           </td>
                         </tr>
                       );

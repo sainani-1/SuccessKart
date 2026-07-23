@@ -228,7 +228,7 @@ Deno.serve(async (req: Request) => {
         roomName = roomNameForClassSession(sessionId);
       }
       identity = `${callerRole}:${requesterId}:class:${sessionId}`;
-      canPublish = callerRole === "admin" || isTeacherOwner;
+      canPublish = callerRole === "admin" || isTeacherOwner || callerRole === "student";
     } else {
       const { data: sessionRow, error: sessionError } = await adminClient
         .from("exam_live_sessions")

@@ -40,6 +40,7 @@ const Login = () => {
   const [takeoverModalOpen, setTakeoverModalOpen] = useState(false);
   const [inlineNotice, setInlineNotice] = useState('');
   const [registrationsPaused, setRegistrationsPaused] = useState(false);
+  const [faceLoginEnabled, setFaceLoginEnabled] = useState(true);
   const takeoverResolverRef = useRef(null);
   const otpInputRefs = useRef([]);
   const googleAuthStartedRef = useRef(false);
@@ -365,21 +366,21 @@ const Login = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const fetchRegistrationPause = async () => {
+    const fetchLoginSettings = async () => {
       try {
         const { data } = await supabase
           .from('settings')
-          .select('value')
-          .eq('key', 'registrations_paused')
-          .maybeSingle();
-        if (data?.value === 'true') {
-          setRegistrationsPaused(true);
-        }
+          .select('key, value')
+          .in('key', ['registrations_paused', 'face_login_enabled']);
+        (data || []).forEach((row) => {
+          if (row.key === 'registrations_paused' && row.value === 'true') setRegistrationsPaused(true);
+          if (row.key === 'face_login_enabled' && row.value === 'false') setFaceLoginEnabled(false);
+        });
       } catch {
         // silently ignore
       }
     };
-    fetchRegistrationPause();
+    fetchLoginSettings();
   }, []);
 
   useEffect(() => {
@@ -1404,7 +1405,7 @@ const Login = () => {
           </button>
           )}
 
-          {!registrationsPaused && !faceLoginMode && (
+          {!registrationsPaused && faceLoginEnabled && !faceLoginMode && (
             <button
               type="button"
               onClick={async () => { setFaceLoginMode(true); setFaceError(''); setFaceLoading(''); await startFaceCamera(); }}

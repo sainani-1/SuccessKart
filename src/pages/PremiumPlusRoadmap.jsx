@@ -354,6 +354,7 @@ const PremiumPlusRoadmap = () => {
         profile={profile}
         title="Unlock Personal Roadmap"
         message="Monthly personal roadmap updates are available with Premium Plus. Upgrade to get an auto-generated roadmap that your teacher can edit."
+        inline={true}
       />
     );
   }

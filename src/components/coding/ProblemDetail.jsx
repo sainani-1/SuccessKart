@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Zap, ChevronDown, ChevronUp, Play, CheckCircle, 
 import MonacoCdnEditor from '../MonacoCdnEditor';
 import { runCode } from '../../logicBuilding/codeRunner';
 import { getDifficultyBadgeColor, TEMPLATES, LANGUAGES } from '../../data/skillUpUtils';
+import { supabase } from '../../supabaseClient';
 
 const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, allProblems = [], onSelectProblem }) => {
   const isSolved = (userProgress?.solvedIds || []).includes(problem.id);
@@ -22,8 +23,6 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
   const [fullscreen, setFullscreen] = useState(false);
   const outputRef = useRef(null);
   const [pasteWarning, setPasteWarning] = useState(false);
-  const [tabSwitchCount, setTabSwitchCount] = useState(0);
-  const [showTabWarning, setShowTabWarning] = useState(false);
   const [startTime] = useState(Date.now());
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -83,20 +82,52 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
     return () => clearInterval(interval);
   }, [startTime]);
 
-  // Tab switch detection
+  const [discussionError, setDiscussionError] = useState('');
+
+  const loadDiscussion = async () => {
+    if (!problem?.id) return;
+    setDiscussionError('');
+    try {
+      const { data, error } = await supabase
+        .from('skillup_discussions')
+        .select('id, body, user_id, created_at, author:profiles!skillup_discussions_user_id_fkey(full_name)')
+        .eq('problem_id', String(problem.id))
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      setDiscussion((data || []).map((row) => ({
+        id: row.id,
+        text: row.body,
+        userId: row.user_id,
+        userName: row.author?.full_name || 'Anonymous',
+        timestamp: new Date(row.created_at).getTime(),
+      })));
+    } catch (err) {
+      console.error('Failed to load discussion:', err);
+      setDiscussionError(err.message || 'Failed to load discussion');
+      setDiscussion([]);
+    }
+  };
+
   useEffect(() => {
-    const handleVisibility = () => {
-      if (document.hidden) {
-        setTabSwitchCount((c) => {
-          const next = c + 1;
-          if (next >= 3) setShowTabWarning(true);
-          return next;
-        });
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
+    if (!problem?.id) return;
+    setDiscussion([]);
+    loadDiscussion();
+  }, [problem?.id]);
+
+  // Reset state when problem changes
+  useEffect(() => {
+    setResults(null);
+    setRunning(false);
+    setSubmitting(false);
+    setActiveTab('description');
+    setExpandedExamples(new Set());
+    setHintsOpen(false);
+    setUsedHints(new Set());
+    setHintRevealed(new Set());
+    setDiscussion([]);
+    setDiscussionInput('');
+    setCode(TEMPLATES[language] || TEMPLATES.python);
+  }, [problem.id]);
 
   // Paste detection
   const handlePaste = useCallback(() => {
@@ -144,7 +175,6 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
       setResults({ type: 'run', tests: [{ status: 'Error', error: err.message }] });
     }
     setRunning(false);
-    setActiveTab('output');
     scrollToOutput();
   };
 
@@ -171,7 +201,6 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
         language,
         timeSpent: Math.floor((Date.now() - startTime) / 1000),
         hintsUsed: usedHints.size,
-        tabSwitches: tabSwitchCount,
       });
     } catch (err) {
       setResults({ type: 'submit', tests: [{ status: 'Error', error: err.message }], accepted: false });
@@ -425,12 +454,17 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
             <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 space-y-4">
               <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Discussion</h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {discussion.length === 0 && (
+                {discussionError && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-xs text-red-400">
+                    {discussionError}
+                  </div>
+                )}
+                {discussion.length === 0 && !discussionError && (
                   <p className="text-sm text-slate-500 text-center py-6">No discussion yet. Start the conversation!</p>
                 )}
                 {discussion.map((msg, i) => (
-                  <div key={i} className="bg-slate-800/40 rounded-xl p-3">
-                    <p className="text-xs text-slate-500 mb-1">User #{msg.userId || 'Anonymous'}</p>
+                  <div key={msg.id || i} className="bg-slate-800/40 rounded-xl p-3">
+                    <p className="text-xs text-slate-500 mb-1">{msg.userName || 'Anonymous'}</p>
                     <p className="text-sm text-slate-300">{msg.text}</p>
                   </div>
                 ))}
@@ -442,8 +476,21 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
                   onChange={(e) => setDiscussionInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && discussionInput.trim()) {
-                      setDiscussion((prev) => [...prev, { text: discussionInput.trim(), userId, timestamp: Date.now() }]);
+                      const text = discussionInput.trim();
                       setDiscussionInput('');
+                      setDiscussionError('');
+                      supabase.from('skillup_discussions').insert({
+                        problem_id: String(problem.id),
+                        user_id: userId,
+                        body: text,
+                      }).then(({ error }) => {
+                        if (error) {
+                          console.error('Failed to send message:', error);
+                          setDiscussionError('Failed to send: ' + error.message);
+                        } else {
+                          loadDiscussion();
+                        }
+                      });
                     }
                   }}
                   placeholder="Share your thoughts..."
@@ -452,8 +499,21 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
                 <button
                   onClick={() => {
                     if (discussionInput.trim()) {
-                      setDiscussion((prev) => [...prev, { text: discussionInput.trim(), userId, timestamp: Date.now() }]);
+                      const text = discussionInput.trim();
                       setDiscussionInput('');
+                      setDiscussionError('');
+                      supabase.from('skillup_discussions').insert({
+                        problem_id: String(problem.id),
+                        user_id: userId,
+                        body: text,
+                      }).then(({ error }) => {
+                        if (error) {
+                          console.error('Failed to send message:', error);
+                          setDiscussionError('Failed to send: ' + error.message);
+                        } else {
+                          loadDiscussion();
+                        }
+                      });
                     }
                   }}
                   className="p-2 rounded-xl bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
@@ -520,12 +580,6 @@ const ProblemDetail = ({ problem, onBack, onSubmit, userProgress = {}, userId, a
               <div className="absolute top-3 right-3 flex items-center gap-2 px-3 py-2 bg-red-500/20 border border-red-500/30 rounded-xl text-xs text-red-400 animate-pulse">
                 <AlertTriangle size={12} />
                 Pasting code is discouraged. Type it out to learn better!
-              </div>
-            )}
-            {showTabWarning && (
-              <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-xs text-amber-400">
-                <AlertTriangle size={12} />
-                Tab switches detected: {tabSwitchCount}
               </div>
             )}
           </div>

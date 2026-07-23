@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2, Bot, ScanFace, Circle, Building2, Compass, Shield } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2, Bot, ScanFace, Circle, Building2, Compass, Shield, PenTool, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { useNotifications } from '../context/NotificationContext';
@@ -24,6 +24,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
   const [newGuidanceRequests, setNewGuidanceRequests] = useState(0);
   const [newStartupIdeas, setNewStartupIdeas] = useState(0);
   const [newMultiSessionAlerts, setNewMultiSessionAlerts] = useState(0);
+  const [signingOut, setSigningOut] = useState(false);
   const [lastPathname, setLastPathname] = useState(location.pathname);
   const [vmiAccess, setVmiAccess] = useState(null);
   const [ahiAuthorized, setAhiAuthorized] = useState(false);
@@ -76,7 +77,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
     fetchNewGuidanceRequests();
     const interval = setInterval(fetchNewGuidanceRequests, 30000);
     return () => clearInterval(interval);
-  }, [profile?.id, role, location.pathname]);
+  }, [profile?.id, role]);
 
   useEffect(() => {
     if (!profile?.id || role !== 'admin') return;
@@ -114,7 +115,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
     fetchNewMultiSessionAlerts();
     const interval = setInterval(fetchNewMultiSessionAlerts, 30000);
     return () => clearInterval(interval);
-  }, [profile?.id, role, location.pathname]);
+  }, [profile?.id, role]);
 
   const navItemClass = ({ isActive }) =>
     `flex min-h-[56px] items-center ${isMobile ? 'justify-start gap-3 px-4 py-3' : isCollapsed && !isHovered ? 'justify-center px-2' : 'gap-3 px-4'} rounded-xl transition-all duration-300 whitespace-nowrap [&>svg]:h-6 [&>svg]:w-6 [&>svg]:shrink-0 ${isActive ? 'bg-gold-400 text-nani-dark font-bold shadow-sm' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`;
@@ -253,7 +254,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [profile?.id, role, location.pathname]);
+  }, [profile?.id, role]);
 
   // Fetch new user registrations count (Admin only)
   useEffect(() => {
@@ -292,7 +293,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
     fetchNewUsers();
     const interval = setInterval(fetchNewUsers, 30000);
     return () => clearInterval(interval);
-  }, [profile?.id, role, location.pathname]);
+  }, [profile?.id, role]);
 
   // Fetch new teacher assignment requests (Admin and Teacher)
   useEffect(() => {
@@ -338,7 +339,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
     fetchNewRequests();
     const interval = setInterval(fetchNewRequests, 30000);
     return () => clearInterval(interval);
-  }, [profile?.id, role, location.pathname]);
+  }, [profile?.id, role]);
 
   // Fetch new leave requests (Admin only)
   useEffect(() => {
@@ -378,7 +379,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
     fetchNewLeaves();
     const interval = setInterval(fetchNewLeaves, 30000);
     return () => clearInterval(interval);
-  }, [profile?.id, role, location.pathname]);
+  }, [profile?.id, role]);
 
   // Fetch new startup ideas count (Admin only)
   useEffect(() => {
@@ -418,7 +419,19 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
     fetchNewStartupIdeas();
     const interval = setInterval(fetchNewStartupIdeas, 30000);
     return () => clearInterval(interval);
-  }, [profile?.id, role, location.pathname]);
+  }, [profile?.id, role]);
+
+  // Reset badge counts immediately when navigating to relevant pages
+  useEffect(() => {
+    if (!profile?.id) return;
+    const p = location.pathname;
+    if (p === '/app/admin/user-management') { localStorage.setItem(`lastSeenUsers_${profile.id}`, new Date().toISOString()); setNewUserRegistrations(0); }
+    if (p === '/app/admin/teacher-requests' || p === '/app/teacher-requests') { localStorage.setItem(`lastSeenTeacherRequests_${profile.id}`, new Date().toISOString()); setNewTeacherRequests(0); }
+    if (p === '/app/leaves') { localStorage.setItem(`lastSeenLeaves_${profile.id}`, new Date().toISOString()); setNewLeaveRequests(0); }
+    if (p === '/app/admin/startup-ideas') { localStorage.setItem(`lastSeenStartupIdeas_${profile.id}`, new Date().toISOString()); setNewStartupIdeas(0); }
+    if (p === '/app/guidance-sessions') { localStorage.setItem(`lastSeenGuidanceRequests_${profile.id}`, new Date().toISOString()); setNewGuidanceRequests(0); }
+    if (p === '/app/admin/multi-session-alerts') { localStorage.setItem(`lastSeenMultiSessionAlerts_${profile.id}`, new Date().toISOString()); setNewMultiSessionAlerts(0); }
+  }, [location.pathname, profile?.id]);
 
   useEffect(() => {
     if (!profile?.id || role !== 'student') {
@@ -483,18 +496,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className={`${isMobile ? 'p-4' : 'p-6'} border-b border-white/10 flex-shrink-0`}>
-        {isMobile ? (
-          <div className="mb-3 flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-white"
-              aria-label="Close menu"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        ) : null}
+        <div className="flex items-center justify-between">
         <div
           className={`flex items-center ${isMobile ? 'gap-3' : isCollapsed && !isHovered ? 'justify-center' : 'space-x-2'} cursor-pointer hover:opacity-80 transition-opacity`}
           onClick={() => requestNavigation('/app')}
@@ -507,6 +509,29 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             </div>
           )}
         </div>
+        {!isMobile && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white hover:bg-white/10 transition-colors flex-shrink-0"
+            title="Close menu"
+          >
+            <X size={16} />
+          </button>
+        )}
+        </div>
+        {isMobile ? (
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-white"
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        ) : null}
         {shouldShowText && !isMobile ? <p className="text-xs text-slate-400 mt-2 uppercase tracking-wider">{role} Panel</p> : null}
         {shouldShowText && isImpersonating && (
           <div className="mt-3 rounded-lg border border-amber-300/30 bg-amber-400/10 p-3">
@@ -540,7 +565,6 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
 
       <nav
         className={`flex-1 ${isMobile ? 'p-3 space-y-2' : 'p-4 space-y-3'} overflow-y-auto scrollbar-thin scrollbar-thumb-gold-400 scrollbar-track-nani-dark/50 flex flex-col`}
-        onClickCapture={handleSidebarNavigationClick}
       >
         {role === 'instructor' ? (
           <>
@@ -555,6 +579,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/instructor/live-exams" className={navItemClass} title="Live Exams">
               <ShieldCheck size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Live Exams</span>}
+            </NavLink>
+            <NavLink to="/app/design" className={navItemClass} title="Design">
+              <PenTool size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Design</span>}
             </NavLink>
           </>
         ) : role === 'verifier' ? (
@@ -576,12 +604,20 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
                 </span>
               )}
             </NavLink>
+            <NavLink to="/app/design" className={navItemClass} title="Design">
+              <PenTool size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Design</span>}
+            </NavLink>
           </>
         ) : (
           <>
             <NavLink to="/app" end className={navItemClass} title="Dashboard">
               <LayoutDashboard size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Dashboard</span>}
+            </NavLink>
+            <NavLink to="/app/design" className={navItemClass} title="Design">
+              <PenTool size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Design</span>}
             </NavLink>
             {role !== 'student' && (
               <NavLink to="/app/learn-by-playing" className={navItemClass} title="Learn by Playing">
@@ -794,36 +830,30 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Sparkles size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Personal Roadmap</span>}
             </NavLink>
-            <NavLink to="/app/career-roadmap" className={navItemClass} title="AI Career Roadmap">
-              <Compass size={28} />
-              {shouldShowText && <span className="truncate text-sm font-medium">AI Career Roadmap</span>}
-            </NavLink>
             <NavLink to="/app/skill-up" className={navItemClass} title="SkillUp Yourself">
               <Trophy size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">SkillUp Yourself</span>}
+            </NavLink>
+            <NavLink to="/app/career-roadmap" className={navItemClass} title="AI Career Roadmap">
+              <Compass size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">AI Career Roadmap</span>}
             </NavLink>
             <NavLink to="/app/company-exam" className={navItemClass} title="Company Exams">
               <Building2 size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Company Exams</span>}
             </NavLink>
-            {premiumPlusActive && (
-              <>
-                <NavLink to="/app/coding-playground" className={navItemClass} title="Coding Playground">
-                  <Code2 size={28} />
-                  {shouldShowText && <span className="truncate text-sm font-medium">Coding Playground</span>}
-                </NavLink>
-                <NavLink to="/app/discussion-forum" className={navItemClass} title="Discussion Forum">
-                  <MessageSquare size={28} />
-                  {shouldShowText && <span className="truncate text-sm font-medium">Discussion Forum</span>}
-                </NavLink>
-              </>
-            )}
-            {premiumPlusActive && (
-              <NavLink to="/app/addons" className={navItemClass} title="Add Ons">
-                <Package size={28} />
-                {shouldShowText && <span className="truncate text-sm font-medium">Add Ons</span>}
-              </NavLink>
-            )}
+            <NavLink to="/app/coding-playground" className={navItemClass} title="Coding Playground">
+              <Code2 size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Coding Playground</span>}
+            </NavLink>
+            <NavLink to="/app/discussion-forum" className={navItemClass} title="Discussion Forum">
+              <MessageSquare size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Discussion Forum</span>}
+            </NavLink>
+            <NavLink to="/app/addons" className={navItemClass} title="Add Ons">
+              <Package size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Add Ons</span>}
+            </NavLink>
             <NavLink to="/app/attendance" className={navItemClass} title="Attendance">
               <ClipboardList size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Attendance</span>}
@@ -1014,6 +1044,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/admin/logic-building-setup" className={navItemClass} title="Logic Building Setup">
               <Sparkles size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Logic Building Setup</span>}
+            </NavLink>
+            <NavLink to="/app/admin/live-contest-monitor" className={navItemClass} title="Live Contest Monitor">
+              <Activity size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Live Contest Monitor</span>}
             </NavLink>
             <NavLink to="/app/admin/change-course" className={navItemClass} title="Change Course">
               <BookOpen size={28} />
@@ -1419,9 +1453,13 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
         ) : null}
 
         <div className="pt-8 mt-8 border-t border-white/10 flex-shrink-0">
-          <button onClick={signOut} className={`flex min-h-[56px] items-center ${isCollapsed && !isHovered ? 'justify-center px-2' : 'gap-3 px-4'} text-red-400 hover:text-red-300 w-full rounded-xl transition-all duration-300 whitespace-nowrap [&>svg]:h-7 [&>svg]:w-7 [&>svg]:shrink-0 hover:bg-white/5`} title="Sign Out">
-            <LogOut size={28} />
-            {shouldShowText && <span className="truncate text-sm font-medium">Sign Out</span>}
+          <button
+            onClick={async () => { setSigningOut(true); try { await signOut(); } catch { setSigningOut(false); } }}
+            disabled={signingOut}
+            className={`flex min-h-[56px] items-center ${isCollapsed && !isHovered ? 'justify-center px-2' : 'gap-3 px-4'} text-red-400 hover:text-red-300 w-full rounded-xl transition-all duration-300 whitespace-nowrap [&>svg]:h-7 [&>svg]:w-7 [&>svg]:shrink-0 hover:bg-white/5 disabled:opacity-60`} title="Sign Out"
+          >
+            {signingOut ? <Loader2 size={28} className="animate-spin" /> : <LogOut size={28} />}
+            {shouldShowText && <span className="truncate text-sm font-medium">{signingOut ? 'Signing out...' : 'Sign Out'}</span>}
           </button>
         </div>
       </nav>

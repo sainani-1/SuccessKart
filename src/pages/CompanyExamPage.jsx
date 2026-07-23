@@ -29,9 +29,9 @@ function shuffleArray(arr) {
 }
 
 const CompanyExamPage = () => {
-  const { profile } = useAuth();
+  const { profile, isPremiumPlus } = useAuth();
   const navigate = useNavigate();
-  const isPremium = profile?.premium_until && new Date(profile.premium_until) > new Date();
+  const isPp = isPremiumPlus(profile);
 
   const [view, setView] = useState('list'); // list | exam | result
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -127,17 +127,17 @@ const CompanyExamPage = () => {
   };
 
   // ---- PREMIUM GATE ----
-  if (!isPremium) {
+  if (!isPp) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="bg-gradient-to-br from-indigo-500 to-blue-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
             <Lock className="text-white" size={40} />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Premium Feature</h2>
-          <p className="text-gray-600 mb-6">Company-specific exam preparation is available for Premium members.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Premium Plus Feature</h2>
+          <p className="text-gray-600 mb-6">Company-specific exam preparation is available for Premium Plus members.</p>
           <button onClick={() => navigate('/app/payment')} className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-indigo-600 hover:to-blue-600 transition">
-            Upgrade to Premium
+            Upgrade to Premium Plus
           </button>
         </div>
       </div>
