@@ -280,7 +280,7 @@ const ProtectedRoute = ({ children }) => {
     return (
       <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-red-950 text-white p-6 flex items-center justify-center relative overflow-hidden">
         <img
-          src="/sucesskart-logo.svg"
+          src="/NewLogo.jpeg"
           alt=""
           aria-hidden="true"
           className="absolute inset-0 m-auto w-72 h-72 object-contain opacity-15 mix-blend-multiply pointer-events-none select-none"
@@ -290,10 +290,10 @@ const ProtectedRoute = ({ children }) => {
           <p className="text-red-100">
             {realProfile?.disabled_reason
               ? `Reason: ${realProfile.disabled_reason}`
-              : 'Your account has been disabled by the SucessKart team due to suspicious activity.'}
+              : 'Your account has been disabled by the SuccessKart team due to suspicious activity.'}
           </p>
           <div className="rounded-xl bg-red-500/10 border border-red-300/30 p-4">
-            <p className="text-sm text-red-100">Please contact the SucessKart team for reactivation.</p>
+            <p className="text-sm text-red-100">Please contact the SuccessKart team for reactivation.</p>
             {supportContactEmail ? (
               <a className="inline-block mt-2 text-sm font-semibold underline text-red-200" href={`mailto:${supportContactEmail}`}>
                 {supportContactEmail}
@@ -320,7 +320,7 @@ const ProtectedRoute = ({ children }) => {
       return (
         <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-red-950 text-white p-6 flex items-center justify-center relative overflow-hidden">
           <img
-            src="/sucesskart-logo.svg"
+            src="/NewLogo.jpeg"
             alt=""
             aria-hidden="true"
             className="absolute inset-0 m-auto w-72 h-72 object-contain opacity-15 mix-blend-multiply pointer-events-none select-none"
@@ -332,7 +332,7 @@ const ProtectedRoute = ({ children }) => {
               {lockedUntil ? (
                 <p>Lock expires on: {lockedUntil.toLocaleDateString('en-IN')}</p>
               ) : (
-                <p>Your account is locked until the SucessKart team reviews it.</p>
+                <p>Your account is locked until the SuccessKart team reviews it.</p>
               )}
               {supportContactEmail ? (
                 <p className="mt-2">Need help? Contact <a className="font-semibold underline text-red-200" href={`mailto:${supportContactEmail}`}>{supportContactEmail}</a>.</p>

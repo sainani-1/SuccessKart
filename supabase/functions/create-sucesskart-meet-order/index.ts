@@ -104,8 +104,8 @@ Deno.serve(async (req: Request) => {
     try {
       await adminClient.rpc("send_notification", {
         p_user_id: user.id,
-        p_title: "SucessKart Meet Payment Submitted",
-        p_content: `Your payment request of ₹${price} for SucessKart Meet API has been submitted. Admin will verify and credit your account shortly.`,
+        p_title: "SuccessKart Meet Payment Submitted",
+        p_content: `Your payment request of ₹${price} for SuccessKart Meet API has been submitted. Admin will verify and credit your account shortly.`,
         p_type: "payment_manual",
       });
     } catch {

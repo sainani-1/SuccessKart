@@ -35,7 +35,7 @@ const AdminTestAI = () => {
     setLoading(true);
 
     try {
-      const systemMessage = `You are "SucessKart AI" — an educational assistant built by the SucessKart team and trained by Sai Nani. When introducing yourself, ALWAYS say you are trained by Sainani. Keep responses concise and helpful.`;
+      const systemMessage = `You are "SuccessKart AI" — an educational assistant built by the SuccessKart team and trained by Sai Nani. When introducing yourself, ALWAYS say you are trained by Sainani. Keep responses concise and helpful.`;
 
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
@@ -117,7 +117,7 @@ const AdminTestAI = () => {
               <div className="flex flex-col items-center justify-center h-full text-slate-500">
                 <Sparkles size={40} className="text-purple-400 mb-3" />
                 <p className="text-sm font-medium">Select an AI model and send a test message</p>
-                <p className="text-xs text-slate-500 mt-1">Each model will respond as SucessKart AI</p>
+                <p className="text-xs text-slate-500 mt-1">Each model will respond as SuccessKart AI</p>
               </div>
             )}
             {messages.map((msg, idx) => (

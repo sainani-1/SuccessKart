@@ -779,7 +779,7 @@ const Payment = () => {
   const handlePayment = async () => {
     if (paymentGatewayMode === 'manual' && pricing.finalAmount > 0) {
       if (manualSubmitted) {
-        setAlertModal({ show: true, title: 'Already Submitted', message: 'Your payment request is already being verified by the SucessKart team.', type: 'info' });
+        setAlertModal({ show: true, title: 'Already Submitted', message: 'Your payment request is already being verified by the SuccessKart team.', type: 'info' });
         return;
       }
       setShowManualForm(true);
@@ -850,9 +850,9 @@ const Payment = () => {
         key: effectiveKeyId,
         amount: data.amount,
         currency: data.currency || 'INR',
-        name: 'SucessKart',
+        name: 'SuccessKart',
         description: `${selectedPlan?.name || 'Premium'} Access - ${selectedPlan?.periodMonths || 6} Months`,
-        image: '/sucesskart-logo.svg',
+        image: '/NewLogo.jpeg',
         order_id: data.order_id,
         handler: handleGatewaySuccess,
         prefill: {
@@ -1011,7 +1011,7 @@ const Payment = () => {
       setAlertModal({
         show: true,
         title: 'Payment Submitted',
-        message: 'Your manual payment response has been submitted. The SucessKart team is verifying your request. You will be notified once your payment is confirmed.',
+        message: 'Your manual payment response has been submitted. The SuccessKart team is verifying your request. You will be notified once your payment is confirmed.',
         type: 'success',
       });
 
@@ -1044,7 +1044,7 @@ const Payment = () => {
           <Clock3 className="mx-auto text-amber-600" size={48} />
           <h2 className="mt-4 text-xl font-bold text-amber-800">Request Submitted</h2>
           <p className="mt-2 text-amber-700">
-            Your payment request has been submitted. The SucessKart team will contact you soon.
+            Your payment request has been submitted. The SuccessKart team will contact you soon.
           </p>
           <p className="mt-2 text-sm text-amber-600">
             You already have a pending application. A new submission is not allowed until the current one is resolved.
@@ -1125,7 +1125,7 @@ const Payment = () => {
             <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3">
               <p className="text-sm text-slate-500">Base price</p>
               <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Gateway: {paymentGatewayMode === 'skillpro_upi' ? 'SucessKart UPI' : paymentGatewayMode === 'manual' ? 'Manual' : 'Razorpay'}
+                Gateway: {paymentGatewayMode === 'skillpro_upi' ? 'SuccessKart UPI' : paymentGatewayMode === 'manual' ? 'Manual' : 'Razorpay'}
               </p>
               <p className="text-3xl font-bold text-slate-900">₹{displayBaseAmount}</p>
             </div>
@@ -1327,7 +1327,7 @@ const Payment = () => {
           {paymentGatewayMode === 'skillpro_upi' ? (
             <div className="flex items-center gap-2">
               <Clock3 className="text-amber-600" size={16} />
-              <span>SucessKart UPI requests stay in waiting for admin approval until admin verifies the payment</span>
+              <span>SuccessKart UPI requests stay in waiting for admin approval until admin verifies the payment</span>
             </div>
           ) : null}
         </div>

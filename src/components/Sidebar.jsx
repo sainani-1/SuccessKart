@@ -501,10 +501,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
           className={`flex items-center ${isMobile ? 'gap-3' : isCollapsed && !isHovered ? 'justify-center' : 'space-x-2'} cursor-pointer hover:opacity-80 transition-opacity`}
           onClick={() => requestNavigation('/app')}
         >
-          <img src="/sucesskart-logo.svg" alt="SucessKart logo" className={`${isMobile ? 'w-11 h-11' : 'w-10 h-10'} rounded-full object-contain`} />
+          <img src="/NewLogo.jpeg" alt="SuccessKart logo" className={`${isMobile ? 'w-11 h-11' : 'w-10 h-10'} rounded-full object-contain`} />
           {shouldShowText && (
             <div className="min-w-0">
-              <span className="block truncate font-bold text-xl tracking-tight">SucessKart</span>
+              <span className="block truncate font-bold text-xl tracking-tight">SuccessKart</span>
               {isMobile ? <span className="block text-xs text-slate-400">Learning Panel</span> : null}
             </div>
           )}
@@ -1361,11 +1361,11 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <ListChecks size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Payment Responses</span>}
             </NavLink>
-            <NavLink to="/app/admin/sucesskart-meet-settings" className={navItemClass} title="SucessKart Meet API">
+            <NavLink to="/app/admin/sucesskart-meet-settings" className={navItemClass} title="SuccessKart Meet API">
               <Video size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Meet API</span>}
             </NavLink>
-            <NavLink to="/app/admin/sucesskart-meet-payments" className={navItemClass} title="SucessKart Meet Payments">
+            <NavLink to="/app/admin/sucesskart-meet-payments" className={navItemClass} title="SuccessKart Meet Payments">
               <ListChecks size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Meet Payments</span>}
             </NavLink>

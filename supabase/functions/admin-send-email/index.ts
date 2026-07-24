@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         from: {
           email: fromEmail,
-          name: "SucessKart",
+          name: "SuccessKart",
         },
         to: validEmails.map((e) => ({ email: e })),
         subject,

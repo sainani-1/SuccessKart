@@ -186,7 +186,7 @@ export const buildCertificateDataUrl = async (cert, formattedId, options = {}) =
     ctx.fillStyle = '#1f4c63';
     ctx.font = 'bold 82px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('SucessKart', 800, 270);
+    ctx.fillText('SuccessKart', 800, 270);
     ctx.fillStyle = '#334155';
     ctx.font = '24px Arial';
     ctx.fillText('GLOBAL EDUCATION PLATFORM', 800, 315);
@@ -238,7 +238,7 @@ export const buildCertificateDataUrl = async (cert, formattedId, options = {}) =
   ctx.font = 'bold italic 38px Arial';
   ctx.fillText('Nani', 395, 1870);
   ctx.font = '34px Arial';
-  ctx.fillText('Issued by SucessKart', 310, 2045);
+  ctx.fillText('Issued by SuccessKart', 310, 2045);
 
   drawVerifiedSeal(ctx, 1125, 1740);
 

@@ -127,7 +127,7 @@ const CareerSupportDashboard = () => {
     const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     const lines = [
-      'SucessKart Career Report',
+      'SuccessKart Career Report',
       `Student: ${profile?.full_name || profile?.email || '-'}`,
       `Month: ${formatCareerCycle(cycleMonth)}`,
       `Career Readiness: ${readinessScore}/100`,
@@ -147,7 +147,7 @@ const CareerSupportDashboard = () => {
       ...data.tasks.slice(0, 8).map((task) => `- ${task.title}: ${task.status}`),
     ];
     doc.text(lines, 12, 16);
-    doc.save('SucessKart-career-report.pdf');
+    doc.save('SuccessKart-career-report.pdf');
   };
 
   if (loading) return <LoadingSpinner message="Loading career support dashboard..." />;

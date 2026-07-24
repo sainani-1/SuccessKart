@@ -7,7 +7,7 @@ const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
 const SMTP_EMAIL = process.env.SMTP_EMAIL || process.env.GMAIL_EMAIL || '';
 const SMTP_APP_PASSWORD = process.env.SMTP_APP_PASSWORD || process.env.GMAIL_APP_PASSWORD || '';
-const OTP_FROM_NAME = process.env.OTP_FROM_NAME || 'SucessKart';
+const OTP_FROM_NAME = process.env.OTP_FROM_NAME || 'SuccessKart';
 const OTP_SECRET = process.env.LOGIN_OTP_SECRET || SMTP_APP_PASSWORD;
 
 const json = (res, status, body) => {
@@ -208,7 +208,7 @@ const buildOtpEmail = (otp, email) => {
     .join('');
 
   const text = [
-    `Your SucessKart OTP is ${otp}.`,
+    `Your SuccessKart OTP is ${otp}.`,
     'It expires in 5 minutes.',
     'If you did not try to login, reset your password.',
     '',
@@ -256,7 +256,7 @@ const buildOtpEmail = (otp, email) => {
                           Secure Login
                         </div>
                         <h1 class="otp-title" style="margin:18px 0 0;color:#ffffff;font-size:32px;line-height:1.15;font-weight:900;letter-spacing:0;">
-                          Your SucessKart OTP
+                          Your SuccessKart OTP
                         </h1>
                         <p style="margin:10px 0 0;color:#fde68a;font-size:15px;line-height:1.6;">
                           Use this code to finish signing in.
@@ -297,7 +297,7 @@ const buildOtpEmail = (otp, email) => {
               </tr>
               <tr>
                 <td style="padding:18px 28px;background:#f1f5f9;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.5;">
-                  Sent by SucessKart. This is an automated security email.
+                  Sent by SuccessKart. This is an automated security email.
                 </td>
               </tr>
             </table>
@@ -361,7 +361,7 @@ export default async function handler(req, res) {
       const emailContent = buildOtpEmail(otp, email);
       await sendSmtpMail({
         to: email,
-        subject: 'Your SucessKart login OTP',
+        subject: 'Your SuccessKart login OTP',
         text: emailContent.text,
         html: emailContent.html,
       });

@@ -92,10 +92,10 @@ const FALLBACK_QUESTIONS = {
     },
     {
       title: 'Reverse a String',
-      description: 'Problem Statement:\nGiven a string S, reverse it and print the result.\n\nInput Format:\nA single string S.\n\nOutput Format:\nPrint the reversed string.\n\nConstraints:\n1 <= length of S <= 10^4\n\nExample 1:\nInput: hello\nOutput: olleh\n\nExample 2:\nInput: SucessKart\nOutput: traKssecsuS',
+      description: 'Problem Statement:\nGiven a string S, reverse it and print the result.\n\nInput Format:\nA single string S.\n\nOutput Format:\nPrint the reversed string.\n\nConstraints:\n1 <= length of S <= 10^4\n\nExample 1:\nInput: hello\nOutput: olleh\n\nExample 2:\nInput: SuccessKart\nOutput: traKssuccesS',
       testCases: [
         { input: 'hello', output: 'olleh', hidden: false },
-        { input: 'SucessKart', output: 'traKssecsuS', hidden: false },
+        { input: 'SuccessKart', output: 'traKssuccesS', hidden: false },
         { input: 'a', output: 'a', hidden: true },
         { input: 'racecar', output: 'racecar', hidden: true },
       ],

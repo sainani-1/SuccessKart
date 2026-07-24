@@ -84,7 +84,7 @@ const ParticipantDrawer = ({
               {buildParticipantInitials(participant.full_name)}
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">{participant.full_name || 'SucessKart Participant'}</p>
+              <p className="text-sm font-semibold text-white">{participant.full_name || 'SuccessKart Participant'}</p>
               <p className="mt-1 text-xs text-slate-400">{participant.phone || 'Phone not available'}</p>
             </div>
           </div>
@@ -125,7 +125,7 @@ const ParticipantDrawer = ({
               <ExternalLink size={18} className="text-violet-300" />
               <span>
                 <span className="block text-sm font-semibold text-white">Copy Room Link</span>
-                <span className="block text-xs text-slate-400">Share the active SucessKart room if needed</span>
+                <span className="block text-xs text-slate-400">Share the active SuccessKart room if needed</span>
               </span>
             </span>
             <Copy size={16} className="text-slate-400" />
@@ -165,7 +165,7 @@ const ParticipantDrawer = ({
         </div>
 
         <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-slate-900/80 px-4 py-4 text-sm text-slate-300">
-          SucessKart still runs in the separate meeting tab. This drawer adds classroom shortcuts and participant context without changing the meeting behavior.
+          SuccessKart still runs in the separate meeting tab. This drawer adds classroom shortcuts and participant context without changing the meeting behavior.
         </div>
       </aside>
     </div>
@@ -213,7 +213,7 @@ const LiveClass = () => {
   const isSessionStartReached = sessionStartTime ? new Date() >= sessionStartTime : false;
   const getJitsiRoomName = (sessionRow) => `SucessKart_Session_${sessionRow.id}_${sessionRow.title?.replace(/\s+/g, '_') || 'Class'}`;
   const getJitsiRoomUrl = (sessionRow) => `https://meet.jit.si/${encodeURIComponent(getJitsiRoomName(sessionRow))}`;
-  const getMeetingProviderLabel = (sessionRow) => sessionRow?.meeting_type === 'external' ? 'External Platform' : 'SucessKart';
+  const getMeetingProviderLabel = (sessionRow) => sessionRow?.meeting_type === 'external' ? 'External Platform' : 'SuccessKart';
   const sessionRoomUrl = session ? getJitsiRoomUrl(session) : '';
   const getAssignedBreakoutRoomId = (sessionRow) => {
     const breakout = sessionRow?.livekit_controls?.breakout;
@@ -364,7 +364,7 @@ const LiveClass = () => {
     if (!openedWindow) {
       openPopup(
         'Popup Blocked',
-        'SucessKart could not open in a new tab. Please allow popups for this site and try again.',
+        'SuccessKart could not open in a new tab. Please allow popups for this site and try again.',
         'warning'
       );
       return false;
@@ -641,7 +641,7 @@ if (!isTeacher && !isParticipant && !noParticipants) {
 
       setSession((prev) => (prev ? { ...prev, status: 'live', started_at: prev.started_at || new Date().toISOString() } : prev));
     } else if (session.status !== 'live') {
-      openPopup('Please Wait', 'Only the teacher can start this SucessKart class. You can join after the teacher starts it.', 'info');
+      openPopup('Please Wait', 'Only the teacher can start this SuccessKart class. You can join after the teacher starts it.', 'info');
       setJoiningMeeting(false);
       return;
     }
@@ -696,7 +696,7 @@ if (!isTeacher && !isParticipant && !noParticipants) {
 
       setSession((prev) => (prev ? { ...prev, status: 'live', started_at: prev.started_at || new Date().toISOString() } : prev));
     } else if (session.status !== 'live') {
-      openPopup('Please Wait', 'Only the teacher can start this SucessKart class. You can join after the teacher starts it.', 'info');
+      openPopup('Please Wait', 'Only the teacher can start this SuccessKart class. You can join after the teacher starts it.', 'info');
       setJoiningMeeting(false);
       return;
     }
@@ -1235,7 +1235,7 @@ if (!isTeacher && !isParticipant && !noParticipants) {
                       Opened in new tab
                     </span>
                   </div>
-                  <h2 className="mt-6 text-3xl font-bold tracking-tight text-white sm:text-4xl">SucessKart is running in the full meeting tab</h2>
+                  <h2 className="mt-6 text-3xl font-bold tracking-tight text-white sm:text-4xl">SuccessKart is running in the full meeting tab</h2>
                   <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
                     The actual room stays in a separate browser tab to avoid the embedded-session limit. This classroom console remains here for participants, shortcuts, and session controls.
                   </p>
@@ -1244,7 +1244,7 @@ if (!isTeacher && !isParticipant && !noParticipants) {
                       onClick={() => openJitsiMeetingWindow(sessionRoomUrl)}
                       className="rounded-2xl bg-cyan-500 px-6 py-4 font-semibold text-slate-950 transition hover:bg-cyan-400"
                     >
-                      Reopen SucessKart
+                      Reopen SuccessKart
                     </button>
                     <a
                       href={sessionRoomUrl}
@@ -1297,7 +1297,7 @@ if (!isTeacher && !isParticipant && !noParticipants) {
                       <ChevronRight size={18} className="text-slate-400" />
                     </button>
                     <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-4 text-sm text-cyan-100">
-                      Live video thumbnails and per-participant meeting controls are available in the SucessKart meeting tab itself. This page now gives you a cleaner control console around that room.
+                      Live video thumbnails and per-participant meeting controls are available in the SuccessKart meeting tab itself. This page now gives you a cleaner control console around that room.
                     </div>
                   </div>
                 </div>

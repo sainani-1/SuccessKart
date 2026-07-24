@@ -285,7 +285,7 @@ export const createAdminPasskey = async ({ userId, email, displayName }) => {
   const publicKey = {
     challenge: randomChallenge(),
     rp: {
-      name: 'SucessKart Admin',
+      name: 'SuccessKart Admin',
       id: window.location.hostname,
     },
     user: {

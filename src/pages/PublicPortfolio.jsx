@@ -52,7 +52,7 @@ const formatCertificateId = (cert) => {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   const random = generateDeterministicCode(String(cert?.id ?? `${y}${m}${d}`));
-  return `SucessKart-${y}-${m}-${d}-${random}`;
+  return `SuccessKart-${y}-${m}-${d}-${random}`;
 };
 
 const PublicPortfolio = () => {
@@ -130,7 +130,7 @@ const PublicPortfolio = () => {
           <h1 className="mt-5 text-2xl font-black text-slate-900">Portfolio unavailable</h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">{error || 'This portfolio could not be found.'}</p>
           <Link to="/" className="mt-6 inline-flex rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800">
-            Go to SucessKart
+            Go to SuccessKart
           </Link>
         </div>
       </div>
@@ -153,7 +153,7 @@ const PublicPortfolio = () => {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white">
               <Globe2 size={14} />
-              SucessKart Portfolio
+              SuccessKart Portfolio
             </div>
             <h1 className="mt-6 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">{content.headline || portfolio.title}</h1>
             <p className={`mt-4 text-xl font-bold ${theme.accent}`}>{content.role || portfolio.tagline || profile?.core_subject || 'Student'}</p>
@@ -184,7 +184,7 @@ const PublicPortfolio = () => {
             {profile?.education_level ? <p className="mt-2 text-sm text-slate-300">{profile.education_level}{profile.study_stream ? `, ${profile.study_stream}` : ''}</p> : null}
             <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-100">
               <ShieldCheck size={15} />
-              SucessKart verified profile
+              SuccessKart verified profile
             </div>
           </div>
         </div>
@@ -237,11 +237,11 @@ const PublicPortfolio = () => {
               <div>
                 <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
                   <ShieldCheck size={14} />
-                  Verified SucessKart Proof
+                  Verified SuccessKart Proof
                 </p>
-                <h2 className="mt-2 text-2xl font-black text-slate-900">Certificates earned on SucessKart</h2>
+                <h2 className="mt-2 text-2xl font-black text-slate-900">Certificates earned on SuccessKart</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  These certificates are pulled from SucessKart records and shown only when active.
+                  These certificates are pulled from SuccessKart records and shown only when active.
                 </p>
               </div>
               <span className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white">{certificates.length} verified</span>
@@ -251,7 +251,7 @@ const PublicPortfolio = () => {
                 <div key={cert.id} className="rounded-xl border border-emerald-200 bg-white p-4">
                   <p className="flex items-center gap-2 font-bold text-slate-900">
                     <Award size={18} className="text-emerald-600" />
-                    {cert.course?.title || 'Verified SucessKart Certificate'}
+                    {cert.course?.title || 'Verified SuccessKart Certificate'}
                   </p>
                   {cert.course?.category ? <p className="mt-1 text-xs text-slate-500">{cert.course.category}</p> : null}
                   <p className="mt-2 break-all font-mono text-xs font-semibold text-emerald-700">

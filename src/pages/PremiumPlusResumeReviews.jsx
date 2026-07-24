@@ -397,7 +397,7 @@ const PremiumPlusResumeReviews = () => {
             >
               <FileText />
               <p className="mt-3 font-bold">Use Resume Builder</p>
-              <p className="mt-1 text-sm opacity-80">Submit the resume already saved inside SucessKart.</p>
+              <p className="mt-1 text-sm opacity-80">Submit the resume already saved inside SuccessKart.</p>
             </button>
             <button
               type="button"

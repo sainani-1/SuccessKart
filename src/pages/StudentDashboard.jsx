@@ -330,7 +330,7 @@ const StudentDashboard = () => {
   const shareReferralWhatsApp = () => {
     if (!referralLink) return;
     trackPremiumEvent('referral_link_shared_whatsapp', 'student_dashboard', { referralCode }, profile?.id);
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Join SucessKart with my link: ${referralLink}. When you buy premium, I get 7 bonus premium days.`)}`, '_blank', 'noopener,noreferrer');
+    window.open(`https://wa.me/?text=${encodeURIComponent(`Join SuccessKart with my link: ${referralLink}. When you buy premium, I get 7 bonus premium days.`)}`, '_blank', 'noopener,noreferrer');
   };
 
   return (

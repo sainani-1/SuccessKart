@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
-  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@sucesskart.com";
+  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@successkart.vercel.app";
 
   if (!supabaseUrl || !serviceRoleKey || !anonKey) {
     return errorResponse("Missing Supabase environment variables.", 500);
@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
     title,
     body: bodyText,
     url: targetUrl,
-    icon: "/sucesskart-logo.svg",
+    icon: "/NewLogo.jpeg",
     tag: `admin-push-${Date.now()}`,
   });
 

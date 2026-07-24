@@ -105,12 +105,12 @@ Deno.serve(async (req: Request) => {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #7c3aed, #2563eb); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 20px;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">SucessKart</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">SuccessKart</h1>
         </div>
         <div style="background: #f8fafc; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
           <h2 style="color: #1e293b; margin-top: 0;">Hi ${userName},</h2>
           <p style="color: #475569; font-size: 16px; line-height: 1.6;">
-            Your SucessKart Premium membership <strong>${statusText}</strong>.
+            Your SuccessKart Premium membership <strong>${statusText}</strong>.
           </p>
           <p style="color: #475569; font-size: 16px; line-height: 1.6;">
             Don't lose access to exclusive courses, live classes, mock interviews, and more!
@@ -125,7 +125,7 @@ Deno.serve(async (req: Request) => {
           </p>
         </div>
         <p style="color: #cbd5e1; font-size: 12px; text-align: center; margin-top: 16px;">
-          SucessKart — Your success, our mission.
+          SuccessKart — Your success, our mission.
         </p>
       </div>
     `;
@@ -139,9 +139,9 @@ Deno.serve(async (req: Request) => {
           "X-Requested-With": "XMLHttpRequest",
         },
         body: JSON.stringify({
-          from: { email: fromEmail, name: "SucessKart" },
+          from: { email: fromEmail, name: "SuccessKart" },
           to: [{ email: user.email }],
-          subject: `Your SucessKart Premium ${diffDays <= 0 ? "Has Expired" : "Expiring Soon"}`,
+          subject: `Your SuccessKart Premium ${diffDays <= 0 ? "Has Expired" : "Expiring Soon"}`,
           html,
         }),
       });

@@ -148,10 +148,10 @@ Deno.serve(async (req: Request) => {
             body: JSON.stringify({
               from: {
                 email: fromEmail,
-                name: "SucessKart",
+                name: "SuccessKart",
               },
               to: [{ email: adminEmail }],
-              subject: `SucessKart - Add-On Manual Payment from ${userName}`,
+              subject: `SuccessKart - Add-On Manual Payment from ${userName}`,
               html: `
                 <div style="font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
                   <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:24px 32px;text-align:center;">
@@ -186,11 +186,11 @@ Deno.serve(async (req: Request) => {
                       <a href="${screenshotUrl}" target="_blank" style="display:inline-block;background:#3b82f6;color:#ffffff;padding:10px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">View Screenshot</a>
                     </div>
                     <div style="text-align:center;margin-top:8px;">
-                      <a href="${Deno.env.get("APP_URL") || "https://SucessKart.app"}/app/admin/addon-payments" target="_blank" style="display:inline-block;background:#1e293b;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">Review in Admin Panel</a>
+                      <a href="${Deno.env.get("APP_URL") || "https://SuccessKart.app"}/app/admin/addon-payments" target="_blank" style="display:inline-block;background:#1e293b;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">Review in Admin Panel</a>
                     </div>
                   </div>
                   <div style="background:#f8fafc;padding:16px 32px;text-align:center;border-top:1px solid #e2e8f0;">
-                    <p style="color:#94a3b8;font-size:12px;margin:0;">SucessKart &bull; This is an automated notification from the payment system.</p>
+                    <p style="color:#94a3b8;font-size:12px;margin:0;">SuccessKart &bull; This is an automated notification from the payment system.</p>
                   </div>
                 </div>
               `,

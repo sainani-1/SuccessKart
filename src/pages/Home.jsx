@@ -196,12 +196,12 @@ const Home = () => {
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-full shadow-sm overflow-hidden">
             <img
-              src="/sucesskart-logo.svg"
-              alt="SucessKart logo"
+              src="/NewLogo.jpeg"
+              alt="SuccessKart logo"
               className="h-full w-full rounded-full object-contain mix-blend-multiply"
             />
           </div>
-          <div className="font-serif font-bold text-2xl text-nani-dark">SucessKart</div>
+          <div className="font-serif font-bold text-2xl text-nani-dark">SuccessKart</div>
         </div>
         <div className="space-x-4">
           <Link to="/login" className="text-slate-600 hover:text-nani-dark font-medium">Login</Link>
@@ -376,7 +376,7 @@ const Home = () => {
               <LeadCard
                 icon={ShieldCheck}
                 title="Certificate Verification"
-                description="Public verification already creates trust. Push a clear Join SucessKart CTA beside it."
+                description="Public verification already creates trust. Push a clear Join SuccessKart CTA beside it."
               />
               <LeadCard
                 icon={Users}
@@ -512,10 +512,10 @@ const Home = () => {
             <div>
               <div className="flex items-center gap-3">
                 <div className="h-11 w-11 overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm">
-                  <img src="/sucesskart-logo.svg" alt="SucessKart logo" className="h-full w-full object-contain mix-blend-multiply" />
+                  <img src="/NewLogo.jpeg" alt="SuccessKart logo" className="h-full w-full object-contain mix-blend-multiply" />
                 </div>
                 <div>
-                  <p className="font-serif text-2xl font-bold text-nani-dark">SucessKart</p>
+                  <p className="font-serif text-2xl font-bold text-nani-dark">SuccessKart</p>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Career-first learning</p>
                 </div>
               </div>
@@ -561,7 +561,7 @@ const Home = () => {
           </div>
 
           <div className="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-5 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
-            <p>SucessKart public website and student access portal.</p>
+            <p>SuccessKart public website and student access portal.</p>
             <p>Built for guided learning, assessments, and verified outcomes.</p>
           </div>
         </div>

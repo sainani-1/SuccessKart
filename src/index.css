@@ -16,7 +16,7 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: url('/sucesskart-logo.svg');
+  background-image: url('/NewLogo.jpeg');
   background-repeat: no-repeat;
   background-position: center;
   background-size: min(42vmin, 360px);

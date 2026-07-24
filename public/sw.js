@@ -1,7 +1,7 @@
 const CACHE_NAME = 'sucesskart-notifications-v1';
 
 self.addEventListener('push', (event) => {
-  let data = { title: 'SucessKart', body: '', icon: '/sucesskart-logo.svg', url: '/app' };
+  let data = { title: 'SuccessKart', body: '', icon: '/NewLogo.jpeg', url: '/app' };
 
   if (event.data) {
     try {
@@ -14,8 +14,8 @@ self.addEventListener('push', (event) => {
 
   const notificationOptions = {
     body: data.body,
-    icon: data.icon || '/sucesskart-logo.svg',
-    badge: '/sucesskart-logo.svg',
+    icon: data.icon || '/NewLogo.jpeg',
+    badge: '/NewLogo.jpeg',
     data: { url: data.url || '/app' },
     tag: data.tag || 'sucesskart-notification',
     renotify: true,

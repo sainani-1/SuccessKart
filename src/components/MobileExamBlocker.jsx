@@ -15,7 +15,7 @@ const MobileExamBlocker = ({ children, bypassRoles = [] }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-red-950 text-white p-6 flex items-center justify-center relative overflow-hidden">
       <img
-        src="/sucesskart-logo.svg"
+        src="/NewLogo.jpeg"
         alt=""
         aria-hidden="true"
         className="absolute inset-0 m-auto w-72 h-72 object-contain opacity-10 mix-blend-multiply pointer-events-none select-none"

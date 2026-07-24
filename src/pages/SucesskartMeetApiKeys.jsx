@@ -162,7 +162,7 @@ const SucesskartMeetApiKeys = () => {
       });
 
       setManualSubmitted(true);
-      setSuccessMsg(`Your payment request of ₹${price} for SucessKart Meet API has been submitted. Admin will verify and credit 90 minutes to your account shortly.`);
+      setSuccessMsg(`Your payment request of ₹${price} for SuccessKart Meet API has been submitted. Admin will verify and credit 90 minutes to your account shortly.`);
     } catch (err) {
       setAlertModal({ show: true, title: 'Submission Failed', message: err.message || 'Failed to submit payment request.', type: 'error' });
     } finally {
@@ -183,7 +183,7 @@ const SucesskartMeetApiKeys = () => {
       <div className="max-w-2xl mx-auto p-6 space-y-6">
         <div className="text-center space-y-3 pb-4 border-b border-slate-200">
           <Video size={48} className="text-blue-600 mx-auto" />
-          <h1 className="text-3xl font-bold text-slate-900">SucessKart Meet API Keys</h1>
+          <h1 className="text-3xl font-bold text-slate-900">SuccessKart Meet API Keys</h1>
           <p className="text-slate-500">Get your API key to integrate video meetings into your application.</p>
         </div>
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-4">
@@ -227,7 +227,7 @@ const SucesskartMeetApiKeys = () => {
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <div className="text-center space-y-3 pb-4 border-b border-slate-200">
         <Video size={48} className="text-blue-600 mx-auto" />
-        <h1 className="text-3xl font-bold text-slate-900">SucessKart Meet API Keys</h1>
+        <h1 className="text-3xl font-bold text-slate-900">SuccessKart Meet API Keys</h1>
         <p className="text-slate-500">Get your API key to integrate video meetings into your application.</p>
       </div>
 
@@ -235,7 +235,7 @@ const SucesskartMeetApiKeys = () => {
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
           <AlertCircle size={32} className="text-amber-600 mx-auto" />
           <h2 className="mt-3 text-lg font-bold text-amber-800">Currently Unavailable</h2>
-          <p className="text-amber-700">SucessKart Meet API is currently disabled by the admin. Please check back later.</p>
+          <p className="text-amber-700">SuccessKart Meet API is currently disabled by the admin. Please check back later.</p>
         </div>
       )}
 

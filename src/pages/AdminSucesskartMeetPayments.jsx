@@ -141,7 +141,7 @@ const AdminSucesskartMeetPayments = () => {
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3">
         <ListChecks size={28} className="text-blue-600" />
-        <h1 className="text-2xl font-bold text-slate-900">SucessKart Meet Payments</h1>
+        <h1 className="text-2xl font-bold text-slate-900">SuccessKart Meet Payments</h1>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">

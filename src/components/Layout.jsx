@@ -881,7 +881,7 @@ const Layout = () => {
         </main>
         {!examModeActive && (
         <footer className="text-center py-4 text-xs text-slate-400">
-           &copy; {new Date().getFullYear()} SucessKart. All rights reserved. 
+           &copy; {new Date().getFullYear()} SuccessKart. All rights reserved. 
         </footer>
         )}
       </div>

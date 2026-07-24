@@ -156,7 +156,7 @@ const PushNotificationSettings = () => {
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
           <Bell size={24} /> Push Notifications
         </h1>
-        <p className="text-slate-200">Manage how and when SucessKart notifies you.</p>
+        <p className="text-slate-200">Manage how and when SuccessKart notifies you.</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">

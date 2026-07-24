@@ -445,7 +445,7 @@ const Register = () => {
 
   return (
     <AuthShell
-      title="Start your SucessKart journey"
+      title="Start your SuccessKart journey"
       subtitle="Create your account to access classes, exams, certificates, and personalized learning updates."
       highlights={[
         { icon: GraduationCap, text: 'Education-specific setup so recommendations and assessments fit the learner profile.' },
@@ -475,7 +475,7 @@ const Register = () => {
             <div className="mb-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-amber-700 px-4 py-4 text-white">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">Registration Flow</p>
               <p className="mt-2 text-sm text-slate-100">
-                Complete each step to create your SucessKart account with the right education details.
+                Complete each step to create your SuccessKart account with the right education details.
               </p>
             </div>
 

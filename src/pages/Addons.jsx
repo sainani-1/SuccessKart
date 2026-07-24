@@ -150,9 +150,9 @@ const Addons = () => {
         key: effectiveKey,
         amount: data.amount,
         currency: data.currency || 'INR',
-        name: 'SucessKart',
+        name: 'SuccessKart',
         description: `Add-On: ${buyingAddon.name}`,
-        image: '/sucesskart-logo.svg',
+        image: '/NewLogo.jpeg',
         order_id: data.order_id,
         handler: async (response) => {
           try {
@@ -173,11 +173,11 @@ const Addons = () => {
             await supabase.from('notifications').insert({
               user_id: profile.id,
               title: 'Add-On Purchase',
-              content: `Your request for ${buyingAddon.name} add-on has been sent to the SucessKart team. Your add-on will be added in 24 hrs.`,
+              content: `Your request for ${buyingAddon.name} add-on has been sent to the SuccessKart team. Your add-on will be added in 24 hrs.`,
               type: 'addon_purchase',
             });
 
-            setSuccessMsg(`Your request sent to SucessKart team. Your add-on "${buyingAddon.name}" will be added in 24 hrs. ${buyingAddon.name ? '' : ''}`);
+            setSuccessMsg(`Your request sent to SuccessKart team. Your add-on "${buyingAddon.name}" will be added in 24 hrs. ${buyingAddon.name ? '' : ''}`);
             setShowBuyModal(false);
             setBuying(false);
             setBuyingAddon(null);
@@ -261,12 +261,12 @@ const Addons = () => {
       await supabase.from('notifications').insert({
         user_id: profile.id,
         title: 'Add-On Purchase Request',
-        content: `Your request for ${buyingAddon.name} add-on has been sent to the SucessKart team. Your add-on will be added in 24 hrs.`,
+        content: `Your request for ${buyingAddon.name} add-on has been sent to the SuccessKart team. Your add-on will be added in 24 hrs.`,
         type: 'addon_purchase',
       });
 
       setManualSubmitted(true);
-      setSuccessMsg(`Your request sent to SucessKart team. Your add-on "${buyingAddon.name}" will be added in 24 hrs.`);
+      setSuccessMsg(`Your request sent to SuccessKart team. Your add-on "${buyingAddon.name}" will be added in 24 hrs.`);
     } catch (err) {
       setAlertModal({ show: true, title: 'Submission Failed', message: err.message || 'Failed to submit payment request.', type: 'error' });
     } finally {

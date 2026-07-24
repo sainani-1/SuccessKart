@@ -823,7 +823,7 @@ const CourseList = () => {
                    className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                  />
                  <p className="text-xs text-slate-500 mt-1">
-                   Use a Google Drive file link or embed code. Avoid YouTube here because it can expose the original video outside SucessKart.
+                   Use a Google Drive file link or embed code. Avoid YouTube here because it can expose the original video outside SuccessKart.
                  </p>
                </div>
 
@@ -918,7 +918,7 @@ const CourseList = () => {
                    className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                  />
                  <p className="text-xs text-slate-500 mt-1">
-                   Use a Google Drive file link or embed code. Avoid YouTube here because it can expose the original video outside SucessKart.
+                   Use a Google Drive file link or embed code. Avoid YouTube here because it can expose the original video outside SuccessKart.
                  </p>
                </div>
 

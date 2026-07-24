@@ -244,7 +244,7 @@ const VerifiedSkillCredentials = () => {
           category: examState.category,
           earnedAt: new Date().toISOString(),
           level: 'Verified',
-          verifiedBy: 'SucessKart Platform',
+          verifiedBy: 'SuccessKart Platform',
           userId: profile.id,
           userName: profile.full_name || profile.username || 'Student',
           verificationUrl: `${window.location.origin}/verify-credential/${generateCredentialId(profile.id, examState.skill)}`,
@@ -287,7 +287,7 @@ const VerifiedSkillCredentials = () => {
   };
 
   const downloadCredential = (cred) => {
-    const text = `VERIFIED SKILL CREDENTIAL\n=========================\nSucessKart EdTech Platform\n\nCredential ID: ${cred.id}\nSkill: ${cred.skill}\nCategory: ${cred.category}\nLevel: ${cred.level}\nExam Score: ${cred.examScore || 'N/A'} / 10\nHolder: ${cred.userName}\nIssued: ${new Date(cred.earnedAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}\nVerified By: ${cred.verifiedBy}\nVerify at: ${cred.verificationUrl}\n=========================\nThis credential is digitally verified by SucessKart Platform.`;
+    const text = `VERIFIED SKILL CREDENTIAL\n=========================\nSuccessKart EdTech Platform\n\nCredential ID: ${cred.id}\nSkill: ${cred.skill}\nCategory: ${cred.category}\nLevel: ${cred.level}\nExam Score: ${cred.examScore || 'N/A'} / 10\nHolder: ${cred.userName}\nIssued: ${new Date(cred.earnedAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}\nVerified By: ${cred.verifiedBy}\nVerify at: ${cred.verificationUrl}\n=========================\nThis credential is digitally verified by SuccessKart Platform.`;
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

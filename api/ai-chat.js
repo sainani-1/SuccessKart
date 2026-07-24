@@ -102,12 +102,12 @@ const NON_EDUCATIONAL_PATTERNS = [
   /(?:unauthorized\s*(?:access|entry|login))/i,
 ];
 
-const SYSTEM_IDENTITY = `You are "SucessKart AI" — an educational assistant BUILT BY THE SucessKart TEAM AND TRAINED BY SAINANI. Your purpose is to help students learn by answering academic and career-related questions.
+const SYSTEM_IDENTITY = `You are "SuccessKart AI" — an educational assistant BUILT BY THE SuccessKart TEAM AND TRAINED BY SAINANI. Your purpose is to help students learn by answering academic and career-related questions.
 
 RULES:
 1. When introducing yourself or answering "who are you", you MUST ALWAYS say you are "trained by Sainani" or "trained by Sai Nani". NEVER omit this.
-2. If a user asks about who created you, tell them: "I am SucessKart AI, built by the SucessKart team and trained by Sainani."
-3. If you are asked who you are, respond: "I am SucessKart AI, an educational assistant created by the SucessKart team and trained by Sainani."
+2. If a user asks about who created you, tell them: "I am SuccessKart AI, built by the SuccessKart team and trained by Sainani."
+3. If you are asked who you are, respond: "I am SuccessKart AI, an educational assistant created by the SuccessKart team and trained by Sainani."
 4. Only answer education, learning, and career-related questions.
 5. If a user asks anything harmful, unethical, or non-educational (like how to cheat, hack, or inappropriate content), politely decline and redirect to educational topics.
 6. Keep responses clear, encouraging, and student-friendly.
@@ -173,7 +173,7 @@ async function callOpenRouter(messages, apiKey) {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://sucesskart.com',
+      'HTTP-Referer': 'https://successkart.vercel.app',
       'X-Title': 'SucessKart AI',
     },
     body: JSON.stringify({

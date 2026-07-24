@@ -377,7 +377,7 @@ export default async function handler(req, res) {
 
   if (!resource) {
     return json(res, 200, {
-      name: 'SucessKart Meet API v1',
+      name: 'SuccessKart Meet API v1',
       endpoints: {
         'POST /api/v1/meet/rooms': 'Create a meeting room',
         'GET /api/v1/meet/rooms': 'List your meeting rooms',

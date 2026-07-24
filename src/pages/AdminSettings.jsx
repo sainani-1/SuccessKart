@@ -362,7 +362,7 @@ const AdminSettings = () => {
                     : 'bg-slate-100 text-slate-700'
                 }`}
               >
-                SucessKart UPI
+                SuccessKart UPI
               </button>
               <button
                 type="button"
@@ -377,11 +377,11 @@ const AdminSettings = () => {
               </button>
             </div>
             <p className="mt-2 text-xs text-slate-500">
-              Razorpay uses the current checkout flow. SucessKart UPI creates fixed-amount UPI requests/manual review records. Manual shows admin-set QR codes on the payment page.
+              Razorpay uses the current checkout flow. SuccessKart UPI creates fixed-amount UPI requests/manual review records. Manual shows admin-set QR codes on the payment page.
             </p>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">SucessKart UPI ID</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">SuccessKart UPI ID</label>
             <input
               type="text"
               className="w-full p-3 border border-slate-300 rounded-lg"
@@ -390,7 +390,7 @@ const AdminSettings = () => {
               onChange={(e) => setSucessKartUpiId(e.target.value)}
             />
             <p className="mt-1 text-xs text-slate-500">
-              Used only when payment gateway mode is set to SucessKart UPI.
+              Used only when payment gateway mode is set to SuccessKart UPI.
             </p>
           </div>
           <div className="md:col-span-2">

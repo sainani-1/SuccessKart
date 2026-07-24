@@ -50,7 +50,7 @@ const SucesskartMeetDocs = () => {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div className="text-center space-y-3 pb-4 border-b border-slate-200">
         <Video size={48} className="text-blue-600 mx-auto" />
-        <h1 className="text-3xl font-bold text-slate-900">SucessKart Meet API Documentation</h1>
+        <h1 className="text-3xl font-bold text-slate-900">SuccessKart Meet API Documentation</h1>
         <p className="text-slate-500 max-w-2xl mx-auto">
           Create video meeting rooms instantly via API. Your users can join with one click — no login needed.
         </p>
@@ -58,7 +58,7 @@ const SucesskartMeetDocs = () => {
 
       <Section icon={Key} title="1. Get Your API Key">
         <ol className="list-decimal list-inside space-y-2 text-slate-600">
-          <li>Go to <a href="/sucesskart-meet-apikeys" className="text-blue-600 font-semibold hover:underline">SucessKart Meet API Keys</a></li>
+          <li>Go to <a href="/sucesskart-meet-apikeys" className="text-blue-600 font-semibold hover:underline">SuccessKart Meet API Keys</a></li>
           <li>Pay <strong>₹499</strong> via UPI &mdash; admin will credit <strong>90 minutes</strong> to your account</li>
           <li>Copy your API key from the page (it looks like <code className="bg-slate-100 px-1 rounded text-xs font-mono">884960d2-...</code>)</li>
         </ol>
@@ -172,7 +172,7 @@ Body:
       </Section>
 
       <div className="text-center text-sm text-slate-400 pt-4 border-t border-slate-200">
-        SucessKart Meet API v1.0 &mdash; Last updated: June 2026
+        SuccessKart Meet API v1.0 &mdash; Last updated: June 2026
       </div>
     </div>
   );

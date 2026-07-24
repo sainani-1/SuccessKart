@@ -1225,14 +1225,14 @@ const Login = () => {
         onClose={() => setToast({ show: false, message: '', type: 'success' })}
       />
       <AuthShell
-        title="Continue your SucessKart learning"
+        title="Continue your SuccessKart learning"
         subtitle="Sign in to access courses, exams, certificates, mentor support, and your full student dashboard."
         highlights={[
           { icon: UserRoundCheck, text: 'Resume your learning from the same account across courses and assessments.' },
           { icon: ShieldCheck, text: 'Protected login flow with session checks and account safety controls.' },
           { icon: KeyRound, text: 'Reset your password anytime if you lose access to your email login.' },
         ]}
-        footerLabel="New to SucessKart?"
+        footerLabel="New to SuccessKart?"
         footerLinkTo="/register"
         footerLinkText="Create your account"
         rightTitle="Welcome Back"

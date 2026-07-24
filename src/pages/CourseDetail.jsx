@@ -172,7 +172,7 @@ const parseVideoSource = (rawValue) => {
         type: 'youtube',
         src,
         blocked: true,
-        message: 'YouTube is blocked in the protected player because it can reveal the source video outside SucessKart. Use Google Drive preview or a direct hosted video URL instead.'
+        message: 'YouTube is blocked in the protected player because it can reveal the source video outside SuccessKart. Use Google Drive preview or a direct hosted video URL instead.'
       };
     }
     return {
@@ -280,7 +280,7 @@ const ContentProtectionNotice = () => (
       <div>
         <p className="font-semibold">Protected premium content</p>
         <p className="mt-1 text-amber-800">
-          Viewing is limited to the logged-in premium account inside SucessKart. Right click, print, copy,
+          Viewing is limited to the logged-in premium account inside SuccessKart. Right click, print, copy,
           common devtool shortcuts, and direct note downloads are blocked here.
         </p>
       </div>
@@ -602,7 +602,7 @@ const DriveLockedIframe = ({ title, src }) => {
                 ? playWindowUsed
                   ? 'Drive surface locked. Return with Esc or F; video access stays protected.'
                   : 'Start the Drive video now. The surface locks immediately after playback starts.'
-                : 'Enter SucessKart fullscreen to start this Drive video.'}
+                : 'Enter SuccessKart fullscreen to start this Drive video.'}
             </p>
             {isSucessKartFullscreen && playWindowUsed ? null : (
               <button
@@ -1609,7 +1609,7 @@ const CourseDetail = () => {
                   </div>
                   <div className="flex items-center">
                     <FileText size={20} className="mr-3 flex-shrink-0" />
-                    <span>Read protected notes inside SucessKart</span>
+                    <span>Read protected notes inside SuccessKart</span>
                   </div>
                   <div className="flex items-center">
                     <EyeOff size={20} className="mr-3 flex-shrink-0" />
@@ -1712,7 +1712,7 @@ const CourseDetail = () => {
             <div className="relative bg-slate-950 px-6 py-7 text-white">
               <div className="SucessKart-demo-ring absolute left-1/2 top-5 h-24 w-24 -translate-x-1/2 rounded-full border border-amber-300/40" />
               <div className="SucessKart-logo-assemble mx-auto" aria-hidden="true">
-                <img src="/sucesskart-logo.svg" alt="" className="SucessKart-assembled-logo" />
+                <img src="/NewLogo.jpeg" alt="" className="SucessKart-assembled-logo" />
               </div>
               <h2 className="SucessKart-demo-title mt-5 text-center text-2xl font-bold">Demo Course</h2>
               <p className="SucessKart-demo-subtitle mt-2 text-center text-sm text-slate-300">
@@ -1790,7 +1790,7 @@ const CourseDetail = () => {
                       />
                     </ProtectedMediaFrame>
                   ) : (
-                    <ProtectedMediaFrame title={`${course.title} video`} badge="SucessKart Drive player">
+                    <ProtectedMediaFrame title={`${course.title} video`} badge="SuccessKart Drive player">
                       <CustomProtectedVideo
                         videoRef={videoRef}
                         src={videoSource.src}
@@ -1805,7 +1805,7 @@ const CourseDetail = () => {
                 ) : videoSource?.type === 'cloudinary-video' || videoSource?.type === 'direct-video' ? (
                   <ProtectedMediaFrame
                     title={`${course.title} video`}
-                    badge={videoSource.type === 'cloudinary-video' ? 'SucessKart video player' : 'Protected video player'}
+                    badge={videoSource.type === 'cloudinary-video' ? 'SuccessKart video player' : 'Protected video player'}
                   >
                     <CustomProtectedVideo
                       videoRef={videoRef}
@@ -1944,7 +1944,7 @@ const CourseDetail = () => {
                     ) : activeNote ? (
                       <div className="space-y-4">
                         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                          Notes are previewed inside SucessKart only. Direct download and print actions are intentionally removed.
+                           Notes are previewed inside SuccessKart only. Direct download and print actions are intentionally removed.
                         </div>
                         {notesPreviewImage ? (
                           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -2093,7 +2093,7 @@ const CourseDetail = () => {
                   <p className="text-sm text-slate-600">
                     {course.is_free
                       ? 'Demo courses are for preview and practice. They do not include live exams or certification.'
-                      : `Protected materials are bound to this logged-in session inside ${APP_ORIGIN || 'SucessKart'}.`}
+                      : `Protected materials are bound to this logged-in session inside ${APP_ORIGIN || 'SuccessKart'}.`}
                   </p>
                 </div>
               </div>

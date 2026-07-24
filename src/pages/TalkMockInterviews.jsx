@@ -34,7 +34,7 @@ const TOTAL_QUESTIONS = 10;
 const STORAGE_KEY = 'talk_mock_interview_state';
 const SILENCE_TIMEOUT = 1800;
 
-const SYSTEM_PROMPT = `You are an expert interview coach conducting a live voice-based practice interview for SucessKart students.
+const SYSTEM_PROMPT = `You are an expert interview coach conducting a live voice-based practice interview for SuccessKart students.
 
 YOUR JOB:
 1. The student has already told you their target role. Start by asking the first interview question.
@@ -504,7 +504,7 @@ const TalkMockInterviews = () => {
             </div>
             <h2 className="mt-6 text-2xl font-bold text-white">Access Required</h2>
             <p className="mt-3 text-indigo-300 text-sm leading-relaxed">
-              Talk Mock Interviews is a restricted feature. You need approval from the SucessKart team to access it.
+              Talk Mock Interviews is a restricted feature. You need approval from the SuccessKart team to access it.
             </p>
 
             {isPp ? (

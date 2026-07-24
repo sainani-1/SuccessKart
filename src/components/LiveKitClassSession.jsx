@@ -2463,7 +2463,7 @@ const ClassroomLayout = ({ sessionId, currentRole, currentUserProfile, classSess
       rec.ctx = canvas.getContext('2d');
 
       const logoImg = new Image();
-      logoImg.src = '/sucesskart-logo.svg';
+      logoImg.src = '/NewLogo.jpeg';
       await new Promise((r) => { logoImg.onload = r; logoImg.onerror = r; });
       rec.logoImage = logoImg;
 

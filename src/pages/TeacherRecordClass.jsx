@@ -372,7 +372,7 @@ export default function TeacherRecordClass() {
 
   useEffect(() => {
     const img = new Image();
-    img.src = '/sucesskart-logo.svg';
+    img.src = '/NewLogo.jpeg';
     img.onload = () => { logoImageRef.current = img; };
     img.onerror = () => { logoImageRef.current = null; };
   }, []);
@@ -1171,8 +1171,8 @@ export default function TeacherRecordClass() {
                     {showLogoInPreview && (
                       <div className="absolute top-3 right-3 logo-anim-preview pointer-events-none">
                         <img
-                          src="/sucesskart-logo.svg"
-                          alt="SucessKart"
+                          src="/NewLogo.jpeg"
+                          alt="SuccessKart"
                           className="w-10 h-10 md:w-14 md:h-14 drop-shadow-lg"
                           style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))' }}
                         />
@@ -1358,7 +1358,7 @@ export default function TeacherRecordClass() {
                       <h4 className="text-sm font-bold text-gray-700">Watermark Settings</h4>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <img src="/sucesskart-logo.svg" alt="" className="w-6 h-6" />
+                          <img src="/NewLogo.jpeg" alt="" className="w-6 h-6" />
                           <span className="text-sm text-gray-600">Show logo on preview playback</span>
                         </div>
                         <button
@@ -1386,8 +1386,8 @@ export default function TeacherRecordClass() {
                         <div className="flex flex-col items-center gap-6">
                           <div className="logo-anim-save">
                             <img
-                              src="/sucesskart-logo.svg"
-                              alt="SucessKart"
+                              src="/NewLogo.jpeg"
+alt="SuccessKart"
                               className="w-32 h-32 md:w-40 md:h-40 drop-shadow-2xl"
                             />
                           </div>

@@ -391,7 +391,7 @@ const Profile = () => {
               placeholder="Your username"
             />
             <p className="mt-1 text-xs text-slate-500">
-              Unique username. Example: SucessKart-Name-A1B2-260418
+              Unique username. Example: SuccessKart-Name-A1B2-260418
             </p>
           </div>
           <div>

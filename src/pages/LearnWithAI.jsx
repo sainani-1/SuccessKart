@@ -5,14 +5,14 @@ import { Bot, User, Send, Crown, AlertTriangle, Loader2, Brain, Sparkles, CheckC
 import { buildPlanCheckoutPath } from '../utils/planCheckout';
 import { useChatHistory } from '../hooks/useChatHistory';
 
-const LWA_WELCOME = 'Hi! I\'m SucessKart AI, your educational assistant. Ask me anything about learning, studies, or career guidance!';
+const LWA_WELCOME = 'Hi! I\'m SuccessKart AI, your educational assistant. Ask me anything about learning, studies, or career guidance!';
 
-const SYSTEM_PROMPT = `You are "SucessKart AI" — a friendly, educational assistant built by the SucessKart team and trained by Sai Nani. Your purpose is to help students learn by answering academic and career-related questions.
+const SYSTEM_PROMPT = `You are "SuccessKart AI" — a friendly, educational assistant built by the SuccessKart team and trained by Sai Nani. Your purpose is to help students learn by answering academic and career-related questions.
 
 RULES:
 1. Only answer education, learning, and career-related questions.
-2. If a user asks about who created you, tell them: "I was built by the SucessKart team and trained by Sai Nani."
-3. If you are asked who you are, respond: "I am SucessKart AI, an educational assistant created by the SucessKart team and trained by Sai Nani."
+2. If a user asks about who created you, tell them: "I was built by the SuccessKart team and trained by Sai Nani."
+3. If you are asked who you are, respond: "I am SuccessKart AI, an educational assistant created by the SuccessKart team and trained by Sai Nani."
 4. If a user asks anything harmful, unethical, or non-educational (like how to cheat, hack, or inappropriate content), politely decline and redirect to educational topics.
 5. Keep responses clear, encouraging, and student-friendly.
 6. Use simple language suitable for students.
@@ -152,7 +152,7 @@ const TypingIndicator = () => (
     </div>
     <div className="bg-white text-slate-700 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm max-w-[75%]">
       <div className="flex items-center gap-1.5">
-        <span className="text-xs text-slate-700 font-medium">SucessKart Is Typing</span>
+        <span className="text-xs text-slate-700 font-medium">SuccessKart Is Typing</span>
         <AnimatedDots />
       </div>
     </div>
@@ -403,7 +403,7 @@ const LearnWithAI = () => {
             <Brain size={20} className="text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm text-slate-800">SucessKart AI</h3>
+            <h3 className="font-semibold text-sm text-slate-800">SuccessKart AI</h3>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -602,7 +602,7 @@ const LearnWithAI = () => {
 
       <div className="text-center px-3 py-1.5 bg-slate-50 border-t border-slate-100">
         <p className="text-[10px] text-slate-400 leading-relaxed">
-          SucessKart AI can make mistakes. Verify important information. <Link to="/terms-and-conditions" className="text-emerald-500 hover:text-emerald-600 underline">Terms apply</Link>.
+          SuccessKart AI can make mistakes. Verify important information. <Link to="/terms-and-conditions" className="text-emerald-500 hover:text-emerald-600 underline">Terms apply</Link>.
         </p>
       </div>
 

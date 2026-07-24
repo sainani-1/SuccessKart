@@ -97,9 +97,9 @@ const sections = [
   {
     title: '13. AI Disclaimer — Learn with AI',
     points: [
-      'SucessKart AI is an educational assistant designed to help students learn and understand academic topics. It is not a substitute for professional advice, instruction, or certified teaching.',
-      'SucessKart AI can make mistakes. You should not rely solely on AI-generated answers — always verify important information with your teacher, textbooks, or trusted sources.',
-      'The SucessKart team is not responsible for any issues, errors, misunderstandings, or outcomes resulting from the use of the AI assistant. The AI is provided "as is" to support your learning journey.',
+      'SuccessKart AI is an educational assistant designed to help students learn and understand academic topics. It is not a substitute for professional advice, instruction, or certified teaching.',
+      'SuccessKart AI can make mistakes. You should not rely solely on AI-generated answers — always verify important information with your teacher, textbooks, or trusted sources.',
+      'The SuccessKart team is not responsible for any issues, errors, misunderstandings, or outcomes resulting from the use of the AI assistant. The AI is provided "as is" to support your learning journey.',
       'By using the "Learn with AI" feature, you acknowledge that you understand these limitations and agree to use the tool responsibly as a supplementary learning aid only.',
     ],
   },

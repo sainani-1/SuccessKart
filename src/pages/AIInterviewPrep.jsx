@@ -32,7 +32,7 @@ const incrementVMIUsage = async (userId, feature) => {
 
 const TOTAL_QUESTIONS = 10;
 
-const SYSTEM_PROMPT = `You are an expert interview coach conducting a live practice interview for SucessKart students.
+const SYSTEM_PROMPT = `You are an expert interview coach conducting a live practice interview for SuccessKart students.
 
 YOUR JOB:
 1. Start by asking the user what role they are preparing for (e.g., Frontend Developer, Backend Developer, App Developer, Data Analyst, Full Stack, etc.).
@@ -244,7 +244,7 @@ const AIInterviewPrep = () => {
             </div>
             <h2 className="mt-6 text-2xl font-bold text-white">Access Required</h2>
             <p className="mt-3 text-indigo-300 text-sm leading-relaxed">
-              AI Interview Prep is a restricted feature. You need approval from the SucessKart team to access it.
+              AI Interview Prep is a restricted feature. You need approval from the SuccessKart team to access it.
             </p>
 
             {isPp ? (

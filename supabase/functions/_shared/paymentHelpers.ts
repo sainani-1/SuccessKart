@@ -141,7 +141,7 @@ const sendEmailIfConfigured = async ({
     body: JSON.stringify({
       from: {
         email: fromEmail,
-        name: "SucessKart",
+        name: "SuccessKart",
       },
       to: [{ email: to }],
       subject,
@@ -232,7 +232,7 @@ export const notifyAdminOfPaymentEvent = async (
   try {
     await sendEmailIfConfigured({
       to: paymentAdminEmail,
-      subject: `SucessKart ${title}: ${options.userEmail || options.userName || options.paymentId}`,
+      subject: `SuccessKart ${title}: ${options.userEmail || options.userName || options.paymentId}`,
       html: `
         <div style="font-family:Arial,sans-serif;padding:16px;color:#0f172a;">
           <h2 style="margin:0 0 12px;">${title}</h2>
@@ -261,8 +261,8 @@ export const notifyUserOfPaymentReview = async (options: {
   const title = options.status === "approved" ? "Payment Approved" : "Payment Rejected";
   const summary =
     options.status === "approved"
-      ? `${options.planName} payment has been approved by SucessKart.`
-      : `${options.planName} payment request was reviewed by SucessKart.`;
+      ? `${options.planName} payment has been approved by SuccessKart.`
+      : `${options.planName} payment request was reviewed by SuccessKart.`;
 
   const detailRows = [
     ["User", options.userName || "-"],
@@ -279,7 +279,7 @@ export const notifyUserOfPaymentReview = async (options: {
   try {
     await sendEmailIfConfigured({
       to: options.email,
-      subject: `SucessKart ${title}: ${options.planName}`,
+      subject: `SuccessKart ${title}: ${options.planName}`,
       html: `
         <div style="font-family:Arial,sans-serif;padding:16px;color:#0f172a;">
           <h2 style="margin:0 0 12px;">${title}</h2>
