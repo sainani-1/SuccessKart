@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-const LOGO_URL = import.meta.env.VITE_CERTIFICATE_LOGO || "/sucesskart-logo.svg";
+const LOGO_URL = import.meta.env.VITE_CERTIFICATE_LOGO || "/NewLogo.jpeg";
 import { supabase } from "../supabaseClient";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AlertModal from "../components/AlertModal";

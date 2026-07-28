@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import usePopup from '../hooks/usePopup.jsx';
 import useSensitiveContentGuard from "../hooks/useSensitiveContentGuard";
-const LOGO_URL = import.meta.env.VITE_CERTIFICATE_LOGO || "/sucesskart-logo.svg";
+const LOGO_URL = import.meta.env.VITE_CERTIFICATE_LOGO || "/NewLogo.jpeg";
 const MFA_ISSUER = "SuccessKart";
 
 export default function AdminMFASetup() {

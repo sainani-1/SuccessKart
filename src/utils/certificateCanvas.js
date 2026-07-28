@@ -7,7 +7,7 @@ import { getCertificateDisplayName } from './identityVerification';
 export const CERTIFICATE_CANVAS_SIZE = { width: 1600, height: 2200 };
 const CERTIFICATE_VERIFY_BASE_URL = import.meta.env.VITE_CERTIFICATE_VERIFY_BASE_URL || 'https://skillingpro.vercel.app';
 
-const LOGO_URL = import.meta.env.VITE_CERTIFICATE_LOGO || '/sucesskart-logo.svg';
+const LOGO_URL = import.meta.env.VITE_CERTIFICATE_LOGO || '/NewLogo.jpeg';
 const FOUNDER_SIGNATURE_URL = '/nani-signature-cropped.png';
 
 const loadImage = async (src) => {
