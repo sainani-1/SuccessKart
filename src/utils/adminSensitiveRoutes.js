@@ -33,6 +33,7 @@ export const ADMIN_SENSITIVE_ROUTE_OPTIONS = [
   createRouteOption('/app/admin/teacher-progress', 'Teacher Progress', 'Teacher performance and progress tracking.'),
   createRouteOption('/app/admin/student-progress', 'Student Progress', 'Student performance and progress tracking.'),
   createRouteOption('/app/admin/manage-premium', 'Manage Premium', 'Premium grants, expiry changes, and membership edits.'),
+  createRouteOption('/app/admin/grant-skillup', 'Grant SkillUp Access', 'Grant or revoke SkillUp access for students without premium.'),
   createRouteOption('/app/admin/plans', 'Plan Management', 'Admin pricing plans including Premium and Premium Plus.'),
   createRouteOption('/app/admin/notes-library', 'Notes Library', 'Premium Plus notes library management and uploads.'),
   createRouteOption('/app/admin/teacher-assignment', 'Assign Teachers', 'Teacher assignment and reassignment controls.'),

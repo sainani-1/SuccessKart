@@ -8,6 +8,7 @@ import { getLevelFromXp, generateHeatmapData, calculateStreak, checkBadges } fro
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import PremiumPlusUpgradeGate from '../components/PremiumPlusUpgradeGate';
+import { fetchSkillUpGrantedUsers, isSkillUpGranted } from '../utils/skillupAccess';
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -230,7 +231,9 @@ const emptyProgress = () => normalizeProgress(EMPTY_PROGRESS);
 const SkillUp = () => {
   const { profile, user, isPremiumPlus } = useAuth();
   const actorId = profile?.id || user?.id || null;
-  const hasAccess = isPremiumPlus(profile);
+  const premiumPlusAccess = isPremiumPlus(profile);
+  const [adminGrantedAccess, setAdminGrantedAccess] = useState(false);
+  const hasAccess = premiumPlusAccess || adminGrantedAccess;
   const totalQuestions = CODING_PROBLEMS.length;
   const codingStartRef = useRef(Date.now());
   const loadSeqRef = useRef(0);
@@ -248,6 +251,16 @@ const SkillUp = () => {
       mountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!actorId || premiumPlusAccess) {
+      if (premiumPlusAccess) setAdminGrantedAccess(true);
+      return;
+    }
+    fetchSkillUpGrantedUsers().then((granted) => {
+      setAdminGrantedAccess(isSkillUpGranted(granted, actorId));
+    });
+  }, [actorId, premiumPlusAccess]);
 
   const solvedSet = useMemo(() => new Set(progress.solvedIds || []), [progress.solvedIds]);
 

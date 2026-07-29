@@ -181,6 +181,7 @@ const AdminTestAI = lazy(() => import('./pages/AdminTestAI'));
 const AdminMisuseAI = lazy(() => import('./pages/AdminMisuseAI'));
 const AdminLoginHistory = lazy(() => import('./pages/AdminLoginHistory'));
 const AdminSkillUpTracker = lazy(() => import('./pages/AdminSkillUpTracker'));
+const AdminGrantSkillUpAccess = lazy(() => import('./pages/AdminGrantSkillUpAccess'));
 const AdminMaintenanceMode = lazy(() => import('./pages/AdminMaintenanceMode'));
 const MaintenanceModePage = lazy(() => import('./pages/MaintenanceModePage'));
 const AdminLastActive = lazy(() => import('./pages/AdminLastActive'));
@@ -646,6 +647,7 @@ function App() {
           <Route path="admin/login-history" element={<AdminRoute><AdminLoginHistory /></AdminRoute>} />
           <Route path="admin/maintenance-mode" element={<AdminRoute><AdminMaintenanceMode /></AdminRoute>} />
           <Route path="admin/track-sy" element={<AdminRoute><AdminSkillUpTracker /></AdminRoute>} />
+          <Route path="admin/grant-skillup" element={<AdminRoute><AdminGrantSkillUpAccess /></AdminRoute>} />
           <Route path="admin/last-active" element={<AdminRoute><AdminLastActive /></AdminRoute>} />
           <Route path="admin/ahi" element={<AdminRoute><AdminAHI /></AdminRoute>} />
           <Route path="admin/sucesskart-meet-settings" element={<AdminRoute><AdminSucesskartMeetSettings /></AdminRoute>} />

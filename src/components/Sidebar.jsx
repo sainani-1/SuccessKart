@@ -1313,6 +1313,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Trophy size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Track SY</span>}
             </NavLink>
+            <NavLink to="/app/admin/grant-skillup" className={navItemClass} title="Grant SkillUp Access">
+              <UserPlus size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Grant SkillUp</span>}
+            </NavLink>
             <NavLink to="/app/admin/maintenance-mode" className={navItemClass} title="Maintenance Mode">
               <Wrench size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Maintenance Mode</span>}
