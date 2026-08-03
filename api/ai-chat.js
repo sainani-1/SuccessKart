@@ -230,6 +230,32 @@ async function callGemini(messages, apiKey) {
   return { ok: true, text };
 }
 
+async function callMistral(messages, apiKey) {
+  const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'mistral-small-latest',
+      messages,
+      max_tokens: 1024,
+      temperature: 0.7,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    const isRateLimit = response.status === 429;
+    return { ok: false, status: response.status, error: errorText, isRateLimit };
+  }
+
+  const data = await response.json();
+  const text = data?.choices?.[0]?.message?.content || '';
+  return { ok: true, text };
+}
+
 async function callCerebras(messages, apiKey) {
   const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
     method: 'POST',
@@ -262,6 +288,7 @@ const AI_PROVIDERS = [
   { name: 'openrouter', keySetting: 'ai_openrouter_api_key', enabledSetting: 'ai_openrouter_enabled', call: callOpenRouter },
   { name: 'gemini', keySetting: 'ai_gemini_api_key', enabledSetting: 'ai_gemini_enabled', call: callGemini },
   { name: 'cerebras', keySetting: 'ai_cerebras_api_key', enabledSetting: 'ai_cerebras_enabled', call: callCerebras },
+  { name: 'mistral', keySetting: 'ai_mistral_api_key', enabledSetting: 'ai_mistral_enabled', call: callMistral },
 ];
 
 export default async function handler(req, res) {
@@ -338,6 +365,7 @@ export default async function handler(req, res) {
       'ai_openrouter_api_key', 'ai_openrouter_enabled',
       'ai_gemini_api_key', 'ai_gemini_enabled',
       'ai_cerebras_api_key', 'ai_cerebras_enabled',
+      'ai_mistral_api_key', 'ai_mistral_enabled',
       'ai_rate_limit_per_minute', 'ai_rate_limit_per_day',
     ];
 
@@ -480,11 +508,13 @@ export default async function handler(req, res) {
     const openrouterKey = settingsMap['ai_openrouter_api_key'] || '';
     const geminiKey = settingsMap['ai_gemini_api_key'] || '';
     const cerebrasKey = settingsMap['ai_cerebras_api_key'] || '';
+    const mistralKey = settingsMap['ai_mistral_api_key'] || '';
 
     const grokEnabled = settingsMap['ai_grok_enabled'] !== 'false';
     const openrouterEnabled = settingsMap['ai_openrouter_enabled'] !== 'false';
     const geminiEnabled = settingsMap['ai_gemini_enabled'] !== 'false';
     const cerebrasEnabled = settingsMap['ai_cerebras_enabled'] !== 'false';
+    const mistralEnabled = settingsMap['ai_mistral_enabled'] !== 'false';
 
     let lastError = null;
     let usedProvider = null;
@@ -517,7 +547,7 @@ export default async function handler(req, res) {
       return json(res, 400, { error: `Unknown provider: ${forceProvider}` });
     }
 
-    // Try providers in order: Grok -> OpenRouter -> Gemini -> Cerebras
+    // Try providers in order: Grok -> OpenRouter -> Gemini -> Cerebras -> Mistral
     for (const provider of AI_PROVIDERS) {
       const apiKey = settingsMap[provider.keySetting] || '';
       const enabled = settingsMap[provider.enabledSetting] !== 'false';

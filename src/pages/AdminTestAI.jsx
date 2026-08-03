@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Send, Bot, User, Loader2, Globe, Zap, Cpu, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Loader2, Globe, Zap, Cpu, Sparkles, Wind } from 'lucide-react';
 
 const AI_MODELS = [
   { id: 'grok', label: 'Grok (xAI)', icon: Zap, color: 'from-emerald-500 to-teal-600' },
   { id: 'openrouter', label: 'OpenRouter', icon: Globe, color: 'from-blue-500 to-indigo-600' },
   { id: 'gemini', label: 'Gemini (Google)', icon: Bot, color: 'from-yellow-500 to-orange-600' },
   { id: 'cerebras', label: 'Cerebras', icon: Cpu, color: 'from-purple-500 to-pink-600' },
+  { id: 'mistral', label: 'Mistral AI', icon: Wind, color: 'from-orange-500 to-red-600' },
 ];
 
 const AdminTestAI = () => {

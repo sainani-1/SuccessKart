@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Save, Key, Sliders, Eye, EyeOff, CheckCircle, AlertCircle, Loader2, ToggleLeft, ToggleRight, Globe, Bot, Cpu, Zap } from 'lucide-react';
+import { Save, Key, Sliders, Eye, EyeOff, CheckCircle, AlertCircle, Loader2, ToggleLeft, ToggleRight, Globe, Bot, Cpu, Zap, Wind } from 'lucide-react';
 
 const AI_PROVIDERS = [
   { id: 'grok', label: 'Grok (xAI)', icon: Zap, keySetting: 'ai_grok_api_key', enabledSetting: 'ai_grok_enabled', placeholder: 'Enter your xAI API key (xai-...)', docs: 'Get your API key from console.x.ai' },
   { id: 'openrouter', label: 'OpenRouter', icon: Globe, keySetting: 'ai_openrouter_api_key', enabledSetting: 'ai_openrouter_enabled', placeholder: 'Enter your OpenRouter API key (sk-or-...)', docs: 'Get your API key from openrouter.ai/keys' },
   { id: 'gemini', label: 'Gemini (Google)', icon: Bot, keySetting: 'ai_gemini_api_key', enabledSetting: 'ai_gemini_enabled', placeholder: 'Enter your Gemini API key (AIza...)', docs: 'Get your API key from aistudio.google.com' },
   { id: 'cerebras', label: 'Cerebras', icon: Cpu, keySetting: 'ai_cerebras_api_key', enabledSetting: 'ai_cerebras_enabled', placeholder: 'Enter your Cerebras API key', docs: 'Get your API key from cloud.cerebras.ai' },
+  { id: 'mistral', label: 'Mistral AI', icon: Wind, keySetting: 'ai_mistral_api_key', enabledSetting: 'ai_mistral_enabled', placeholder: 'Enter your Mistral API key', docs: 'Get your API key from console.mistral.ai' },
 ];
 
 const AdminMultiAISettings = () => {
@@ -31,6 +32,7 @@ const AdminMultiAISettings = () => {
         'ai_openrouter_api_key', 'ai_openrouter_enabled',
         'ai_gemini_api_key', 'ai_gemini_enabled',
         'ai_cerebras_api_key', 'ai_cerebras_enabled',
+        'ai_mistral_api_key', 'ai_mistral_enabled',
         'ai_rate_limit_per_minute', 'ai_rate_limit_per_day',
       ];
 
@@ -123,7 +125,7 @@ const AdminMultiAISettings = () => {
       <div className="max-w-3xl mx-auto">
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl border border-purple-300/20 shadow-2xl p-8">
           <h1 className="text-2xl font-bold text-white mb-2">Multi-AI Settings</h1>
-          <p className="text-purple-300 text-sm mb-8">Configure all AI providers. Fallback chain: Grok → OpenRouter → Gemini → Cerebras</p>
+          <p className="text-purple-300 text-sm mb-8">Configure all AI providers. Fallback chain: Grok → OpenRouter → Gemini → Cerebras → Mistral</p>
 
           <div className="space-y-8">
             {AI_PROVIDERS.map((provider) => (
@@ -238,10 +240,11 @@ const AdminMultiAISettings = () => {
             <li>1. <strong className="text-white">Grok</strong> is tried first. If rate limited, moves to next.</li>
             <li>2. <strong className="text-white">OpenRouter</strong> is tried second. If disabled, skipped.</li>
             <li>3. <strong className="text-white">Gemini</strong> is tried third. If disabled, skipped.</li>
-            <li>4. <strong className="text-white">Cerebras</strong> is tried last as final fallback.</li>
-            <li>5. When using a fallback, the system periodically checks if Grok is available again.</li>
-            <li>6. Disabled providers are completely skipped in the fallback chain.</li>
-            <li>7. Non-educational content is automatically detected and rejected.</li>
+            <li>4. <strong className="text-white">Cerebras</strong> is tried fourth. If disabled, skipped.</li>
+            <li>5. <strong className="text-white">Mistral</strong> is tried last as final fallback.</li>
+            <li>6. When using a fallback, the system periodically checks if Grok is available again.</li>
+            <li>7. Disabled providers are completely skipped in the fallback chain.</li>
+            <li>8. Non-educational content is automatically detected and rejected.</li>
           </ul>
         </div>
       </div>
