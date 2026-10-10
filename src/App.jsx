@@ -9,6 +9,7 @@ import RequireConfiguredSensitiveAdminMFA from './components/RequireConfiguredSe
 import { supabase } from './supabaseClient';
 import { isProfileComplete } from './utils/profileCompletion';
 import { getFaceAuthSettings, isFaceMfaVerified } from './utils/faceAuth';
+import { isFaceRegistrationHidden } from './utils/hideFace';
 import { useVisitorTracking } from './hooks/useVisitorTracking';
 import MobileExamBlocker from './components/MobileExamBlocker';
 
@@ -183,6 +184,7 @@ const AdminLoginHistory = lazy(() => import('./pages/AdminLoginHistory'));
 const AdminSkillUpTracker = lazy(() => import('./pages/AdminSkillUpTracker'));
 const AdminGrantSkillUpAccess = lazy(() => import('./pages/AdminGrantSkillUpAccess'));
 const AdminMaintenanceMode = lazy(() => import('./pages/AdminMaintenanceMode'));
+const AdminHideFace = lazy(() => import('./pages/AdminHideFace'));
 const MaintenanceModePage = lazy(() => import('./pages/MaintenanceModePage'));
 const AdminLastActive = lazy(() => import('./pages/AdminLastActive'));
 const AdminAHI = lazy(() => import('./pages/AdminAHI'));
@@ -210,6 +212,17 @@ const TeacherPerformancePanel = lazy(() => import('./pages/ZeroCostGrowthPanels'
 const AssignmentSubmit = lazy(() => import('./pages/AssignmentSubmit'));
 const TeacherAssignmentsPage = lazy(() => import('./pages/TeacherAssignments'));
 const AdminAssignments = lazy(() => import('./pages/AdminAssignments'));
+const DailyCodingStreak = lazy(() => import('./pages/DailyCodingStreak'));
+const DCSProblem = lazy(() => import('./pages/DCSProblem'));
+const AdminDCS = lazy(() => import('./pages/AdminDCS'));
+const AdminTrackDCS = lazy(() => import('./pages/AdminTrackDCS'));
+const CodingAccounts = lazy(() => import('./pages/CodingAccounts'));
+const AdminTopUpOffers = lazy(() => import('./pages/AdminTopUpOffers'));
+const AdminPlagiarism = lazy(() => import('./pages/AdminPlagiarism'));
+const TeacherPlagiarism = lazy(() => import('./pages/TeacherPlagiarism'));
+const TeacherCodingProfiles = lazy(() => import('./pages/TeacherCodingProfiles'));
+const AdminAddNames = lazy(() => import('./pages/AdminAddNames'));
+const AdminAISummaries = lazy(() => import('./pages/AdminAISummaries'));
 
 const ViewPortfolioRedirect = () => {
   const loc = useLocation();
@@ -256,6 +269,10 @@ const ProtectedRoute = ({ children }) => {
   }, [realProfile?.is_disabled, realProfile?.is_locked]);
 
   if (!auth) return null;
+  // Wait for session hydration before deciding anything. Without this, a fresh
+  // tab deep-linked to /dcs/problem/:id briefly sees user=null, gets bounced to
+  // /login, and /login then forwards to /app -> landing on the list page.
+  if (loading) return <LoadingSpinner message="Loading..." />;
   if (!user) return <Navigate to="/login" />;
   if (!isImpersonating && !profile) {
     if (!profileChecked) return <LoadingSpinner message="Loading..." />;
@@ -365,6 +382,41 @@ const AdminRoute = ({ children }) => {
     return <Navigate to="/app" />;
 
   return <RequireAdminMFA>{children}</RequireAdminMFA>;
+};
+
+const FaceRegisterGuard = ({ children }) => {
+  const { profile } = useAuth();
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    isFaceRegistrationHidden().then((value) => {
+      if (mounted) setHidden(value);
+    }).catch(() => {
+      if (mounted) setHidden(false);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (hidden && profile?.role !== 'admin') return <Navigate to="/app" replace />;
+  return children;
+};
+
+// DCS setup / tracking are staff pages: admins keep every control, teachers and
+// instructors get read access scoped to their assigned students.
+const DcsStaffRoute = ({ children }) => {
+  const auth = useAuth();
+  const { realProfile, loading } = auth || {};
+
+  if (loading || !auth) return children;
+
+  const role = String(realProfile?.role || '');
+  if (!['admin', 'teacher', 'instructor'].includes(role)) return <Navigate to="/app" />;
+  if (role === 'admin') return <RequireAdminMFA>{children}</RequireAdminMFA>;
+
+  return children;
 };
 
 const TeacherRoute = ({ children }) => {
@@ -478,7 +530,7 @@ function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="design" element={<DesignPage />} />
           <Route path="face-auth" element={<FaceAuthSettings />} />
-          <Route path="face-register" element={<FaceRegister />} />
+          <Route path="face-register" element={<FaceRegisterGuard><FaceRegister /></FaceRegisterGuard>} />
           <Route path="payment" element={<Payment />} />
           <Route path="guidance" element={<CareerGuidance />} />
           <Route path="guidance-sessions" element={<GuidanceSessions />} />
@@ -646,13 +698,27 @@ function App() {
           <Route path="admin/misuse-ai" element={<AdminRoute><AdminMisuseAI /></AdminRoute>} />
           <Route path="admin/login-history" element={<AdminRoute><AdminLoginHistory /></AdminRoute>} />
           <Route path="admin/maintenance-mode" element={<AdminRoute><AdminMaintenanceMode /></AdminRoute>} />
+            <Route path="admin/hide-face" element={<AdminRoute><AdminHideFace /></AdminRoute>} />
           <Route path="admin/track-sy" element={<AdminRoute><AdminSkillUpTracker /></AdminRoute>} />
+<Route path="daily-coding-streak" element={<DailyCodingStreak />} />
+<Route path="coding-accounts" element={<CodingAccounts />} />
+          <Route path="admin/dcs-setup" element={<DcsStaffRoute><AdminDCS /></DcsStaffRoute>} />
+          <Route path="admin/track-dcs" element={<DcsStaffRoute><AdminTrackDCS /></DcsStaffRoute>} />
+<Route path="admin/topup-offers" element={<AdminRoute><AdminTopUpOffers /></AdminRoute>} />
+<Route path="admin/plagiarism" element={<AdminRoute><AdminPlagiarism /></AdminRoute>} />
+<Route path="admin/add-names" element={<AdminRoute><AdminAddNames /></AdminRoute>} />
+<Route path="admin/ai-test-summaries" element={<AdminRoute><AdminAISummaries /></AdminRoute>} />
+<Route path="teacher/plagiarism" element={<TeacherRoute><TeacherPlagiarism /></TeacherRoute>} />
+          <Route path="teacher/coding-profiles" element={<DcsStaffRoute><TeacherCodingProfiles /></DcsStaffRoute>} />
           <Route path="admin/grant-skillup" element={<AdminRoute><AdminGrantSkillUpAccess /></AdminRoute>} />
           <Route path="admin/last-active" element={<AdminRoute><AdminLastActive /></AdminRoute>} />
           <Route path="admin/ahi" element={<AdminRoute><AdminAHI /></AdminRoute>} />
           <Route path="admin/sucesskart-meet-settings" element={<AdminRoute><AdminSucesskartMeetSettings /></AdminRoute>} />
           <Route path="admin/sucesskart-meet-payments" element={<AdminRoute><AdminSucesskartMeetPayments /></AdminRoute>} />
         </Route>
+
+        {/* Daily Coding Streak fullscreen workspace is outside layout for a LeetCode style split view */}
+        <Route path="/dcs/problem/:questionId" element={<ProtectedRoute><DCSProblem /></ProtectedRoute>} />
 
         {/* Exam is outside layout for fullscreen enforcement */}
         <Route path="/exam/:courseId" element={<ProtectedRoute><MobileExamBlocker><Exam /></MobileExamBlocker></ProtectedRoute>} />

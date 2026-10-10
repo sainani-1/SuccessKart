@@ -2,7 +2,7 @@ import { supabase } from '../supabaseClient';
 
 const PREMIUM_PLAN_TYPES_KEY = 'premium_plan_types';
 
-const normalizePlanType = (value) => (value === 'premium_plus' ? 'premium_plus' : 'premium');
+const normalizePlanType = (value) => (value === 'personalized' ? 'personalized' : value === 'premium_plus' ? 'premium_plus' : 'premium');
 
 export const parsePremiumPlanTypeMap = (rawValue) => {
   if (!rawValue) return {};

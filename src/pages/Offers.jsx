@@ -13,7 +13,7 @@ const Offers = () => {
     const fetchOffers = async () => {
       setLoading(true);
       const user = (await supabase.auth.getUser()).data.user;
-      if (!user) return;
+      if (!user) { setLoading(false); return; }
       // Fetch assigned offers
       const { data: assignments } = await supabase
         .from('offer_assignments')
@@ -32,14 +32,28 @@ const Offers = () => {
         .select('offer_id, status')
         .eq('user_id', user.id);
 
+      const { data: topUpSetting } = await supabase.from('settings').select('value').eq('key', 'topup_offers').maybeSingle();
+      let topUpOffers = [];
+      try {
+        topUpOffers = JSON.parse(topUpSetting?.value || '[]')
+          .filter((offer) => offer.isActive !== false)
+          .map((offer) => ({ ...offer, coupon_name: offer.title, discount_type: 'flat', discount_value: offer.offerPrice, valid_until: offer.expiresAt, applies_to_all: true }));
+      } catch { topUpOffers = []; }
       // Merge and deduplicate offers
-      const allOffers = [...assignedOffers, ...(globalOffers || [])];
+      const allOffers = [...assignedOffers, ...(globalOffers || []), ...topUpOffers];
       const uniqueOffers = allOffers.filter((offer, idx, arr) =>
         offer && offer.is_listed !== false && arr.findIndex(o => o.id === offer.id) === idx
       );
       setOffers(uniqueOffers);
       setRedeemedOfferIds(new Set((redemptions || []).filter(r => r.status === 'redeemed').map(r => r.offer_id)));
       setLoading(false);
+      const popupKey = 'topup_offer_popup_seen_at';
+      const lastSeen = Number(localStorage.getItem(popupKey) || 0);
+      const firstOffer = topUpOffers.find((offer) => !offer.expiresAt || new Date(offer.expiresAt) > new Date());
+      if (firstOffer && Date.now() - lastSeen >= 24 * 60 * 60 * 1000) {
+        setPopupCoupon(firstOffer.coupon_name);
+        localStorage.setItem(popupKey, String(Date.now()));
+      }
     };
     fetchOffers();
   }, []);

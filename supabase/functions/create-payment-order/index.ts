@@ -188,10 +188,10 @@ Deno.serve(async (req: Request) => {
   const configuredPaymentAddress = configuredPaymentPhone || configuredUpiId;
 
   const selectedPlanTier = normalizePlanTier(payload.plan_tier);
-  let selectedPlanLabel = selectedPlanTier === "premium_plus" ? "Premium Plus" : "Premium";
-  let selectedPlanCode = selectedPlanTier === "premium_plus" ? "premium_plus_6months" : "premium_6months";
+  let selectedPlanLabel = selectedPlanTier === "personalized" ? "Personalized Learning" : selectedPlanTier === "premium_plus" ? "Premium Plus" : "Premium";
+  let selectedPlanCode = selectedPlanTier === "personalized" ? "personalized_6months" : selectedPlanTier === "premium_plus" ? "premium_plus_6months" : "premium_6months";
   let selectedPlanMonths = PREMIUM_MONTHS;
-  let baseAmount = selectedPlanTier === "premium_plus" ? fallbackPremiumPlusCost : fallbackPremiumCost;
+  let baseAmount = ['premium_plus', 'personalized'].includes(selectedPlanTier) ? fallbackPremiumPlusCost : fallbackPremiumCost;
 
   try {
     const publicPlans = config.public_plans ? JSON.parse(config.public_plans) : [];
@@ -218,6 +218,15 @@ Deno.serve(async (req: Request) => {
     let offerError: Error | null = null;
 
     if (payload.offer_id) {
+      if (String(payload.offer_id).startsWith('topup_')) {
+        const { data: topupSetting } = await adminClient.from('settings').select('value').eq('key', 'topup_offers').maybeSingle();
+        try {
+          const topups = JSON.parse(topupSetting?.value || '[]');
+          const item = topups.find((candidate: any) => `topup_${candidate.id}` === payload.offer_id);
+          if (item) offer = { id: String(payload.offer_id), title: item.title, coupon_name: item.title, coupon_code: item.title, applicable_plan: item.targetPlan || 'both', discount_type: 'topup_price', discount_value: Number(item.offerPrice || 0), is_lifetime_free: false, applies_to_all: true, valid_until: item.expiresAt };
+        } catch { offer = null; }
+      }
+      if (!offer) {
       const result = await adminClient
         .from("offers")
         .select("id, title, coupon_code, coupon_name, applicable_plan, discount_type, discount_value, is_lifetime_free, applies_to_all, valid_until, status")
@@ -225,6 +234,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
       offer = result.data;
       offerError = result.error;
+      }
     } else {
       const sanitizedCode = escapeLikeValue(couponCode);
       const result = await adminClient
@@ -298,7 +308,7 @@ Deno.serve(async (req: Request) => {
         final_amount: discount.finalAmount,
         amount: discount.finalAmount,
         currency: "INR",
-        coupon_offer_id: selectedOffer?.id ?? null,
+        coupon_offer_id: selectedOffer?.id && !String(selectedOffer.id).startsWith('topup_') ? selectedOffer.id : null,
         coupon_code: discount.couponCode,
         valid_until: validUntil,
         paid_at: new Date().toISOString(),
@@ -341,7 +351,7 @@ Deno.serve(async (req: Request) => {
       return errorResponse("Payment was recorded but premium activation failed.", 500);
     }
 
-    if (selectedOffer?.id) {
+    if (selectedOffer?.id && !String(selectedOffer.id).startsWith('topup_')) {
       const now = new Date().toISOString();
       await adminClient.from("offer_redemptions").upsert(
         {
@@ -403,7 +413,7 @@ Deno.serve(async (req: Request) => {
         final_amount: discount.finalAmount,
         amount: discount.finalAmount,
         currency: "INR",
-        coupon_offer_id: selectedOffer?.id ?? null,
+        coupon_offer_id: selectedOffer?.id && !String(selectedOffer.id).startsWith('topup_') ? selectedOffer.id : null,
         coupon_code: discount.couponCode,
         valid_until: validUntil,
         gateway_ref: null,
@@ -471,7 +481,7 @@ Deno.serve(async (req: Request) => {
       final_amount: discount.finalAmount,
       amount: discount.finalAmount,
       currency: "INR",
-      coupon_offer_id: selectedOffer?.id ?? null,
+      coupon_offer_id: selectedOffer?.id && !String(selectedOffer.id).startsWith('topup_') ? selectedOffer.id : null,
       coupon_code: discount.couponCode,
       valid_until: validUntil,
       metadata: {

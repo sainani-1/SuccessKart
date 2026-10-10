@@ -164,7 +164,7 @@ export const AuthProvider = ({ children }) => {
 
   const getPlanTier = (p) => getPremiumPlanType(p);
 
-  const isPremiumPlus = (p) => getPlanTier(p) === 'premium_plus';
+  const isPremiumPlus = (p) => ['premium_plus', 'personalized'].includes(getPlanTier(p));
 
   const restoreSessionFromStore = async () => {
     let session = null;

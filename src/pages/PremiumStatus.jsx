@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import PremiumGiftCelebration from '../components/PremiumGiftCelebration';
 import { getPremiumPlanType, hasPremiumAccess, isLifetimePremium, formatPremiumLabel, getPremiumDaysRemaining, isPremiumExpiringSoon } from '../utils/premium';
 import { buildPlanCheckoutPath } from '../utils/planCheckout';
+import { DEFAULT_PREMIUM_COST, DEFAULT_PREMIUM_PLUS_COST, DEFAULT_PERSONALIZED_COST } from '../utils/planCosts';
 import { logError } from '../utils/errorLogger';
 
 const PremiumStatus = () => {
@@ -18,8 +19,9 @@ const PremiumStatus = () => {
   const [gifts, setGifts] = useState([]);
   const [showGiftAnim, setShowGiftAnim] = useState(false);
   const [selectedGift, setSelectedGift] = useState(null);
-  const [premiumCost, setPremiumCost] = useState(199);
-  const [premiumPlusCost, setPremiumPlusCost] = useState(299);
+  const [premiumCost, setPremiumCost] = useState(DEFAULT_PREMIUM_COST);
+  const [premiumPlusCost, setPremiumPlusCost] = useState(DEFAULT_PREMIUM_PLUS_COST);
+  const [personalizedCost, setPersonalizedCost] = useState(DEFAULT_PERSONALIZED_COST);
   const [redeemedOfferIds, setRedeemedOfferIds] = useState(new Set());
   const { popupNode, openPopup } = usePopup();
 
@@ -36,12 +38,13 @@ const PremiumStatus = () => {
       const { data: settingsData, error: settingsError } = await supabase
         .from('settings')
         .select('key, value')
-        .in('key', ['premium_cost', 'premium_plus_cost']);
+        .in('key', ['premium_cost', 'premium_plus_cost', 'personalized_cost']);
 
       if (!settingsError && settingsData) {
         const settingsMap = Object.fromEntries((settingsData || []).map((row) => [row.key, row.value]));
-        setPremiumCost(parseInt(settingsMap.premium_cost, 10) || 199);
-        setPremiumPlusCost(parseInt(settingsMap.premium_plus_cost, 10) || 299);
+        setPremiumCost(parseInt(settingsMap.premium_cost, 10) || DEFAULT_PREMIUM_COST);
+        setPremiumPlusCost(parseInt(settingsMap.premium_plus_cost, 10) || DEFAULT_PREMIUM_PLUS_COST);
+        setPersonalizedCost(parseInt(settingsMap.personalized_cost, 10) || DEFAULT_PERSONALIZED_COST);
       }
 
       const { data: payments, error: paymentError } = await supabase
@@ -216,6 +219,14 @@ const PremiumStatus = () => {
                   : `Upgrade to Premium Plus for Rs ${premiumPlusCost}`}
               </Link>
             )}
+            {premiumDetails.planType !== 'personalized' && (
+              <Link
+                to={buildPlanCheckoutPath('personalized')}
+                className="block mt-3 bg-teal-600 text-white py-3 rounded-lg font-semibold text-center hover:bg-teal-700 transition-colors"
+              >
+                Upgrade to Personalized Learning for Rs {personalizedCost}
+              </Link>
+            )}
           </div>
         )}
 
@@ -256,6 +267,13 @@ const PremiumStatus = () => {
               className="block bg-blue-600 text-white py-3 rounded-lg font-semibold text-center hover:bg-blue-700 transition-colors"
             >
               Buy Premium - Just Rs {premiumCost}
+            </Link>
+
+            <Link
+              to={buildPlanCheckoutPath('personalized')}
+              className="block mt-3 bg-teal-600 text-white py-3 rounded-lg font-semibold text-center hover:bg-teal-700 transition-colors"
+            >
+              Buy Personalized Learning - Just Rs {personalizedCost}
             </Link>
           </div>
         )}

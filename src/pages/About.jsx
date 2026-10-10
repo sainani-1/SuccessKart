@@ -5,6 +5,7 @@ import { supabase } from '../supabaseClient';
 
 const About = () => {
   const [supportEmail, setSupportEmail] = useState('');
+  const [team, setTeam] = useState([]);
 
   useEffect(() => {
     const loadSupportEmail = async () => {
@@ -21,6 +22,9 @@ const About = () => {
     };
 
     loadSupportEmail();
+    supabase.from('settings').select('value').eq('key', 'about_team').maybeSingle().then(({ data }) => {
+      try { setTeam(JSON.parse(data?.value || '[]').filter((member) => member?.isVisible !== false)); } catch { setTeam([]); }
+    });
   }, []);
 
   const cards = [
@@ -99,6 +103,37 @@ const About = () => {
           ))}
         </div>
       </section>
+
+      {team.length > 0 ? (
+        <section className="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
+          <div className="rounded-[2rem] border border-slate-200 bg-white/85 p-8 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">Our Team</p>
+            <h2 className="mt-3 text-3xl font-serif font-bold text-nani-dark">The people behind SuccessKart</h2>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+{team.map((member, index) => (
+                <div
+                  key={`${member.name}-${index}`}
+                  className="rounded-2xl border border-slate-200 bg-gradient-to-b from-amber-50/60 to-white p-5 text-center shadow-sm"
+                >
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-lg font-extrabold text-amber-800">
+                    {String(member.name || '')
+                      .trim()
+                      .split(/\s+/)
+                      .slice(0, 2)
+                      .map((part) => part[0]?.toUpperCase() || '')
+                      .join('')}
+                  </div>
+                  <p className="mt-3 text-xs font-bold uppercase tracking-[0.15em] text-amber-700">
+                    {member.role || 'Team'}
+                  </p>
+                  <p className="mt-1 text-lg font-bold text-slate-900">{member.name}</p>
+                  {member.description ? <p className="mt-2 text-sm leading-6 text-slate-600">{member.description}</p> : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
         <div className="rounded-[2rem] border border-slate-200 bg-slate-950 p-8 text-white shadow-xl md:p-10">

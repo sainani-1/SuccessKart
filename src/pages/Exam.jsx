@@ -218,6 +218,7 @@ export default function Exam({ examMode = "certification" }) {
   const fullscreenTimerRef = useRef(null);
 
   const [resultData, setResultData] = useState(null);
+  const [aiMistakeSummary, setAiMistakeSummary] = useState(null);
   const [terminateReason, setTerminateReason] = useState("");
   const [isBlockingAccount, setIsBlockingAccount] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
@@ -243,6 +244,29 @@ export default function Exam({ examMode = "certification" }) {
   const [submitReady, setSubmitReady] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [editorHeight, setEditorHeight] = useState(500);
+
+  useEffect(() => {
+    if (phase !== EXAM_PHASES.RESULT || !resultData || !currentUserId) return undefined;
+    let active = true;
+    (async () => {
+      const { data: setting } = await supabase.from('settings').select('value').eq('key', 'ai_summary_enabled_users').maybeSingle();
+      let allowlist = [];
+      try { allowlist = JSON.parse(setting?.value || '[]'); } catch { allowlist = []; }
+      if (!Array.isArray(allowlist) || !allowlist.includes(currentUserId)) return;
+      const fallbackSummary = resultData.passed
+        ? `Strong performance: you answered ${resultData.correct} of ${resultData.total} questions correctly. Review the missed concepts to make your next attempt more consistent.`
+        : `You answered ${resultData.correct} of ${resultData.total} questions correctly. Focus on the concepts behind the missed questions, then practise them before retaking the test.`;
+      let summary = fallbackSummary;
+      try {
+        const response = await fetch('/api/ai-chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUserId, messages: [{ role: 'system', content: 'Return a concise student-friendly mistake summary in plain text.' }, { role: 'user', content: `Exam score ${resultData.percentage}%, ${resultData.correct}/${resultData.total} correct. Give three actionable areas to review.` }] }) });
+        const payload = await response.json();
+        if (response.ok && payload?.reply) summary = String(payload.reply).trim();
+      } catch { /* fallback summary remains available */ }
+      if (active) setAiMistakeSummary(summary);
+      await supabase.from('ai_test_summaries').insert({ user_id: currentUserId, exam_id: examId, test_title: courseName || 'SuccessKart Assessment', score_percent: resultData.percentage, summary, details: { correct: resultData.correct, total: resultData.total, generated_by: 'ai' } });
+    })();
+    return () => { active = false; };
+  }, [phase, resultData, currentUserId, examId, courseName]);
 
   useEffect(() => {
     const calc = () => setEditorHeight(Math.max(350, window.innerHeight - 480));
@@ -4661,6 +4685,13 @@ export default function Exam({ examMode = "certification" }) {
                 {!resultData.passed && resultData.nextAttemptAllowedAt ? (
                   <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
                     Retake locked until {new Date(resultData.nextAttemptAllowedAt).toLocaleString("en-IN")}
+                  </div>
+                ) : null}
+
+                {aiMistakeSummary ? (
+                  <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
+                    <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">AI Mistake Summary</p>
+                    <p className="mt-2 text-sm leading-6 text-indigo-950">{aiMistakeSummary}</p>
                   </div>
                 ) : null}
 

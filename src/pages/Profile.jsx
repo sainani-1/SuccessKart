@@ -8,6 +8,7 @@ import { prepareAvatarFile } from '../utils/imageUtils';
 import { buildAvatarPublicUrl } from '../utils/avatarUtils';
 import { detectFace } from '../utils/detectFace';
 import AvatarImage from '../components/AvatarImage';
+import StreakBadges from '../components/StreakBadges';
 import { isLifetimePremium, formatPremiumLabel } from '../utils/premium';
 import { getCertificateDisplayName } from '../utils/identityVerification';
 import { updateUsernameForUser } from '../utils/usernames';
@@ -346,6 +347,8 @@ const Profile = () => {
           </div>
         </div>
       )}
+
+      {profile.role === 'student' && <StreakBadges userId={profile.id} />}
 
       {profile.role === 'student' && enrollments.length > 0 && (
         <div className="bg-white rounded-xl p-6 border">

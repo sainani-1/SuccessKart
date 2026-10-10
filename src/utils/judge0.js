@@ -1,3 +1,5 @@
+import { LANGUAGES } from './dcsLanguages';
+
 const DEFAULT_JUDGE0_TIMEOUT_MS = 30000;
 const ONECOMPILER_URL = 'https://onecompiler-apis.p.rapidapi.com/api/v1/run';
 const ONECOMPILER_DEFAULT_KEY = '6c1b60a65emsh4f7371296b76e50p18a055jsn78b781957d20';
@@ -59,8 +61,16 @@ async function resolveLanguageId(languageKey) {
       python: (name) => /^python\b/i.test(name),
       java: (name) => /^java\b/i.test(name),
       javascript: (name) => /^javascript\b/i.test(name),
+      typescript: (name) => /^typescript\b/i.test(name),
       c: (name) => /^c\b(?!\+)/i.test(name),
       cpp: (name) => /^c\+\+\b/i.test(name),
+      csharp: (name) => /^c#\b/i.test(name),
+      go: (name) => /^go\b/i.test(name),
+      rust: (name) => /^rust\b/i.test(name),
+      ruby: (name) => /^ruby\b/i.test(name),
+      php: (name) => /^php\b/i.test(name),
+      swift: (name) => /^swift\b/i.test(name),
+      kotlin: (name) => /^kotlin\b/i.test(name),
     };
 
     languageIdCache = Object.entries(matchers).reduce((acc, [key, matcher]) => {
@@ -124,16 +134,8 @@ export async function executeJudge0Code({ language, sourceCode, stdin = '' }) {
 }
 
 async function executeOneCompilerFallback({ language, sourceCode, stdin = '' }) {
-  const fileMap = {
-    python: { language: 'python', name: 'index.py' },
-    java: { language: 'java', name: 'Main.java' },
-    javascript: { language: 'javascript', name: 'index.js' },
-    c: { language: 'c', name: 'main.c' },
-    cpp: { language: 'cpp', name: 'main.cpp' },
-  };
-
-  const config = fileMap[language];
-  if (!config) {
+  const meta = LANGUAGES[language];
+  if (!meta) {
     throw new Error(`Unsupported language "${language}" for playground.`);
   }
 
@@ -141,11 +143,11 @@ async function executeOneCompilerFallback({ language, sourceCode, stdin = '' }) 
     method: 'POST',
     headers: getOneCompilerHeaders(),
     body: JSON.stringify({
-      language: config.language,
+      language: meta.ocLanguage,
       stdin,
       files: [
         {
-          name: config.name,
+          name: meta.fileName,
           content: sourceCode,
         },
       ],

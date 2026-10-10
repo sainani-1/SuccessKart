@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import { Save, Plus, Trash2 } from 'lucide-react';
 import usePopup from '../hooks/usePopup';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { DEFAULT_PREMIUM_COST, DEFAULT_PREMIUM_PLUS_COST, DEFAULT_PERSONALIZED_COST } from '../utils/planCosts';
 
 const DEFAULT_PLAN_FORM = {
   name: '',
@@ -19,8 +20,9 @@ const DEFAULT_PLAN_FORM = {
 const AdminSettings = () => {
   const [examDuration, setExamDuration] = useState(60);
   const [minQuestions, setMinQuestions] = useState(25);
-  const [premiumCost, setPremiumCost] = useState(199);
-  const [premiumPlusCost, setPremiumPlusCost] = useState(299);
+  const [premiumCost, setPremiumCost] = useState(DEFAULT_PREMIUM_COST);
+  const [premiumPlusCost, setPremiumPlusCost] = useState(DEFAULT_PREMIUM_PLUS_COST);
+  const [personalizedCost, setPersonalizedCost] = useState(DEFAULT_PERSONALIZED_COST);
   const [paymentUrgencyDate, setPaymentUrgencyDate] = useState('2026-04-15');
   const [paymentUrgencyLabel, setPaymentUrgencyLabel] = useState('April 15, 2026');
   const [paymentGatewayMode, setPaymentGatewayMode] = useState('razorpay');
@@ -34,6 +36,7 @@ const AdminSettings = () => {
   const [registrationPaused, setRegistrationPaused] = useState(false);
   const [plans, setPlans] = useState([]);
   const [planForm, setPlanForm] = useState(DEFAULT_PLAN_FORM);
+  const [aboutTeam, setAboutTeam] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savingGeneral, setSavingGeneral] = useState(false);
   const [savingPlans, setSavingPlans] = useState(false);
@@ -57,7 +60,7 @@ const AdminSettings = () => {
         .filter((p) => p && p.id && p.name)
         .map((plan) => ({
           ...plan,
-          tier: plan.tier === 'premium_plus' ? 'premium_plus' : 'premium',
+          tier: plan.tier === 'personalized' ? 'personalized' : plan.tier === 'premium_plus' ? 'premium_plus' : 'premium',
           features: Array.isArray(plan.features)
             ? plan.features.filter(Boolean)
             : String(plan.features || '')
@@ -75,14 +78,15 @@ const AdminSettings = () => {
       const { data, error } = await supabase
         .from('settings')
         .select('key, value')
-        .in('key', ['exam_duration', 'premium_cost', 'premium_plus_cost', 'payment_urgency_banner', 'payment_gateway_mode', 'skillpro_upi_id', 'payment_admin_phone', 'payment_admin_email', 'payment_request_admin_email_enabled', 'registration_paused', 'min_questions', 'public_plans', 'support_contact_email', 'resume_builder_access', 'manual_payment_admin_email']);
+        .in('key', ['exam_duration', 'premium_cost', 'premium_plus_cost', 'personalized_cost', 'payment_urgency_banner', 'payment_gateway_mode', 'skillpro_upi_id', 'payment_admin_phone', 'payment_admin_email', 'payment_request_admin_email_enabled', 'registration_paused', 'min_questions', 'public_plans', 'support_contact_email', 'resume_builder_access', 'manual_payment_admin_email', 'about_team']);
 
       if (error) throw error;
 
       (data || []).forEach((setting) => {
         if (setting.key === 'exam_duration') setExamDuration(parseInt(setting.value, 10) || 60);
-        if (setting.key === 'premium_cost') setPremiumCost(parseInt(setting.value, 10) || 199);
-        if (setting.key === 'premium_plus_cost') setPremiumPlusCost(parseInt(setting.value, 10) || 299);
+        if (setting.key === 'premium_cost') setPremiumCost(parseInt(setting.value, 10) || DEFAULT_PREMIUM_COST);
+        if (setting.key === 'premium_plus_cost') setPremiumPlusCost(parseInt(setting.value, 10) || DEFAULT_PREMIUM_PLUS_COST);
+        if (setting.key === 'personalized_cost') setPersonalizedCost(parseInt(setting.value, 10) || DEFAULT_PERSONALIZED_COST);
         if (setting.key === 'registration_paused') setRegistrationPaused(setting.value === 'true');
         if (setting.key === 'min_questions') setMinQuestions(parseInt(setting.value, 10) || 25);
         if (setting.key === 'public_plans') setPlans(parsePlans(setting.value));
@@ -94,6 +98,9 @@ const AdminSettings = () => {
         if (setting.key === 'payment_request_admin_email_enabled') setPaymentRequestAdminEmailEnabled(setting.value !== 'false');
         if (setting.key === 'resume_builder_access') setResumeBuilderAccess(setting.value === 'free' ? 'free' : 'premium');
         if (setting.key === 'manual_payment_admin_email') setManualPaymentAdminEmail(setting.value || '');
+        if (setting.key === 'about_team') {
+          try { setAboutTeam(JSON.parse(setting.value || '[]')); } catch { setAboutTeam([]); }
+        }
         if (setting.key === 'payment_urgency_banner') {
           try {
             const parsed = setting.value ? JSON.parse(setting.value) : null;
@@ -125,6 +132,7 @@ const AdminSettings = () => {
       await saveSetting('exam_duration', examDuration);
       await saveSetting('premium_cost', premiumCost);
       await saveSetting('premium_plus_cost', premiumPlusCost);
+      await saveSetting('personalized_cost', personalizedCost);
       await saveSetting('registration_paused', registrationPaused);
       await saveSetting('min_questions', minQuestions);
       await saveSetting('support_contact_email', supportContactEmail.trim());
@@ -143,6 +151,7 @@ const AdminSettings = () => {
           year: 'numeric',
         }),
       }));
+      await saveSetting('about_team', JSON.stringify(aboutTeam.filter((member) => member.name?.trim())));
       openPopup('Success', 'General settings saved successfully.', 'success');
     } catch (error) {
       openPopup('Error', `Failed to save settings: ${error.message}`, 'error');
@@ -174,7 +183,7 @@ const AdminSettings = () => {
     const newPlan = {
       id: `plan_${Date.now()}`,
       name: planForm.name.trim(),
-      tier: planForm.tier === 'premium_plus' ? 'premium_plus' : 'premium',
+      tier: planForm.tier === 'personalized' ? 'personalized' : planForm.tier === 'premium_plus' ? 'premium_plus' : 'premium',
       cost: planForm.isLifetimeFree ? 0 : Number(planForm.cost),
       isLifetimeFree: !!planForm.isLifetimeFree,
       periodMonths: planForm.periodMonths ? Number(planForm.periodMonths) : null,
@@ -258,7 +267,7 @@ const AdminSettings = () => {
               min="0"
               className="w-full p-3 border border-slate-300 rounded-lg"
               value={premiumCost}
-              onChange={(e) => setPremiumCost(parseInt(e.target.value, 10) || 199)}
+              onChange={(e) => setPremiumCost(parseInt(e.target.value, 10) || DEFAULT_PREMIUM_COST)}
             />
           </div>
           <div>
@@ -268,7 +277,17 @@ const AdminSettings = () => {
               min="0"
               className="w-full p-3 border border-slate-300 rounded-lg"
               value={premiumPlusCost}
-              onChange={(e) => setPremiumPlusCost(parseInt(e.target.value, 10) || 299)}
+              onChange={(e) => setPremiumPlusCost(parseInt(e.target.value, 10) || DEFAULT_PREMIUM_PLUS_COST)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Default Personalized Learning Cost (INR)</label>
+            <input
+              type="number"
+              min="0"
+              className="w-full p-3 border border-slate-300 rounded-lg"
+              value={personalizedCost}
+              onChange={(e) => setPersonalizedCost(parseInt(e.target.value, 10) || DEFAULT_PERSONALIZED_COST)}
             />
           </div>
           {paymentGatewayMode === 'manual' && (
@@ -457,6 +476,23 @@ const AdminSettings = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+        <h2 className="text-xl font-bold text-slate-900">About Page Team</h2>
+        <p className="text-sm text-slate-500 mt-1">Set founder, co-founder, and other admin names. Turn visibility off to hide a member publicly.</p>
+        <div className="mt-4 space-y-3">
+          {aboutTeam.map((member, index) => (
+            <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center">
+              <input value={member.name || ''} placeholder="Name" onChange={(e) => setAboutTeam((items) => items.map((item, i) => i === index ? { ...item, name: e.target.value } : item))} className="border rounded-lg px-3 py-2" />
+              <input value={member.role || ''} placeholder="Founder / Co-Founder / Admin" onChange={(e) => setAboutTeam((items) => items.map((item, i) => i === index ? { ...item, role: e.target.value } : item))} className="border rounded-lg px-3 py-2" />
+              <input value={member.description || ''} placeholder="Short description" onChange={(e) => setAboutTeam((items) => items.map((item, i) => i === index ? { ...item, description: e.target.value } : item))} className="border rounded-lg px-3 py-2" />
+              <label className="text-xs text-slate-600 inline-flex items-center gap-1"><input type="checkbox" checked={member.isVisible !== false} onChange={(e) => setAboutTeam((items) => items.map((item, i) => i === index ? { ...item, isVisible: e.target.checked } : item))} /> Show</label>
+              <button type="button" onClick={() => setAboutTeam((items) => items.filter((_, i) => i !== index))} className="text-red-600"><Trash2 size={17} /></button>
+            </div>
+          ))}
+          <button type="button" onClick={() => setAboutTeam((items) => [...items, { name: '', role: 'Admin', description: '', isVisible: true }])} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-semibold"><Plus size={16} /> Add Team Member</button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
         <h2 className="text-xl font-bold text-slate-900 mb-4">Plan Management</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -478,6 +514,7 @@ const AdminSettings = () => {
             >
               <option value="premium">Premium</option>
               <option value="premium_plus">Premium Plus</option>
+              <option value="personalized">Personalized Learning</option>
             </select>
           </div>
           <div>
@@ -486,7 +523,7 @@ const AdminSettings = () => {
               type="number"
               min="0"
               className="w-full p-3 border border-slate-300 rounded-lg"
-              placeholder="199"
+              placeholder={String(DEFAULT_PREMIUM_COST)}
               value={planForm.cost}
               onChange={(e) => setPlanForm((p) => ({ ...p, cost: e.target.value }))}
             />
@@ -578,7 +615,7 @@ const AdminSettings = () => {
                 <div>
                   <p className="font-semibold text-slate-900">{plan.name}</p>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {plan.tier === 'premium_plus' ? 'Premium Plus' : 'Premium'}
+                    {plan.tier === 'personalized' ? 'Personalized Learning' : plan.tier === 'premium_plus' ? 'Premium Plus' : 'Premium'}
                   </p>
                   <p className="text-sm text-slate-600">
                     {plan.isLifetimeFree ? 'Lifetime Free' : `INR ${plan.cost || 0}`} | Period: {plan.periodMonths || '-'} month(s)

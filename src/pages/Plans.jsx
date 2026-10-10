@@ -26,8 +26,14 @@ const PLAN_FEATURES = {
   ],
 };
 
-const getPlanFeatureList = (tier) =>
-  tier === 'premium_plus' ? PLAN_FEATURES.premium_plus : PLAN_FEATURES.premium;
+const getPlanFeatureList = (plan) => {
+  const base = ['premium_plus', 'personalized'].includes(plan.tier) ? PLAN_FEATURES.premium_plus : PLAN_FEATURES.premium;
+  const configured = Array.isArray(plan.features) && plan.features.length ? plan.features : base;
+  if (String(plan.name || '').toLowerCase().includes('personalized')) {
+    return [...new Set([...configured, 'Personalized Learning', 'Daily Coding Streak', 'Coding profile tracking'])];
+  }
+  return configured;
+};
 
 const Plans = () => {
   const [plans, setPlans] = useState([]);
@@ -47,7 +53,7 @@ const Plans = () => {
               .filter((p) => p?.isActive)
               .map((plan) => ({
                 ...plan,
-                tier: plan?.tier === 'premium_plus' ? 'premium_plus' : 'premium',
+                tier: plan?.tier === 'personalized' ? 'personalized' : plan?.tier === 'premium_plus' ? 'premium_plus' : 'premium',
                 features: Array.isArray(plan?.features) ? plan.features.filter(Boolean) : [],
               }))
           : [];
@@ -92,7 +98,7 @@ const Plans = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {orderedPlans.map((plan) => {
-              const featureList = getPlanFeatureList(plan.tier);
+              const featureList = getPlanFeatureList(plan);
               return (
               <div key={plan.id} className="relative bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
                 <div className="absolute top-4 right-4">
@@ -103,7 +109,7 @@ const Plans = () => {
                         ? 'bg-emerald-100 text-emerald-700'
                         : 'bg-amber-100 text-amber-800'
                   }`}>
-                    {plan.tier === 'premium_plus' ? 'Premium Plus' : plan.isLifetimeFree ? 'Best Value' : 'Popular'}
+                    {plan.tier === 'personalized' ? 'Personalized' : plan.tier === 'premium_plus' ? 'Premium Plus' : plan.isLifetimeFree ? 'Best Value' : 'Popular'}
                   </span>
                 </div>
                 <h2 className="text-xl font-bold text-slate-900">{plan.name}</h2>
@@ -117,9 +123,11 @@ const Plans = () => {
                   </p>
                 ) : null}
                 <p className="text-sm text-slate-600 mt-4 min-h-[44px]">
-                  {plan.tier === 'premium_plus'
-                    ? 'Add ask-a-doubt chat, mentoring requests, the separate notes library, and higher-touch support on top of Premium.'
-                    : 'Courses, tests, certificates, resume builder preview, live classes, and normal support.'}
+                  {plan.description || (String(plan.name || '').toLowerCase().includes('personalized')
+                    ? 'Premium Plus features plus personalized learning support, coding streaks, and progress tracking.'
+                    : plan.tier === 'premium_plus'
+                      ? 'Premium learning tools, mentoring requests, AI learning, notes, and priority support.'
+                      : 'Courses, tests, certificates, resume builder, live classes, and normal support.')}
                 </p>
                 <div className="mt-5 space-y-2 text-sm text-slate-700">
                   {featureList.map((feature, index) => (
@@ -133,7 +141,7 @@ const Plans = () => {
                   className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gold-400 text-nani-dark font-bold py-2.5 hover:bg-gold-500 transition"
                 >
                   <Crown size={16} />
-                  {plan.tier === 'premium_plus' ? 'Buy Premium Plus' : 'Buy Premium'}
+                  {plan.tier === 'personalized' ? 'Choose Personalized Learning' : plan.tier === 'premium_plus' ? 'Buy Premium Plus' : 'Buy Premium'}
                 </Link>
               </div>
             )})}

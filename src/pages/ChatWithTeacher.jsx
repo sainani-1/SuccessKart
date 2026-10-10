@@ -6,6 +6,7 @@ import { Send, MessageCircle } from 'lucide-react';
 import { markChatAsRead } from '../utils/chatReadState';
 import { usePresenceContext } from '../context/PresenceContext';
 import { buildPlanCheckoutPath } from '../utils/planCheckout';
+import { getFeatureAccess } from '../utils/featureAccess';
 import { logError } from '../utils/errorLogger';
 import {
   createGroupEncryptionKey,
@@ -19,7 +20,7 @@ import {
 const ChatWithTeacher = () => {
   const ADMIN_USER_ACCESS_TARGET_KEY = 'admin_user_access_target';
   const navigate = useNavigate();
-  const { profile, realProfile, isImpersonating, stopImpersonation, isPremiumPlus } = useAuth();
+  const { profile, realProfile, isImpersonating, stopImpersonation } = useAuth();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [groupId, setGroupId] = useState(null);
@@ -36,7 +37,7 @@ const ChatWithTeacher = () => {
   const autoLoadRef = useRef(0);
 
   const { isOnline } = usePresenceContext();
-  const premiumAccess = isPremiumPlus(profile);
+  const { allowed: askDoubtAllowed, checkoutPlan: askDoubtPlan, ctaLabel: askDoubtCtaLabel } = getFeatureAccess(profile, 'ask_a_doubt');
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }));
@@ -165,17 +166,17 @@ const ChatWithTeacher = () => {
     }
   };
 
-  if (profile?.role === 'student' && !premiumAccess) {
+if (profile?.role === 'student' && !askDoubtAllowed) {
     return (
       <div className="mx-auto max-w-2xl rounded-3xl border border-amber-200 bg-white p-8 text-center shadow-sm">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700">
           <MessageCircle size={24} />
         </div>
-        <h1 className="mt-4 text-2xl font-bold text-slate-900">Premium Plus Required</h1>
-        <p className="mt-3 text-sm text-slate-600">Ask a Doubt is available only for Premium Plus students.</p>
-        <button type="button" onClick={() => navigate(buildPlanCheckoutPath('premium_plus'))}
+        <h1 className="mt-4 text-2xl font-bold text-slate-900">Personalized Learning Required</h1>
+        <p className="mt-3 text-sm text-slate-600">Ask a Doubt is available only in the Personalized Learning plan.</p>
+        <button type="button" onClick={() => navigate(buildPlanCheckoutPath(askDoubtPlan))}
           className="mt-5 rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-white hover:bg-amber-600">
-          Upgrade to Premium Plus
+          {askDoubtCtaLabel}
         </button>
       </div>
     );

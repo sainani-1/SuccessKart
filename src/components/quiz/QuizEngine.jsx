@@ -59,6 +59,7 @@ const QuizEngine = ({ questions: rawQuestions, language, level, onComplete }) =>
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
+        const parsed = JSON.parse(saved);
         return parsed.tabSwitches || 0;
       }
     } catch {}
@@ -69,6 +70,7 @@ const QuizEngine = ({ questions: rawQuestions, language, level, onComplete }) =>
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
+        const parsed = JSON.parse(saved);
         return parsed.copyPasteAttempts || 0;
       }
     } catch {}

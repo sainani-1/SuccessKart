@@ -216,10 +216,6 @@ const Register = () => {
       }
     }
 
-    if (step === 4 && !termsAccepted) {
-      stepErrors.termsAccepted = 'You must accept Terms and Conditions';
-    }
-
     setErrors((prev) => ({ ...prev, ...stepErrors }));
     return Object.keys(stepErrors).length === 0;
   };
@@ -251,9 +247,6 @@ const Register = () => {
     }
     if (formData.studyStream === 'Others' && !formData.customStudyStream.trim()) {
       newErrors.customStudyStream = 'Please enter your stream/branch';
-    }
-    if (!termsAccepted) {
-      newErrors.termsAccepted = 'You must accept Terms and Conditions';
     }
     if (file && faceStatus.state !== 'valid') {
       newErrors.file = faceStatus.message || 'Upload a clear face photo or remove this photo.';
@@ -715,24 +708,6 @@ const Register = () => {
                         <p className="text-sm text-slate-700">Email: {formData.email || '-'}</p>
                       </div>
 
-                      <label className="flex items-start gap-2 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl p-3">
-                        <input
-                          type="checkbox"
-                          className="mt-1 accent-amber-600"
-                          checked={termsAccepted}
-                          onChange={e => {
-                            setTermsAccepted(e.target.checked);
-                            if (errors.termsAccepted) setErrors({ ...errors, termsAccepted: '' });
-                          }}
-                        />
-                        <span>
-                          I agree to the{' '}
-                          <Link to="/terms-and-conditions" target="_blank" className="text-amber-700 font-semibold underline">
-                            Terms and Conditions
-                          </Link>.
-                        </span>
-                      </label>
-                      {errors.termsAccepted && <p className="text-red-500 text-xs -mt-2">{errors.termsAccepted}</p>}
                     </>
                   )}
 

@@ -5,13 +5,13 @@ import { Trophy, Plus, X, ExternalLink, User, Flag, Trash2 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner';
 import AlertModal from '../components/AlertModal';
 import PremiumPlusUpgradeGate from '../components/PremiumPlusUpgradeGate';
-import { getPremiumPlanType } from '../utils/premium';
+import { canUseFeature } from '../utils/featureAccess';
 
 const formatDate = (val) => val ? new Date(val).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
 const ProjectShowcase = () => {
   const { profile } = useAuth();
-  const planType = getPremiumPlanType(profile);
+  const canAddProject = canUseFeature(profile, 'project_showcase_add');
   const isAdmin = profile?.role === 'admin';
 
   const [projects, setProjects] = useState([]);
@@ -41,7 +41,7 @@ const ProjectShowcase = () => {
   useEffect(() => { fetchProjects(); }, []);
 
   const handleShowcaseClick = () => {
-    if (planType === 'premium_plus') {
+    if (canAddProject) {
       setShowForm(true);
     } else {
       setShowGate(true);

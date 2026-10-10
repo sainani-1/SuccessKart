@@ -10,7 +10,7 @@ import { assignBalancedTeacherToStudent } from '../utils/teacherAssignment';
 import { deleteUserFromAdmin } from '../utils/adminUserDeletion';
 import { hasPremiumAccess } from '../utils/premium';
 import { clearTeacherAssignmentForStudent } from '../utils/teacherAssignment';
-import { clearUserPremiumPlanType } from '../utils/premiumPlanTypes';
+import { clearUserPremiumPlanType, setUserPremiumPlanType } from '../utils/premiumPlanTypes';
 
 const LIFETIME_PREMIUM_DATE = '9999-12-31T23:59:59.000Z';
 const LIFETIME_LOCK_DATE = '9999-12-31T23:59:59.000Z';
@@ -24,6 +24,7 @@ const AccountManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [action, setAction] = useState(''); // unlock, grant-premium, revoke-premium, disable, delete
   const [premiumDate, setPremiumDate] = useState('');
+  const [premiumPlanType, setPremiumPlanType] = useState('premium');
   const [premiumReason, setPremiumReason] = useState('');
   const [actionReason, setActionReason] = useState('');
   const [grantLifetimePremium, setGrantLifetimePremium] = useState(false);
@@ -145,7 +146,7 @@ const AccountManagement = () => {
             ? LIFETIME_PREMIUM_DATE
             : new Date(`${premiumDate}T23:59:59.000Z`).toISOString(),
         };
-        successMsg = grantLifetimePremium ? 'Premium granted with lifetime access.' : 'Premium granted successfully.';
+        successMsg = `${premiumPlanType === 'personalized' ? 'Personalized Learning' : premiumPlanType === 'premium_plus' ? 'Premium Plus' : 'Premium'} granted${grantLifetimePremium ? ' with lifetime access' : ''}.`;
       } else if (action === 'revoke-premium') {
         updatePayload = { premium_until: null };
         successMsg = 'Premium revoked successfully.';
@@ -265,6 +266,7 @@ const AccountManagement = () => {
             reason: premiumReason.trim(),
           });
         if (grantLogError) throw grantLogError;
+        await setUserPremiumPlanType(selectedUser.id, premiumPlanType);
         await assignBalancedTeacherToStudent(supabase, selectedUser.id);
       }
       if (!data) throw new Error('Update failed — no rows returned');
@@ -306,6 +308,7 @@ const AccountManagement = () => {
       await loadUsers();
       setShowModal(false);
       setPremiumDate('');
+      setPremiumPlanType('premium');
       setPremiumReason('');
       setActionReason('');
       setGrantLifetimePremium(false);
@@ -327,6 +330,7 @@ const AccountManagement = () => {
     setSelectedUser(user);
     setAction(actionType);
     setPremiumDate('');
+    setPremiumPlanType('premium');
     setPremiumReason('');
     setActionReason('');
     setGrantLifetimePremium(false);
@@ -556,6 +560,16 @@ const AccountManagement = () => {
 
             {action === 'grant-premium' && (
               <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Plan</label>
+                <select
+                  value={premiumPlanType}
+                  onChange={e => setPremiumPlanType(e.target.value)}
+                  className="w-full border rounded-lg p-2 mb-3"
+                >
+                  <option value="premium">Premium</option>
+                  <option value="premium_plus">Premium Plus</option>
+                  <option value="personalized">Personalized Learning</option>
+                </select>
                 <label className="flex items-center gap-2 mb-3 text-sm font-medium">
                   <input
                     type="checkbox"
@@ -715,6 +729,7 @@ const AccountManagement = () => {
                   setShowModal(false);
                   setDeleteConfirm('');
                   setPremiumDate('');
+                  setPremiumPlanType('premium');
                   setPremiumReason('');
                   setActionReason('');
                   setGrantLifetimePremium(false);

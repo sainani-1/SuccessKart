@@ -6,7 +6,7 @@ export const LIFETIME_PREMIUM_DATE = "9999-12-31T23:59:59.000Z";
 export const PREMIUM_PLAN_TYPES_KEY = "premium_plan_types";
 
 export const normalizePlanTier = (value: string | null | undefined) =>
-  value === "premium_plus" ? "premium_plus" : "premium";
+  value === "personalized" ? "personalized" : value === "premium_plus" ? "premium_plus" : "premium";
 
 export const parsePlanTypeMap = (rawValue: string | null | undefined) => {
   if (!rawValue) return {} as Record<string, string>;

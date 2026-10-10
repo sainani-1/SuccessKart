@@ -22,6 +22,10 @@ const AdminVMISettings = () => {
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
 
+  useEffect(() => {
+    if (activeTab === 'requests') fetchRequests();
+  }, [activeTab]);
+
   if (profile?.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 flex items-center justify-center">
@@ -29,10 +33,6 @@ const AdminVMISettings = () => {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (activeTab === 'requests') fetchRequests();
-  }, [activeTab]);
 
   const fetchRequests = async () => {
     setRequestsLoading(true);

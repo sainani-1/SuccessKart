@@ -2,12 +2,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Award, X } from 'lucide-react';
 import { buildPlanCheckoutPath } from '../utils/planCheckout';
-import { getPremiumPlanType } from '../utils/premium';
+import { getFeatureAccess } from '../utils/featureAccess';
 
 const PremiumPlusUpgradeGate = ({ profile, title = 'Premium Plus Required', message, onClose = null, inline = false }) => {
-  const planType = getPremiumPlanType(profile);
-  const isPremium = planType === 'premium';
-  const ctaLabel = isPremium ? 'Upgrade to Premium Plus' : 'Buy Premium Plus';
+  const access = getFeatureAccess(profile, 'premium_plus_access');
+  if (access.allowed) return null;
+  const { ctaLabel, checkoutPlan, userTier } = access;
+  const isPremium = userTier === 'premium';
 
   return (
     <div className={inline ? 'w-full py-12 flex items-center justify-center' : 'fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4'}>
@@ -30,7 +31,7 @@ const PremiumPlusUpgradeGate = ({ profile, title = 'Premium Plus Required', mess
           {message || 'This career support feature is included with Premium Plus.'}
         </p>
         <Link
-          to={buildPlanCheckoutPath('premium_plus')}
+          to={buildPlanCheckoutPath(checkoutPlan)}
           className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-5 py-3 font-semibold text-white hover:bg-slate-800"
         >
           {ctaLabel}

@@ -14,6 +14,7 @@ import { getPublicAppUrl } from '../utils/appUrl';
 import { isLifetimePremium } from '../utils/premium';
 import { formatVideoResumeLabel, getVideoCompletionPercent, readVideoProgress } from '../utils/videoProgress';
 import { logError } from '../utils/errorLogger';
+import { DEFAULT_PREMIUM_COST } from '../utils/planCosts';
 
 // Offer congrats widget
 const OfferCongrats = ({ offer }) => (
@@ -144,9 +145,9 @@ const StudentDashboard = () => {
           .eq('key', 'premium_cost')
           .maybeSingle();
         const parsedCost = parseInt(data?.value, 10);
-        setPremiumCost(Number.isFinite(parsedCost) ? parsedCost : 199);
+        setPremiumCost(Number.isFinite(parsedCost) ? parsedCost : DEFAULT_PREMIUM_COST);
       } catch {
-        setPremiumCost(199);
+        setPremiumCost(DEFAULT_PREMIUM_COST);
       }
     };
     loadPremiumCost();

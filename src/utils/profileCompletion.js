@@ -11,11 +11,6 @@ export const getProfileCompletionIssues = (profile) => {
     if (!String(profile.study_stream || profile.core_subject || '').trim()) issues.push('study_stream');
   }
 
-  if (profile.auth_provider === 'google') {
-    if (!profile.terms_accepted) issues.push('terms_accepted');
-    if (!profile.google_profile_completed) issues.push('google_profile_completed');
-  }
-
   return issues;
 };
 

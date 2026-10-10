@@ -13,6 +13,7 @@ import {
 } from '../utils/courseProtectedAssets';
 import { readBrowserState, writeBrowserState } from '../utils/browserState';
 import { logError } from '../utils/errorLogger';
+import { DEFAULT_PREMIUM_COST } from '../utils/planCosts';
 
 const COURSES_CACHE_KEY = 'course_list_cache';
 const COURSE_FORM_DRAFT_KEY = 'course_list_new_course_draft';
@@ -212,9 +213,9 @@ const CourseList = () => {
                 .eq('key', 'premium_cost')
                 .maybeSingle();
               const parsedCost = parseInt(data?.value, 10);
-              setPremiumCost(Number.isFinite(parsedCost) ? parsedCost : 199);
+              setPremiumCost(Number.isFinite(parsedCost) ? parsedCost : DEFAULT_PREMIUM_COST);
             } catch {
-              setPremiumCost(199);
+              setPremiumCost(DEFAULT_PREMIUM_COST);
             }
           };
           loadPremiumCost();

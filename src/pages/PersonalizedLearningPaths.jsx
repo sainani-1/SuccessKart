@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { Sparkles, BookOpen, Target, AlertCircle } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { logError } from '../utils/errorLogger';
 
 const PersonalizedLearningPaths = () => {

@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import useDialog from '../hooks/useDialog.jsx';
 import { trackPremiumEvent } from '../utils/growth';
 import { sendAdminNotification } from '../utils/adminNotifications';
+import { DEFAULT_PREMIUM_COST, DEFAULT_PREMIUM_PLUS_COST } from '../utils/planCosts';
 import { buildPlanCheckoutPath } from '../utils/planCheckout';
 import { TEACHING_ROLES, isTeachingRole } from '../utils/teachingRoles';
 import { logError } from '../utils/errorLogger';
@@ -35,8 +36,8 @@ const GuidanceSessions = () => {
   const [sessionMeetLink, setSessionMeetLink] = useState('');
   const [sessionLinkActiveUntil, setSessionLinkActiveUntil] = useState('');
   const [scheduling, setScheduling] = useState(false);
-  const [premiumCost, setPremiumCost] = useState(199);
-  const [premiumPlusCost, setPremiumPlusCost] = useState(299);
+  const [premiumCost, setPremiumCost] = useState(DEFAULT_PREMIUM_COST);
+  const [premiumPlusCost, setPremiumPlusCost] = useState(DEFAULT_PREMIUM_PLUS_COST);
   const [supportContactEmail, setSupportContactEmail] = useState('');
   const [alertModal, setAlertModal] = useState({ show: false, title: '', message: '', type: 'info' });
 
@@ -56,10 +57,10 @@ const GuidanceSessions = () => {
 
       const settingsMap = Object.fromEntries((settingRows || []).map((row) => [row.key, row.value || '']));
       if (settingsMap.premium_cost) {
-        setPremiumCost(parseInt(settingsMap.premium_cost, 10) || 199);
+        setPremiumCost(parseInt(settingsMap.premium_cost, 10) || DEFAULT_PREMIUM_COST);
       }
       if (settingsMap.premium_plus_cost) {
-        setPremiumPlusCost(parseInt(settingsMap.premium_plus_cost, 10) || 299);
+        setPremiumPlusCost(parseInt(settingsMap.premium_plus_cost, 10) || DEFAULT_PREMIUM_PLUS_COST);
       }
       setSupportContactEmail(settingsMap.support_contact_email || '');
 

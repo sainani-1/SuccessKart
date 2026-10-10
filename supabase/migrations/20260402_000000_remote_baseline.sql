@@ -1,0 +1,3 @@
+-- Placeholder for migration version 20260402, which exists in the remote
+-- Supabase migration history but was applied outside this repository.
+-- No SQL here: the remote database already contains its effects.

@@ -1,5 +1,5 @@
 export const normalizeCheckoutPlanTier = (value) =>
-  value === 'premium_plus' ? 'premium_plus' : 'premium';
+  value === 'personalized' ? 'personalized' : value === 'premium_plus' ? 'premium_plus' : 'premium';
 
 export const buildPlanCheckoutPath = (planTier = 'premium', extraParams = {}) => {
   const params = new URLSearchParams({

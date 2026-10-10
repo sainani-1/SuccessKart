@@ -1,11 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2, Bot, ScanFace, Circle, Building2, Compass, Shield, PenTool, Loader2 } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, GraduationCap, Video, Users, CheckSquare, LogOut, FileBadge, ShieldCheck, ClipboardList, Sparkles, MessageCircle, Calendar, Award, UserPlus, Lock, Unlock, Bell, Clock, Briefcase, ChevronLeft, ChevronRight, Settings, Gift, Trash2, Mail, FileText, Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert, CreditCard, X, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, AlertTriangle, Eye, Brain, Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2, Bot, ScanFace, Circle, Building2, Compass, Shield, PenTool, Loader2, Flame, Link2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { useNotifications } from '../context/NotificationContext';
 import { getChatReadTimes, markChatsAsRead } from '../utils/chatReadState';
 import { buildPlanCheckoutPath } from '../utils/planCheckout';
+import { canUseFeature, getFeatureAccess, PLAN_LABELS } from '../utils/featureAccess';
+import useFaceRegistrationHidden from '../hooks/useFaceRegistrationHidden';
+
+const FEATURE_ROUTE_MAP = {
+  '/app/courses': 'courses',
+  '/app/notes-library': 'notes_library',
+  '/app/guidance-sessions': 'mentorship_sessions',
+  '/app/daily-planner': 'daily_planner',
+  '/app/daily-coding-streak': 'daily_coding_streak',
+  '/app/coding-accounts': 'coding_profiles',
+  '/app/write-test': 'write_test',
+  '/app/class-schedule': 'live_classes',
+  '/app/internships': 'internships',
+  '/app/learn-with-ai': 'learn_with_ai',
+  '/app/know-your-level': 'know_your_level',
+  '/app/resume-builder': 'resume_builder',
+  '/app/career-support': 'career_support',
+  '/app/resume-reviews': 'resume_reviews',
+  '/app/mock-interviews': 'mock_interviews',
+  '/app/personal-roadmap': 'personal_roadmap',
+  '/app/skill-up': 'skill_up',
+  '/app/career-roadmap': 'career_roadmap',
+  '/app/company-exam': 'company_exams',
+  '/app/coding-playground': 'coding_playground',
+  '/app/discussion-forum': 'discussion_forum',
+  '/app/addons': 'add_ons',
+  '/app/attendance': 'attendance',
+  '/app/chat': 'ask_a_doubt',
+};
+
+const LOCKED_NAV_META = {
+  '/app/courses': { label: 'Courses', Icon: BookOpen },
+  '/app/daily-planner': { label: 'Daily Planner', Icon: Calendar },
+  '/app/daily-coding-streak': { label: 'Daily Coding Streak', Icon: Flame },
+  '/app/coding-accounts': { label: 'Coding Profiles', Icon: Code2 },
+  '/app/notes-library': { label: 'Notes Library', Icon: FileText },
+  '/app/guidance-sessions': { label: 'Mentorship Sessions', Icon: Calendar },
+  '/app/write-test': { label: 'Write Test', Icon: CheckSquare },
+  '/app/class-schedule': { label: 'Live Classes', Icon: Video },
+  '/app/learn-with-ai': { label: 'Learn with AI', Icon: Brain },
+  '/app/know-your-level': { label: 'Know Your Level', Icon: Brain },
+  '/app/resume-builder': { label: 'Resume Builder', Icon: FileText },
+  '/app/career-support': { label: 'Career Support', Icon: BarChart3 },
+  '/app/resume-reviews': { label: 'Resume Reviews', Icon: FileText },
+  '/app/mock-interviews': { label: 'Mock Interviews', Icon: MessageSquare },
+  '/app/personal-roadmap': { label: 'Personal Roadmap', Icon: Sparkles },
+  '/app/skill-up': { label: 'SkillUp Yourself', Icon: Trophy },
+  '/app/career-roadmap': { label: 'AI Career Roadmap', Icon: Compass },
+  '/app/company-exam': { label: 'Company Exams', Icon: Building2 },
+  '/app/coding-playground': { label: 'Coding Playground', Icon: Code2 },
+  '/app/discussion-forum': { label: 'Discussion Forum', Icon: MessageSquare },
+  '/app/addons': { label: 'Add Ons', Icon: Package },
+  '/app/attendance': { label: 'Attendance', Icon: ClipboardList },
+  '/app/chat': { label: 'Ask a Doubt', Icon: MessageCircle },
+  '/app/internships': { label: 'Internships', Icon: Briefcase },
+};
 
 const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onRequestNavigation = null }) => {
   const { profile, realProfile, isImpersonating, stopImpersonation, signOut, isPremium, isPremiumPlus } = useAuth();
@@ -28,8 +84,46 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
   const [lastPathname, setLastPathname] = useState(location.pathname);
   const [vmiAccess, setVmiAccess] = useState(null);
   const [ahiAuthorized, setAhiAuthorized] = useState(false);
+  const [plagiarismAccess, setPlagiarismAccess] = useState(false);
+  const [lockedNav, setLockedNav] = useState(null);
   const premiumActive = isPremium(profile);
   const premiumPlusActive = isPremiumPlus(profile);
+  const hideFace = useFaceRegistrationHidden();
+  const hasAccess = (path) => {
+    const feature = FEATURE_ROUTE_MAP[path];
+    return feature ? canUseFeature(profile, feature) : true;
+  };
+  const openUpgradeModal = (path) => {
+    const feature = FEATURE_ROUTE_MAP[path];
+    if (!feature || canUseFeature(profile, feature)) return;
+    const access = getFeatureAccess(profile, feature);
+    const meta = LOCKED_NAV_META[path] || { label: 'Premium Feature', Icon: Lock };
+    setLockedNav({
+      label: meta.label,
+      Icon: meta.Icon,
+      ctaLabel: access.ctaLabel || 'Buy Premium',
+      checkoutPlan: access.checkoutPlan || 'premium',
+      requiredPlan: access.requiredTier || 'premium',
+    });
+  };
+  const renderLockedItem = (path) => {
+    const meta = LOCKED_NAV_META[path] || { label: 'Premium Feature', Icon: Lock };
+    const Icon = meta.Icon;
+    return (
+      <button
+        type="button"
+        onClick={() => openUpgradeModal(path)}
+        title={meta.label}
+        className={`flex min-h-[56px] items-center ${isMobile ? 'justify-start gap-3 px-4 py-3' : isCollapsed && !isHovered ? 'justify-center px-2' : 'gap-3 px-4'} rounded-xl transition-all duration-300 whitespace-nowrap [&>svg]:h-6 [&>svg]:w-6 [&>svg]:shrink-0 text-slate-400 hover:bg-white/10 hover:text-white border border-white/10`}
+      >
+        <Icon />
+        {shouldShowText && (
+          <span className="flex-1 truncate text-sm font-medium">{meta.label}</span>
+        )}
+        {shouldShowText && <Lock size={14} className="shrink-0 text-amber-400/80" />}
+      </button>
+    );
+  };
   const isMissingTargetUserColumn = (err) => {
     const msg = String(err?.message || '').toLowerCase();
     const details = String(err?.details || '').toLowerCase();
@@ -475,6 +569,23 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
       .catch(() => setAhiAuthorized(false));
   }, [profile?.id, profile?.role]);
 
+  useEffect(() => {
+    if (!profile?.id || profile.role !== 'teacher') {
+      setPlagiarismAccess(false);
+      return;
+    }
+    supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'plagiarism_enabled_teachers')
+      .maybeSingle()
+      .then(({ data }) => {
+        const teachers = JSON.parse(data?.value || '[]');
+        setPlagiarismAccess(Array.isArray(teachers) && teachers.includes(profile.id));
+      })
+      .catch(() => setPlagiarismAccess(false));
+  }, [profile?.id, profile?.role]);
+
   const sidebarWidthClass = isCollapsed && !isHovered ? 'w-20' : 'w-64';
   const desktopSidebarClass = `${sidebarWidthClass} bg-nani-dark text-white h-screen flex flex-col fixed left-0 top-0 transition-all duration-600 z-30`;
   const mobileSidebarClass = `w-[88vw] max-w-[320px] bg-nani-dark text-white h-screen flex flex-col fixed left-0 top-0 z-50 transform transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`;
@@ -640,17 +751,33 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               </NavLink>
             )}
 
+            {!hasAccess('/app/courses') ? renderLockedItem('/app/courses') : (
             <NavLink to="/app/courses" className={navItemClass} title="Courses">
               <BookOpen size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Courses</span>}
             </NavLink>
+            )}
 
             {role === 'student' && (
               <>
+{!hasAccess('/app/daily-planner') ? renderLockedItem('/app/daily-planner') : (
                 <NavLink to="/app/daily-planner" className={navItemClass} title="Daily Learning Planner">
                   <Calendar size={28} />
                   {shouldShowText && <span className="truncate text-sm font-medium">Daily Planner</span>}
                 </NavLink>
+                )}
+                {!hasAccess('/app/daily-coding-streak') ? renderLockedItem('/app/daily-coding-streak') : (
+                <NavLink to="/app/daily-coding-streak" className={navItemClass} title="Daily Coding Streak">
+                  <Flame size={28} />
+                  {shouldShowText && <span className="truncate text-sm font-medium">Daily Coding Streak</span>}
+                </NavLink>
+                )}
+                {!hasAccess('/app/coding-accounts') ? renderLockedItem('/app/coding-accounts') : (
+                <NavLink to="/app/coding-accounts" className={navItemClass} title="Coding Profiles">
+                  <Code2 size={28} />
+                  {shouldShowText && <span className="truncate text-sm font-medium">Coding Profiles</span>}
+                </NavLink>
+                )}
                 <NavLink to="/app/course-checklist" className={navItemClass} title="Course Checklist">
                   <ClipboardList size={28} />
                   {shouldShowText && <span className="truncate text-sm font-medium">Course Checklist</span>}
@@ -666,10 +793,12 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               </>
             )}
 
+            {!hasAccess('/app/notes-library') ? renderLockedItem('/app/notes-library') : (
             <NavLink to="/app/notes-library" className={navItemClass} title="Notes Library">
               <FileText size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Notes Library</span>}
             </NavLink>
+            )}
 
             <NavLink to="/app/verify" className={navItemClass} title="Verify Certificate">
               <ShieldCheck size={28} />
@@ -681,6 +810,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               {shouldShowText && <span className="truncate text-sm font-medium">Profile</span>}
             </NavLink>
 
+            {!hasAccess('/app/guidance-sessions') ? renderLockedItem('/app/guidance-sessions') : (
             <NavLink to="/app/guidance-sessions" className={navItemClass} title="Mentorship Sessions">
               <Calendar size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Mentorship Sessions</span>}
@@ -690,6 +820,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
                 </span>
               )}
             </NavLink>
+            )}
 
             <NavLink to="/app/notifications" className={navItemClass} title="Notifications">
               <Bell size={28} />
@@ -730,10 +861,12 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Calendar size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">My Exams</span>}
             </NavLink>
+            {!hasAccess('/app/write-test') ? renderLockedItem('/app/write-test') : (
             <NavLink to="/app/write-test" className={navItemClass} title="Write Test">
               <CheckSquare size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Write Test</span>}
             </NavLink>
+            )}
             <NavLink to="/app/my-certificates" className={navItemClass} title="My Certificates">
               <GraduationCap size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">My Certificates</span>}
@@ -742,10 +875,12 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <ShieldCheck size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Verify My ID</span>}
             </NavLink>
+            {!hasAccess('/app/class-schedule') ? renderLockedItem('/app/class-schedule') : (
             <NavLink to="/app/class-schedule" className={navItemClass} title="Live Classes">
               <Video size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Live Classes</span>}
             </NavLink>
+            )}
             <NavLink to="/app/demo-sessions" className={navItemClass} title="Demo Sessions">
               <Video size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Demo Sessions</span>}
@@ -770,14 +905,18 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Trophy size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Project Showcase</span>}
             </NavLink>
+            {!hasAccess('/app/learn-with-ai') ? renderLockedItem('/app/learn-with-ai') : (
             <NavLink to="/app/learn-with-ai" className={navItemClass} title="Learn with AI">
               <Brain size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Learn with AI</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/know-your-level') ? renderLockedItem('/app/know-your-level') : (
             <NavLink to="/app/know-your-level" className={navItemClass} title="Know Your Level">
               <Brain size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Know Your Level</span>}
             </NavLink>
+            )}
             {vmiAccess?.ai_prep_enabled && (
               <NavLink to="/app/ai-prep" className={navItemClass} title="AI Prep">
                 <Sparkles size={28} />
@@ -790,14 +929,18 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
                 {shouldShowText && <span className="truncate text-sm font-medium">Talk Mock Interviews</span>}
               </NavLink>
             )}
+            {!hasAccess('/app/resume-builder') ? renderLockedItem('/app/resume-builder') : (
             <NavLink to="/app/resume-builder" className={navItemClass} title="Resume Builder">
               <FileText size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Resume Builder</span>}
             </NavLink>
+            )}
             <NavLink to="/app/portfolio" className={navItemClass} title="Portfolio Generator">
               <Globe2 size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Portfolio</span>}
             </NavLink>
+            {!hasAccess('/app/career-support') ? renderLockedItem('/app/career-support') : (
+            <>
             <NavLink to="/app/career-support" className={() => exactNavItemClass('/app/career-support')} title="Career Support">
               <BarChart3 size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Career Support</span>}
@@ -818,46 +961,69 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Clock size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Career History</span>}
             </NavLink>
+            </>
+            )}
+            {!hasAccess('/app/resume-reviews') ? renderLockedItem('/app/resume-reviews') : (
             <NavLink to="/app/resume-reviews" className={navItemClass} title="Resume Reviews">
               <FileText size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Resume Reviews</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/mock-interviews') ? renderLockedItem('/app/mock-interviews') : (
             <NavLink to="/app/mock-interviews" className={navItemClass} title="Mock Interviews">
               <MessageSquare size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Mock Interviews</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/personal-roadmap') ? renderLockedItem('/app/personal-roadmap') : (
             <NavLink to="/app/personal-roadmap" className={navItemClass} title="Personal Roadmap">
               <Sparkles size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Personal Roadmap</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/skill-up') ? renderLockedItem('/app/skill-up') : (
             <NavLink to="/app/skill-up" className={navItemClass} title="SkillUp Yourself">
               <Trophy size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">SkillUp Yourself</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/career-roadmap') ? renderLockedItem('/app/career-roadmap') : (
             <NavLink to="/app/career-roadmap" className={navItemClass} title="AI Career Roadmap">
               <Compass size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">AI Career Roadmap</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/company-exam') ? renderLockedItem('/app/company-exam') : (
             <NavLink to="/app/company-exam" className={navItemClass} title="Company Exams">
               <Building2 size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Company Exams</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/coding-playground') ? renderLockedItem('/app/coding-playground') : (
             <NavLink to="/app/coding-playground" className={navItemClass} title="Coding Playground">
               <Code2 size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Coding Playground</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/discussion-forum') ? renderLockedItem('/app/discussion-forum') : (
             <NavLink to="/app/discussion-forum" className={navItemClass} title="Discussion Forum">
               <MessageSquare size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Discussion Forum</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/addons') ? renderLockedItem('/app/addons') : (
             <NavLink to="/app/addons" className={navItemClass} title="Add Ons">
               <Package size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Add Ons</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/attendance') ? renderLockedItem('/app/attendance') : (
             <NavLink to="/app/attendance" className={navItemClass} title="Attendance">
               <ClipboardList size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Attendance</span>}
             </NavLink>
+            )}
+            {!hasAccess('/app/chat') ? renderLockedItem('/app/chat') : (
             <NavLink to="/app/chat" className={navItemClass} title="Ask a Doubt">
               <MessageCircle size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Ask a Doubt</span>}
@@ -867,10 +1033,13 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
                 </span>
               )}
             </NavLink>
+            )}
+            {!profile?.assigned_teacher_id && (
             <NavLink to="/app/request-teacher" className={navItemClass} title="Request Teacher">
               <UserPlus size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Request Teacher</span>}
             </NavLink>
+            )}
             <NavLink to="/app/report-issue" className={navItemClass} title="Report Issue">
               <Wrench size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Report Issue</span>}
@@ -904,6 +1073,16 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
             <NavLink to="/app/teacher/tests" className={navItemClass} title="Conduct Tests">
               <CheckSquare size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Conduct Tests</span>}
+            </NavLink>
+            {plagiarismAccess && (
+              <NavLink to="/app/teacher/plagiarism" className={navItemClass} title="Plagiarism Reports">
+                <ShieldAlert size={28} />
+                {shouldShowText && <span className="truncate text-sm font-medium">Plagiarism Reports</span>}
+              </NavLink>
+            )}
+            <NavLink to="/app/teacher/coding-profiles" className={navItemClass} title="Student Coding Profiles">
+              <Link2 size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Student Coding Profiles</span>}
             </NavLink>
             <NavLink to="/app/teacher/assignments" className={navItemClass} title="Assignments">
               <ClipboardList size={28} />
@@ -1321,6 +1500,10 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <Wrench size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Maintenance Mode</span>}
             </NavLink>
+            <NavLink to="/app/admin/hide-face" className={navItemClass} title="Hide Face">
+              <ScanFace size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Hide Face</span>}
+            </NavLink>
             <NavLink to="/app/admin/website-protection" className={navItemClass} title="Website Protection">
               <ShieldCheck size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Website Protection</span>}
@@ -1430,15 +1613,54 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
               <HelpCircle size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Add Questions</span>}
             </NavLink>
+            <NavLink to="/app/daily-coding-streak" className={navItemClass} title="Daily Coding Streak">
+              <Code2 size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Daily Coding Streak</span>}
+            </NavLink>
+            <NavLink to="/app/admin/topup-offers" className={navItemClass} title="Top Up Offers">
+              <Gift size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Top Up Offers</span>}
+            </NavLink>
+<NavLink to="/app/admin/plagiarism" className={navItemClass} title="Plagiarism Access">
+              <ShieldAlert size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Plagiarism Access</span>}
+            </NavLink>
+            <NavLink to="/app/teacher/coding-profiles" className={navItemClass} title="Coding Plagiarism">
+              <Globe2 size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Coding Plagiarism</span>}
+            </NavLink>
+            <NavLink to="/app/admin/add-names" className={navItemClass} title="Add Names">
+              <UserPlus size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Add Names</span>}
+            </NavLink>
+            <NavLink to="/app/admin/ai-test-summaries" className={navItemClass} title="AI Test Summaries">
+              <Brain size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">AI Test Summaries</span>}
+            </NavLink>
+{!hasAccess('/app/internships') ? renderLockedItem('/app/internships') : (
             <NavLink to="/app/internships" className={navItemClass} title="Internships">
               <Briefcase size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Internships</span>}
             </NavLink>
+            )}
             <NavLink to="/app/project-showcase" className={navItemClass} title="Project Showcase">
               <Trophy size={28} />
               {shouldShowText && <span className="truncate text-sm font-medium">Project Showcase</span>}
             </NavLink>
             {/* Send Gift - Admin only (single entry) */}
+          </>
+        )}
+
+        {(role === 'admin' || role === 'teacher' || role === 'instructor') && (
+          <>
+            <NavLink to="/app/admin/dcs-setup" className={navItemClass} title="Daily Coding Streak Setup">
+              <Flame size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">DCS Setup</span>}
+            </NavLink>
+            <NavLink to="/app/admin/track-dcs" className={navItemClass} title="Track Daily Coding Streak">
+              <BarChart3 size={28} />
+              {shouldShowText && <span className="truncate text-sm font-medium">Track DCS</span>}
+            </NavLink>
           </>
         )}
 
@@ -1449,7 +1671,7 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
           </NavLink>
         ) : null}
 
-        {role === 'student' ? (
+        {role === 'student' && !hideFace ? (
           <NavLink to="/app/face-register" className={navItemClass} title="Register Face">
             <ScanFace size={28} />
             {shouldShowText && <span className="truncate text-sm font-medium">Register Face</span>}
@@ -1468,6 +1690,55 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onClose = () => {}, onR
         </div>
       </nav>
     </aside>
+
+    {lockedNav ? (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-3 sm:p-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-5 sm:p-6 shadow-2xl">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <lockedNav.Icon className="h-7 w-7 shrink-0 text-gold-600" />
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{lockedNav.label}</h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  This feature is part of the {PLAN_LABELS[lockedNav.requiredPlan] || lockedNav.requiredPlan} plan.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLockedNav(null)}
+              className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+              aria-label="Close upgrade prompt"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="mt-6 space-y-3">
+            <button
+              type="button"
+              onClick={() => {
+                const checkoutPath = buildPlanCheckoutPath(lockedNav.checkoutPlan);
+                setLockedNav(null);
+                requestNavigation(checkoutPath);
+              }}
+              className="w-full rounded-xl bg-gold-400 py-3 font-bold text-nani-dark hover:bg-gold-300"
+            >
+              {lockedNav.ctaLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLockedNav(null);
+                requestNavigation('/app/premium-status');
+              }}
+              className="w-full rounded-xl border border-slate-300 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              See Plans
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null}
     </>
   );
 };

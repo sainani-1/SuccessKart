@@ -15,6 +15,7 @@ export const getPremiumPlanType = (profile) => {
 
   if (!hasPremiumAccess(profile)) return 'free';
 
+  if (profile.premium_plan_type === 'personalized') return 'personalized';
   return profile.premium_plan_type === 'premium_plus' ? 'premium_plus' : 'premium';
 };
 

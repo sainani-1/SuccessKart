@@ -8,21 +8,24 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { trackPremiumEvent } from '../utils/growth';
 import { normalizeCheckoutPlanTier } from '../utils/planCheckout';
 import { logError } from '../utils/errorLogger';
+import { DEFAULT_PREMIUM_COST, DEFAULT_PREMIUM_PLUS_COST, DEFAULT_PERSONALIZED_COST } from '../utils/planCosts';
+import { setUserPremiumPlanType } from '../utils/premiumPlanTypes';
 
 const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const DEFAULT_URGENCY_DATE = '2026-04-15';
 const DEFAULT_URGENCY_LABEL = 'April 15, 2026';
 const createPaymentTag = () => `SP${Date.now().toString().slice(-8)}`;
+const paymentTierCode = (tier) => tier === 'personalized' ? 'premium_plus' : tier;
 
 const roundMoney = (value) => Math.round(Number(value || 0) * 100) / 100;
 
-const normalizePlan = (plan, fallbackCost = 199, fallbackTierCosts = {}) => {
-  const tier = plan?.tier === 'premium_plus' ? 'premium_plus' : 'premium';
+const normalizePlan = (plan, fallbackCost = DEFAULT_PREMIUM_COST, fallbackTierCosts = {}) => {
+  const tier = plan?.tier === 'personalized' ? 'personalized' : plan?.tier === 'premium_plus' ? 'premium_plus' : 'premium';
   const tierFallbackCost = Number(fallbackTierCosts?.[tier] ?? fallbackCost) || fallbackCost;
   return {
     id: plan?.id || `plan_${plan?.tier || 'premium'}`,
-    name: plan?.name || (plan?.tier === 'premium_plus' ? 'Premium Plus' : 'Premium'),
+    name: plan?.name || (plan?.tier === 'personalized' ? 'Personalized Learning' : plan?.tier === 'premium_plus' ? 'Premium Plus' : 'Premium'),
     tier,
     cost: Number(plan?.cost ?? tierFallbackCost) || tierFallbackCost,
     periodMonths: Number(plan?.periodMonths || 6) || 6,
@@ -38,7 +41,7 @@ const pickLatestPlansByTier = (planList = []) => {
 
   planList.forEach((plan) => {
     if (!plan?.isActive) return;
-    const tier = plan.tier === 'premium_plus' ? 'premium_plus' : 'premium';
+    const tier = plan.tier === 'personalized' ? 'personalized' : plan.tier === 'premium_plus' ? 'premium_plus' : 'premium';
     const current = bestByTier.get(tier);
     const planTime = new Date(plan.createdAt || 0).getTime();
     const currentTime = new Date(current?.createdAt || 0).getTime();
@@ -49,8 +52,16 @@ const pickLatestPlansByTier = (planList = []) => {
 
   return Array.from(bestByTier.values()).sort((a, b) => {
     if (a.tier === b.tier) return 0;
-    return a.tier === 'premium' ? -1 : 1;
+    return a.tier === 'premium' ? -1 : a.tier === 'premium_plus' ? 1 : 2;
   });
+};
+
+const ensurePersonalizedPlan = (planList = [], fallbackPlan = null) => {
+  const merged = [...(Array.isArray(planList) ? planList : [])];
+  if (fallbackPlan && !merged.some((plan) => plan?.tier === 'personalized')) {
+    merged.push(fallbackPlan);
+  }
+  return pickLatestPlansByTier(merged);
 };
 
 const buildPricing = (baseAmount, offer) => {
@@ -71,6 +82,10 @@ const buildPricing = (baseAmount, offer) => {
   }
 
   const rawValue = Number(offer.discount_value || 0);
+  if (offer.discount_type === 'topup_price') {
+    const finalAmount = Math.min(Math.max(rawValue, 0), baseAmount);
+    return { discountAmount: roundMoney(baseAmount - finalAmount), finalAmount: roundMoney(finalAmount), isLifetimeFree: false };
+  }
   const discountAmount = offer.discount_type === 'percent'
     ? roundMoney((baseAmount * Math.min(Math.max(rawValue, 0), 100)) / 100)
     : roundMoney(Math.min(Math.max(rawValue, 0), baseAmount));
@@ -136,9 +151,20 @@ const PLAN_FEATURES = {
     '1 Mock Interview per Month',
     'Monthly Personal Roadmap Update',
   ],
+  personalized: [
+    'Everything in Premium Plus',
+    'Personalized Learning Path',
+    '1:1 Mentorship Sessions',
+    'AI-Powered Adaptive Study Plan',
+    'Dedicated Career Coach',
+  ],
 };
 const getPlanFeatureList = (tier) =>
-  tier === 'premium_plus' ? PLAN_FEATURES.premium_plus : PLAN_FEATURES.premium;
+  tier === 'personalized'
+    ? PLAN_FEATURES.personalized
+    : tier === 'premium_plus'
+      ? PLAN_FEATURES.premium_plus
+      : PLAN_FEATURES.premium;
 
 const UPI_APPS = [
   { id: 'gpay', label: 'Google Pay', packageName: 'com.google.android.apps.nbu.paisa.user' },
@@ -222,6 +248,7 @@ const Payment = () => {
   const [success, setSuccess] = useState(false);
   const [premiumCost, setPremiumCost] = useState(null);
   const [premiumPlusCost, setPremiumPlusCost] = useState(null);
+  const [personalizedCost, setPersonalizedCost] = useState(null);
   const [plans, setPlans] = useState([]);
   const [selectedPlanTier, setSelectedPlanTier] = useState(() => normalizeCheckoutPlanTier(searchParams.get('plan')));
   const [urgencyBanner, setUrgencyBanner] = useState({
@@ -262,28 +289,41 @@ const Payment = () => {
         id: 'default_premium',
         name: 'Premium',
         tier: 'premium',
-        cost: premiumCost || 199,
+        cost: premiumCost || DEFAULT_PREMIUM_COST,
         periodMonths: 6,
         description: 'Courses, tests, certificates, resume builder, live classes, and normal support.',
         features: PLAN_FEATURES.premium,
-      }, premiumCost || 199, {
-        premium: premiumCost || 199,
-        premium_plus: Math.max((premiumCost || 199) + 100, 299),
+      }, premiumCost || DEFAULT_PREMIUM_COST, {
+        premium: premiumCost || DEFAULT_PREMIUM_COST,
+        premium_plus: premiumPlusCost || DEFAULT_PREMIUM_PLUS_COST,
       }),
       normalizePlan({
         id: 'default_premium_plus',
         name: 'Premium Plus',
         tier: 'premium_plus',
-        cost: premiumPlusCost || Math.max((premiumCost || 199) + 100, 299),
+        cost: premiumPlusCost || DEFAULT_PREMIUM_PLUS_COST,
         periodMonths: 6,
         description: 'Add ask-a-doubt chat, mentoring requests, the separate notes library, and higher-touch support on top of Premium.',
         features: PLAN_FEATURES.premium_plus,
-      }, premiumPlusCost || Math.max((premiumCost || 199) + 100, 299), {
-        premium: premiumCost || 199,
-        premium_plus: premiumPlusCost || Math.max((premiumCost || 199) + 100, 299),
+      }, premiumPlusCost || DEFAULT_PREMIUM_PLUS_COST, {
+        premium: premiumCost || DEFAULT_PREMIUM_COST,
+        premium_plus: premiumPlusCost || DEFAULT_PREMIUM_PLUS_COST,
+      }),
+      normalizePlan({
+        id: 'default_personalized',
+        name: 'Personalized Learning',
+        tier: 'personalized',
+        cost: personalizedCost || DEFAULT_PERSONALIZED_COST,
+        periodMonths: 6,
+        description: 'Everything in Premium Plus plus a fully personalized learning path, 1:1 mentorships and adaptive study plans.',
+        features: PLAN_FEATURES.personalized,
+      }, personalizedCost || DEFAULT_PERSONALIZED_COST, {
+        premium: premiumCost || DEFAULT_PREMIUM_COST,
+        premium_plus: premiumPlusCost || DEFAULT_PREMIUM_PLUS_COST,
+        personalized: personalizedCost || DEFAULT_PERSONALIZED_COST,
       }),
     ];
-  }, [plans, premiumCost, premiumPlusCost]);
+  }, [plans, premiumCost, premiumPlusCost, personalizedCost]);
 
   const selectedPlan = useMemo(
     () => activePlans.find((plan) => plan.tier === selectedPlanTier) || activePlans[0] || null,
@@ -291,9 +331,11 @@ const Payment = () => {
   );
 
   const selectedOffer = offers.find((offer) => offer.id === selectedOfferId) || manualAppliedOffer || null;
-  const SucessKartBaseAmount = selectedPlanTier === 'premium_plus'
-    ? (premiumPlusCost || Math.max((premiumCost || 199) + 100, 299))
-    : (premiumCost || 199);
+  const SucessKartBaseAmount = selectedPlanTier === 'personalized'
+    ? (personalizedCost || DEFAULT_PERSONALIZED_COST)
+    : selectedPlanTier === 'premium_plus'
+      ? (premiumPlusCost || DEFAULT_PREMIUM_PLUS_COST)
+      : (premiumCost || DEFAULT_PREMIUM_COST);
   const displayBaseAmount = paymentGatewayMode === 'skillpro_upi'
     ? SucessKartBaseAmount
     : (selectedPlan?.cost || premiumCost || 0);
@@ -309,19 +351,27 @@ const Payment = () => {
   const isDesktopDevice = !isProbablyMobileDevice;
   const currentPlanTier = getPlanTier(profile);
   const checkoutHeading =
-    selectedPlanTier === 'premium_plus'
-      ? currentPlanTier === 'premium'
-        ? 'Upgrade to Premium Plus'
-        : 'Buy Premium Plus'
-      : currentPlanTier === 'free'
-        ? 'Buy Premium'
-        : 'Renew Premium';
+    selectedPlanTier === 'personalized'
+      ? currentPlanTier === 'free'
+        ? 'Buy Personalized Learning'
+        : 'Upgrade to Personalized Learning'
+      : selectedPlanTier === 'premium_plus'
+        ? currentPlanTier === 'premium'
+          ? 'Upgrade to Premium Plus'
+          : 'Buy Premium Plus'
+        : currentPlanTier === 'free'
+          ? 'Buy Premium'
+          : 'Renew Premium';
   const checkoutSubheading =
-    selectedPlanTier === 'premium_plus'
-      ? currentPlanTier === 'premium'
-        ? 'You already have Premium. Upgrade now to unlock Premium Plus support features.'
-        : 'Choose Premium Plus to unlock limited high-value support.'
-      : 'Choose your Premium plan, apply one coupon, and pay only the final amount.';
+    selectedPlanTier === 'personalized'
+      ? currentPlanTier === 'free'
+        ? 'Choose Personalized Learning to unlock the fully personalized learning path and 1:1 mentorship.'
+        : 'Upgrade now to unlock the fully personalized learning path and 1:1 mentorship.'
+      : selectedPlanTier === 'premium_plus'
+        ? currentPlanTier === 'premium'
+          ? 'You already have Premium. Upgrade now to unlock Premium Plus support features.'
+          : 'Choose Premium Plus to unlock limited high-value support.'
+        : 'Choose your Premium plan, apply one coupon, and pay only the final amount.';
 
   useEffect(() => {
     const loadPricingConfig = async () => {
@@ -329,21 +379,25 @@ const Payment = () => {
         const { data } = await supabase
           .from('settings')
           .select('key, value')
-          .in('key', ['premium_cost', 'premium_plus_cost', 'public_plans', 'payment_urgency_banner', 'payment_gateway_mode']);
+          .in('key', ['premium_cost', 'premium_plus_cost', 'personalized_cost', 'public_plans', 'payment_urgency_banner', 'payment_gateway_mode']);
 
         const settingsMap = Object.fromEntries((data || []).map((item) => [item.key, item.value]));
         const parsedCost = parseInt(settingsMap.premium_cost, 10);
-        const fallbackPremiumCost = Number.isFinite(parsedCost) ? parsedCost : 199;
+        const fallbackPremiumCost = Number.isFinite(parsedCost) ? parsedCost : DEFAULT_PREMIUM_COST;
         const parsedPremiumPlusCost = parseInt(settingsMap.premium_plus_cost, 10);
-        const fallbackPremiumPlusCost = Number.isFinite(parsedPremiumPlusCost) ? parsedPremiumPlusCost : Math.max(fallbackPremiumCost + 100, 299);
+        const fallbackPremiumPlusCost = Number.isFinite(parsedPremiumPlusCost) ? parsedPremiumPlusCost : DEFAULT_PREMIUM_PLUS_COST;
+        const parsedPersonalizedCost = parseInt(settingsMap.personalized_cost, 10);
+        const fallbackPersonalizedCost = Number.isFinite(parsedPersonalizedCost) ? parsedPersonalizedCost : DEFAULT_PERSONALIZED_COST;
         setPremiumCost(fallbackPremiumCost);
         setPremiumPlusCost(fallbackPremiumPlusCost);
+        setPersonalizedCost(fallbackPersonalizedCost);
         const mode = settingsMap.payment_gateway_mode === 'skillpro_upi' ? 'skillpro_upi' : settingsMap.payment_gateway_mode === 'manual' ? 'manual' : 'razorpay';
         setPaymentGatewayMode(mode);
         setManualGatewayMode(mode === 'manual');
         const tierCostMap = {
           premium: fallbackPremiumCost,
           premium_plus: fallbackPremiumPlusCost,
+          personalized: fallbackPersonalizedCost,
         };
 
         try {
@@ -354,13 +408,21 @@ const Payment = () => {
                 .map((plan) => normalizePlan(
                   {
                     ...plan,
-                    cost: tierCostMap[plan?.tier === 'premium_plus' ? 'premium_plus' : 'premium'],
+                    cost: tierCostMap[plan?.tier === 'personalized' ? 'personalized' : plan?.tier === 'premium_plus' ? 'premium_plus' : 'premium'],
                   },
                   fallbackPremiumCost,
                   tierCostMap
                 ))
             : [];
-          setPlans(pickLatestPlansByTier(normalizedPlans));
+          setPlans(ensurePersonalizedPlan(normalizedPlans, normalizePlan({
+            id: 'default_personalized',
+            name: 'Personalized Learning',
+            tier: 'personalized',
+            cost: fallbackPersonalizedCost,
+            periodMonths: 6,
+            description: 'Everything in Premium Plus plus a fully personalized learning path, 1:1 mentorships and adaptive study plans.',
+            features: PLAN_FEATURES.personalized,
+          }, fallbackPersonalizedCost, tierCostMap)));
         } catch {
           setPlans([]);
         }
@@ -385,6 +447,15 @@ const Payment = () => {
               description: 'Add mentoring requests, the separate notes library, and higher-touch support on top of Premium.',
               features: PLAN_FEATURES.premium_plus,
             }, fallbackPremiumPlusCost, tierCostMap),
+            normalizePlan({
+              id: 'default_personalized',
+              name: 'Personalized Learning',
+              tier: 'personalized',
+              cost: fallbackPersonalizedCost,
+              periodMonths: 6,
+              description: 'Everything in Premium Plus plus a fully personalized learning path, 1:1 mentorships and adaptive study plans.',
+              features: PLAN_FEATURES.personalized,
+            }, fallbackPersonalizedCost, tierCostMap),
           ]);
         }
 
@@ -407,8 +478,9 @@ const Payment = () => {
         }
       } catch (error) {
         logError({ message: 'Error loading payment pricing:', source: 'Payment', details: error })
-        setPremiumCost(199);
-        setPremiumPlusCost(299);
+        setPremiumCost(DEFAULT_PREMIUM_COST);
+        setPremiumPlusCost(DEFAULT_PREMIUM_PLUS_COST);
+        setPersonalizedCost(DEFAULT_PERSONALIZED_COST);
         setPlans([]);
       } finally {
         setPricingLoading(false);
@@ -482,7 +554,7 @@ const Payment = () => {
     const loadOffers = async () => {
       setOffersLoading(true);
       try {
-        const [{ data: assignments }, { data: globalOffers }, { data: redemptions }] = await Promise.all([
+        const [{ data: assignments }, { data: globalOffers }, { data: redemptions }, { data: topUpSetting }] = await Promise.all([
           supabase
             .from('offer_assignments')
             .select('offers(*)')
@@ -495,6 +567,7 @@ const Payment = () => {
             .from('offer_redemptions')
             .select('offer_id, status')
             .eq('user_id', profile.id),
+          supabase.from('settings').select('value').eq('key', 'topup_offers').maybeSingle(),
         ]);
 
         const assignedOffers = (assignments || []).map((entry) => entry.offers).filter(Boolean);
@@ -504,7 +577,13 @@ const Payment = () => {
             .map((entry) => entry.offer_id)
         );
 
-        const deduped = [...assignedOffers, ...(globalOffers || [])].filter((offer, index, source) => {
+        let topUpOffers = [];
+        try {
+          topUpOffers = JSON.parse(topUpSetting?.value || '[]').filter((offer) => offer.isActive !== false).map((offer) => ({
+            ...offer, id: `topup_${offer.id}`, coupon_name: offer.title, coupon_code: offer.title, applicable_plan: offer.targetPlan || 'both', discount_type: 'topup_price', discount_value: offer.offerPrice, valid_until: offer.expiresAt, applies_to_all: true,
+          }));
+        } catch { topUpOffers = []; }
+        const deduped = [...assignedOffers, ...(globalOffers || []), ...topUpOffers].filter((offer, index, source) => {
           if (!offer) return false;
           return source.findIndex((candidate) => candidate?.id === offer.id) === index;
         });
@@ -697,6 +776,7 @@ const Payment = () => {
 
       paymentAttemptRef.current.finalized = true;
       if (payload.status === 'success') {
+        if (selectedPlanTier === 'personalized') await setUserPremiumPlanType(profile.id, 'personalized');
         await fetchProfile(profile.id, { background: true });
       }
       return data;
@@ -726,6 +806,7 @@ const Payment = () => {
   };
 
   const handleDirectActivationSuccess = async (data) => {
+    if (selectedPlanTier === 'personalized') await setUserPremiumPlanType(profile.id, 'personalized');
     await fetchProfile(profile.id, { background: true });
     setSuccessMessage(
       data?.is_lifetime_free
@@ -804,7 +885,7 @@ const Payment = () => {
       const data = await callEdgeFunction('create-payment-order', accessToken, {
         offer_id: selectedOffer?.id || null,
         coupon_code: manualAppliedOffer && !selectedOfferId ? manualCouponCode.trim() || null : null,
-        plan_tier: selectedPlanTier,
+        plan_tier: paymentTierCode(selectedPlanTier),
         payment_tag: paymentGatewayMode === 'skillpro_upi' ? paymentTag : null,
       });
 
@@ -864,7 +945,7 @@ const Payment = () => {
           user_id: profile?.id,
           local_payment_id: data.payment_id,
           coupon_code: data.coupon_code || '',
-          plan_tier: selectedPlanTier,
+          plan_tier: paymentTierCode(selectedPlanTier),
         },
         theme: {
           color: '#2563eb',
@@ -974,7 +1055,7 @@ const Payment = () => {
         screenshotUrl = publicUrl;
       }
 
-      const planCode = selectedPlanTier === 'premium_plus' ? 'premium_plus' : 'premium';
+      const planCode = paymentTierCode(selectedPlanTier) === 'premium_plus' ? 'premium_plus' : 'premium';
       const months = selectedPlan?.periodMonths || 6;
 
       let adminEmail = '';
@@ -1075,22 +1156,30 @@ const Payment = () => {
                 onClick={() => setSelectedPlanTier(plan.tier)}
                 className={`rounded-2xl border p-6 text-left transition-all ${
                   isSelected
-                    ? plan.tier === 'premium_plus'
-                      ? 'border-indigo-500 bg-gradient-to-br from-indigo-600 to-slate-900 text-white shadow-xl'
-                      : 'border-amber-400 bg-gradient-to-br from-gold-400 to-gold-600 text-white shadow-xl'
+                    ? plan.tier === 'personalized'
+                      ? 'border-teal-500 bg-gradient-to-br from-teal-600 to-slate-900 text-white shadow-xl'
+                      : plan.tier === 'premium_plus'
+                        ? 'border-indigo-500 bg-gradient-to-br from-indigo-600 to-slate-900 text-white shadow-xl'
+                        : 'border-amber-400 bg-gradient-to-br from-gold-400 to-gold-600 text-white shadow-xl'
                     : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:shadow-md'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>
-                      {plan.tier === 'premium_plus' ? 'Advanced Access' : 'Core Access'}
+                      {plan.tier === 'personalized'
+                        ? 'Personalized Access'
+                        : plan.tier === 'premium_plus'
+                          ? 'Advanced Access'
+                          : 'Core Access'}
                     </p>
                     <h2 className="mt-2 text-2xl font-bold">{plan.name}</h2>
                     <p className={`mt-2 text-sm ${isSelected ? 'text-white/80' : 'text-slate-600'}`}>
-                      {plan.tier === 'premium_plus'
-                        ? 'Add ask-a-doubt chat, mentoring requests, the separate notes library, and higher-touch support on top of Premium.'
-                        : 'Courses, tests, certificates, resume builder preview, live classes, and normal support.'}
+                      {plan.tier === 'personalized'
+                        ? 'Everything in Premium Plus plus a fully personalized learning path, 1:1 mentorships and adaptive study plans.'
+                        : plan.tier === 'premium_plus'
+                          ? 'Add ask-a-doubt chat, mentoring requests, the separate notes library, and higher-touch support on top of Premium.'
+                          : 'Courses, tests, certificates, resume builder preview, live classes, and normal support.'}
                     </p>
                   </div>
                   <div className={`rounded-full px-3 py-1 text-xs font-semibold ${isSelected ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-700'}`}>
@@ -1118,9 +1207,11 @@ const Payment = () => {
             <h3 className="text-lg font-bold text-slate-900">Selected Plan</h3>
             <p className="mt-2 text-2xl font-bold text-slate-900">{selectedPlan?.name || 'Premium'}</p>
             <p className="mt-1 text-sm text-slate-500">
-              {selectedPlan?.tier === 'premium_plus'
-                ? 'Includes Premium plus ask-a-doubt chat, mentoring requests, the separate notes library, and higher-touch support.'
-                : 'Includes courses, tests, certificates, resume builder preview, live classes, and normal support.'}
+              {selectedPlan?.tier === 'personalized'
+                ? 'Includes everything in Premium Plus plus a fully personalized learning path, 1:1 mentorships and adaptive study plans.'
+                : selectedPlan?.tier === 'premium_plus'
+                  ? 'Includes Premium plus ask-a-doubt chat, mentoring requests, the separate notes library, and higher-touch support.'
+                  : 'Includes courses, tests, certificates, resume builder preview, live classes, and normal support.'}
             </p>
             <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3">
               <p className="text-sm text-slate-500">Base price</p>
@@ -1372,9 +1463,13 @@ const Payment = () => {
             <h4 className="font-bold text-purple-900 text-lg">Pay via QR Code</h4>
 
             <div className="flex justify-center">
-              {selectedPlanTier === 'premium_plus' && premiumPlusQr ? (
+              {selectedPlanTier === 'premium_plus' || selectedPlanTier === 'personalized' ? (premiumPlusQr ? (
                 <img src={premiumPlusQr} alt="Premium Plus QR" className="max-w-[250px] rounded-lg border bg-white p-2" />
-              ) : selectedPlanTier === 'premium' && premiumQr ? (
+              ) : (
+                <div className="p-8 bg-white rounded-lg border-2 border-dashed text-center text-slate-400">
+                  QR code not configured. Please contact support.
+                </div>
+              )) : selectedPlanTier === 'premium' && premiumQr ? (
                 <img src={premiumQr} alt="Premium QR" className="max-w-[250px] rounded-lg border bg-white p-2" />
               ) : (
                 <div className="p-8 bg-white rounded-lg border-2 border-dashed text-center text-slate-400">

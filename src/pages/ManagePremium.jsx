@@ -9,6 +9,9 @@ import { formatPremiumLabel, getPremiumDaysRemaining, getPremiumPlanType, hasPre
 import { clearUserPremiumPlanType, fetchPremiumPlanTypeMap, setUserPremiumPlanType } from '../utils/premiumPlanTypes';
 
 const LIFETIME_PREMIUM_DATE = '9999-12-31T23:59:59.000Z';
+const planTypeLabel = (planType) => (
+  planType === 'personalized' ? 'Personalized Learning' : planType === 'premium_plus' ? 'Premium Plus' : 'Premium'
+);
 
 const ManagePremium = () => {
   const [users, setUsers] = useState([]);
@@ -161,8 +164,8 @@ const ManagePremium = () => {
       await pushNotification({
         title: 'Premium Granted',
         content: grantLifetimePremium
-          ? `Your ${selectedPlanType === 'premium_plus' ? 'Premium Plus' : 'Premium'} membership now has lifetime access. Reason: ${reasonText}`
-          : `Your ${selectedPlanType === 'premium_plus' ? 'Premium Plus' : 'Premium'} membership is active until ${new Date(effectiveValidUntil).toLocaleDateString('en-IN')}. Reason: ${reasonText}`,
+          ? `Your ${planTypeLabel(selectedPlanType)} membership now has lifetime access. Reason: ${reasonText}`
+          : `Your ${planTypeLabel(selectedPlanType)} membership is active until ${new Date(effectiveValidUntil).toLocaleDateString('en-IN')}. Reason: ${reasonText}`,
         type: 'success',
         target_role: 'student',
         target_user_id: selectedUser.id,
@@ -186,7 +189,7 @@ const ManagePremium = () => {
       setAlertModal({
         show: true,
         title: 'Success',
-        message: 'Premium access granted successfully.',
+        message: `${planTypeLabel(selectedPlanType)} access granted successfully.`,
         type: 'success'
       });
       setSelectedUser(null);
@@ -367,6 +370,7 @@ const ManagePremium = () => {
             >
               <option value="premium">Premium</option>
               <option value="premium_plus">Premium Plus</option>
+              <option value="personalized">Personalized Learning</option>
             </select>
             <p className="mt-2 text-xs text-slate-500">
               Premium Plus can be used to unlock advanced notes and extra study material.
@@ -430,8 +434,8 @@ const ManagePremium = () => {
                     <>
                       <span className="text-xs bg-gold-100 text-gold-800 px-3 py-1 rounded-full">
                         {isLifetimePremium(user.premium_until)
-                          ? `${planType === 'premium_plus' ? 'Premium Plus' : 'Premium'} Lifetime`
-                          : `${planType === 'premium_plus' ? 'Premium Plus' : 'Premium'} until ${formatPremiumLabel(user.premium_until)}`}
+                          ? `${planTypeLabel(planType)} Lifetime`
+                          : `${planTypeLabel(planType)} until ${formatPremiumLabel(user.premium_until)}`}
                       </span>
                       {expiringSoon ? (
                         <span className="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
@@ -522,7 +526,7 @@ const ManagePremium = () => {
                   : new Date(validUntil).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
               <p className="text-sm mt-2">
-                <strong>Plan:</strong> {selectedPlanType === 'premium_plus' ? 'Premium Plus' : 'Premium'}
+                <strong>Plan:</strong> {planTypeLabel(selectedPlanType)}
               </p>
               {reason && (
                 <p className="text-sm mt-2">

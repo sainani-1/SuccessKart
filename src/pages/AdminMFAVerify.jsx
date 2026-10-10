@@ -17,6 +17,7 @@ export default function AdminMFAVerify() {
   const [alert, setAlert] = useState({ show: false, title: "", message: "", type: "error" });
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   const inputRefs = useRef([]);
+  const verificationInFlight = useRef(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signOut } = useAuth();
@@ -78,7 +79,18 @@ export default function AdminMFAVerify() {
   }, [navigate]);
 
   const handleChange = (e, idx) => {
-    const val = e.target.value.replace(/\D/g, "").slice(0, 1);
+    const raw = e.target.value.replace(/\D/g, "");
+    if (raw.length > 1) {
+      const pasted = raw.slice(0, 6).split("");
+      const next = ["", "", "", "", "", ""];
+      pasted.forEach((digit, offset) => {
+        if (idx + offset < 6) next[idx + offset] = digit;
+      });
+      setCode(next);
+      inputRefs.current[Math.min(idx + pasted.length, 5)]?.focus();
+      return;
+    }
+    const val = raw.slice(0, 1);
     if (!val) return;
 
     const newCode = [...code];
@@ -105,8 +117,22 @@ export default function AdminMFAVerify() {
     }
   };
 
+  const handlePaste = (e, idx) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const next = ["", "", "", "", "", ""];
+    pasted.split("").forEach((digit, offset) => {
+      if (idx + offset < 6) next[idx + offset] = digit;
+    });
+    setCode(next);
+    inputRefs.current[Math.min(idx + pasted.length, 5)]?.focus();
+  };
+
   const verify = async (codeValue) => {
-    if (loading || !sessionReady) return;
+    const normalizedCode = String(codeValue || "").replace(/\D/g, "").slice(0, 6);
+    if (loading || verificationInFlight.current || !sessionReady || normalizedCode.length !== 6) return;
+    verificationInFlight.current = true;
 
     try {
       setLoading(true);
@@ -123,11 +149,13 @@ export default function AdminMFAVerify() {
         return;
       }
 
-      const factorId = factors.totp[0].id;
+      const verifiedFactor = factors.totp.find((factor) => factor.status === "verified") || factors.totp[0];
+      const factorId = verifiedFactor?.id;
+      if (!factorId) throw new Error("No verified authenticator factor was found. Please register MFA again.");
       const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
       if (challengeError) throw challengeError;
 
-      const { error: verifyError } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code: codeValue });
+      const { error: verifyError } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code: normalizedCode });
       if (verifyError) {
         setToast({ show: true, message: "Invalid MFA code. Try again.", type: "error" });
         resetCodeAndFocusFirst();
@@ -156,6 +184,7 @@ export default function AdminMFAVerify() {
       setAlert({ show: true, title: "Verification Failed", message: err.message || "Could not verify MFA code.", type: "error" });
       resetCodeAndFocusFirst();
     } finally {
+      verificationInFlight.current = false;
       setLoading(false);
     }
   };
@@ -237,6 +266,7 @@ export default function AdminMFAVerify() {
                 ${code[i] ? "border-blue-600 bg-blue-50 text-blue-700 shadow" : "border-slate-300 bg-white text-slate-400"}`}
               value={code[i]}
               onChange={(e) => handleChange(e, i)}
+              onPaste={(e) => handlePaste(e, i)}
               onKeyDown={(e) => handleKeyDown(e, i)}
               disabled={loading}
               autoFocus={i === 0}

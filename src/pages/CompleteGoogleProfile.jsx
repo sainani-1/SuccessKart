@@ -111,7 +111,6 @@ const CompleteGoogleProfile = () => {
         const hasStream = String(profile?.study_stream || meta.study_stream || profile?.core_subject || meta.core_subject || '').trim();
         if (!hasEdu || !hasStream) visible.push(4);
       }
-      if (profile?.auth_provider === 'google' || profile?.google_profile_completed === false) visible.push(5);
       visible.push(6);
       setVisibleSteps(visible);
     };

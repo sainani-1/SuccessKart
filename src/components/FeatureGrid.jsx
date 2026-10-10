@@ -7,11 +7,41 @@ import {
   Wrench, BarChart3, Code2, MessageSquare, KeyRound, MonitorUp, ShieldAlert,
   CreditCard, Download, ListChecks, Globe2, Trophy, Wifi, QrCode, Eye, Brain,
   Mic, HelpCircle, Package, Sliders, Activity, ShieldOff, FlaskConical, Gamepad2,
-  Bot, ScanFace, Building2, Compass, PenTool, X, Search, ChevronRight
+  Bot, ScanFace, Building2, Compass, PenTool, X, Search, ChevronRight, Lock
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { canUseFeature, getFeatureAccess, PLAN_LABELS } from '../utils/featureAccess';
+import { buildPlanCheckoutPath } from '../utils/planCheckout';
+import useFaceRegistrationHidden from '../hooks/useFaceRegistrationHidden';
 
-const getNavItems = (role, { isPremium, isPremiumPlus, ahiAuthorized, vmiAccess, unreadChats, unreadNotifications }) => {
+const STUDENT_ROUTE_FEATURES = {
+  '/app/courses': 'courses',
+  '/app/notes-library': 'notes_library',
+  '/app/daily-planner': 'daily_planner',
+  '/app/daily-coding-streak': 'daily_coding_streak',
+  '/app/coding-accounts': 'coding_profiles',
+  '/app/write-test': 'write_test',
+  '/app/class-schedule': 'live_classes',
+  '/app/internships': 'internships',
+  '/app/learn-with-ai': 'learn_with_ai',
+  '/app/know-your-level': 'know_your_level',
+  '/app/resume-builder': 'resume_builder',
+  '/app/career-support': 'career_support',
+  '/app/resume-reviews': 'resume_reviews',
+  '/app/mock-interviews': 'mock_interviews',
+  '/app/personal-roadmap': 'personal_roadmap',
+  '/app/career-roadmap': 'career_roadmap',
+  '/app/skill-up': 'skill_up',
+  '/app/company-exam': 'company_exams',
+  '/app/coding-playground': 'coding_playground',
+  '/app/discussion-forum': 'discussion_forum',
+  '/app/addons': 'add_ons',
+  '/app/attendance': 'attendance',
+  '/app/chat': 'ask_a_doubt',
+  '/app/guidance-sessions': 'mentorship_sessions',
+};
+
+const getNavItems = (role, { isPremium, isPremiumPlus, ahiAuthorized, vmiAccess, unreadChats, unreadNotifications, profile, hideFace }) => {
   const common = [
     { to: '/app', label: 'Dashboard', icon: LayoutDashboard, category: 'Quick Access' },
     { to: '/app/design', label: 'Design', icon: PenTool, category: 'Quick Access' },
@@ -75,11 +105,9 @@ const getNavItems = (role, { isPremium, isPremiumPlus, ahiAuthorized, vmiAccess,
     { to: '/app/career-roadmap', label: 'AI Career Roadmap', icon: Compass, category: 'Career' },
     { to: '/app/skill-up', label: 'SkillUp Yourself', icon: Trophy, category: 'Career' },
     { to: '/app/company-exam', label: 'Company Exams', icon: Building2, category: 'Exams' },
-    ...(isPremiumPlus ? [
-      { to: '/app/coding-playground', label: 'Coding Playground', icon: Code2, category: 'AI Tools' },
-      { to: '/app/discussion-forum', label: 'Discussion Forum', icon: MessageSquare, category: 'Community' },
-      { to: '/app/addons', label: 'Add Ons', icon: Package, category: 'Account' },
-    ] : []),
+    { to: '/app/coding-playground', label: 'Coding Playground', icon: Code2, category: 'AI Tools' },
+    { to: '/app/discussion-forum', label: 'Discussion Forum', icon: MessageSquare, category: 'Community' },
+    { to: '/app/addons', label: 'Add Ons', icon: Package, category: 'Account' },
     { to: '/app/attendance', label: 'Attendance', icon: ClipboardList, category: 'Account' },
     { to: '/app/chat', label: 'Ask a Doubt', icon: MessageCircle, category: 'Community', badge: unreadChats },
     { to: '/app/request-teacher', label: 'Request Teacher', icon: UserPlus, category: 'Community' },
@@ -88,7 +116,7 @@ const getNavItems = (role, { isPremium, isPremiumPlus, ahiAuthorized, vmiAccess,
     ...(!isPremium ? [{ to: '/app/payment', label: 'Buy Premium', icon: CreditCard, category: 'Account' }] : []),
     ...(isPremium && !isPremiumPlus ? [{ to: '/app/payment', label: 'Upgrade Premium Plus', icon: CreditCard, category: 'Account' }] : []),
     ...(ahiAuthorized ? [{ to: '/ahi-interview', label: 'AHI', icon: Bot, category: 'AI Tools' }] : []),
-    { to: '/app/face-register', label: 'Register Face', icon: ScanFace, category: 'Account' },
+    ...(hideFace ? [] : [{ to: '/app/face-register', label: 'Register Face', icon: ScanFace, category: 'Account' }]),
   ];
 
   const teacher = [
@@ -116,7 +144,7 @@ const getNavItems = (role, { isPremium, isPremiumPlus, ahiAuthorized, vmiAccess,
     { to: '/app/session-reassignments', label: 'Session Reassignments', icon: Users, category: 'Teaching' },
     { to: '/app/teacher-requests', label: 'Student Requests', icon: UserPlus, category: 'Teaching' },
     { to: '/app/report-issue', label: 'Report Issue', icon: Wrench, category: 'Account' },
-    { to: '/app/face-register', label: 'Register Face', icon: ScanFace, category: 'Account' },
+    ...(hideFace ? [] : [{ to: '/app/face-register', label: 'Register Face', icon: ScanFace, category: 'Account' }]),
   ];
 
   const admin = [
@@ -167,6 +195,7 @@ const getNavItems = (role, { isPremium, isPremiumPlus, ahiAuthorized, vmiAccess,
     { to: '/app/admin/send-notification', label: 'Send Notification', icon: Mail, category: 'Admin' },
     { to: '/app/admin/push-notifications', label: 'Push Notifications', icon: Bell, category: 'Admin' },
     { to: '/app/admin/maintenance', label: 'Maintenance Mode', icon: ShieldOff, category: 'Admin' },
+    { to: '/app/admin/hide-face', label: 'Hide Face', icon: ScanFace, category: 'Admin' },
     { to: '/app/admin/demo-sessions', label: 'Demo Sessions', icon: Video, category: 'Live' },
     { to: '/app/admin/exam-settings', label: 'Exam Settings', icon: FlaskConical, category: 'Exams' },
     { to: '/app/admin/exam-overrides', label: 'Exam Overrides', icon: Sliders, category: 'Exams' },
@@ -177,10 +206,14 @@ const getNavItems = (role, { isPremium, isPremiumPlus, ahiAuthorized, vmiAccess,
     { to: '/app/attendance', label: 'Attendance', icon: CheckSquare, category: 'Account' },
     { to: '/app/admin/guidance-sessions', label: 'Guidance Sessions', icon: Calendar, category: 'Live' },
     { to: '/app/report-issue', label: 'Report Issue', icon: Wrench, category: 'Account' },
-    { to: '/app/face-register', label: 'Register Face', icon: ScanFace, category: 'Account' },
+    ...(hideFace ? [] : [{ to: '/app/face-register', label: 'Register Face', icon: ScanFace, category: 'Account' }]),
   ];
 
-  const items = role === 'instructor' ? instructor : role === 'verifier' ? verifier : role === 'teacher' ? teacher : role === 'admin' ? admin : student;
+  const items = role === 'instructor' ? instructor : role === 'verifier' ? verifier : role === 'teacher' ? teacher : role === 'admin' ? admin : student
+    .filter((item) => {
+      if (item.to === '/app/request-teacher' && profile?.assigned_teacher_id) return false;
+      return true;
+    });
   return items;
 };
 
@@ -241,10 +274,27 @@ const categoryIconColor = {
 const FeatureGrid = ({ open, onClose }) => {
   const { profile, isPremium, isPremiumPlus } = useAuth();
   const role = profile?.role || 'student';
+  const hideFace = useFaceRegistrationHidden();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [lockedPlan, setLockedPlan] = useState(null);
 
-  const items = getNavItems(role, { isPremium, isPremiumPlus });
+  const openLockedPlan = (item) => {
+    const feature = STUDENT_ROUTE_FEATURES[item.to];
+    if (!feature || canUseFeature(profile, feature)) {
+      handleNav(item.to);
+      return;
+    }
+    const access = getFeatureAccess(profile, feature);
+    setLockedPlan({
+      label: item.label,
+      ctaLabel: access.ctaLabel || 'Buy Premium',
+      checkoutPlan: access.checkoutPlan || 'premium',
+      requiredPlan: access.requiredTier || 'premium',
+    });
+  };
+
+  const items = getNavItems(role, { isPremium, isPremiumPlus, profile, hideFace });
   const filtered = search
     ? items.filter(i => i.label.toLowerCase().includes(search.toLowerCase()))
     : items;
@@ -314,11 +364,13 @@ const FeatureGrid = ({ open, onClose }) => {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
               {grouped[cat].map((item) => {
                 const Icon = item.icon;
+                const feature = STUDENT_ROUTE_FEATURES[item.to];
+                const locked = Boolean(feature && !canUseFeature(profile, feature));
                 return (
                   <button
                     key={item.to}
                     type="button"
-                    onClick={() => handleNav(item.to)}
+                    onClick={() => openLockedPlan(item)}
                     className={`group relative flex flex-col items-center justify-center gap-2.5 rounded-2xl border p-4 md:p-5 transition-all duration-200 cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] ${categoryBg[cat] || 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}
                   >
                     {item.badge > 0 && (
@@ -326,11 +378,20 @@ const FeatureGrid = ({ open, onClose }) => {
                         {item.badge > 9 ? '9+' : item.badge}
                       </span>
                     )}
-                    <div className={`p-2.5 rounded-xl bg-white shadow-sm group-hover:shadow-md transition-shadow ${categoryIconColor[cat] || 'text-slate-600'}`}>
+                    {locked && (
+                      <span className="absolute top-2 left-2 rounded-full bg-amber-100 p-1 text-amber-700" title="Premium feature">
+                        <Lock size={12} />
+                      </span>
+                    )}
+                    <div className={`p-2.5 rounded-xl bg-white shadow-sm group-hover:shadow-md transition-shadow ${categoryIconColor[cat] || 'text-slate-600'} ${locked ? 'opacity-60' : ''}`}>
                       <Icon size={22} />
                     </div>
                     <span className="text-xs md:text-sm font-semibold text-slate-700 text-center leading-tight">{item.label}</span>
-                    <ChevronRight size={12} className="absolute bottom-2 right-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {locked ? (
+                      <ChevronRight size={12} className="absolute bottom-2 right-2 text-amber-400" />
+                    ) : (
+                      <ChevronRight size={12} className="absolute bottom-2 right-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
                   </button>
                 );
               })}
@@ -338,6 +399,52 @@ const FeatureGrid = ({ open, onClose }) => {
           </div>
         ))}
       </div>
+
+      {lockedPlan && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/60 p-3 sm:p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 sm:p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{lockedPlan.label}</h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  This feature is part of the {PLAN_LABELS[lockedPlan.requiredPlan] || lockedPlan.requiredPlan} plan.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLockedPlan(null)}
+                className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+                aria-label="Close upgrade prompt"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mt-6 space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const checkoutPath = buildPlanCheckoutPath(lockedPlan.checkoutPlan);
+                  setLockedPlan(null);
+                  handleNav(checkoutPath);
+                }}
+                className="w-full rounded-xl bg-gold-400 py-3 font-bold text-slate-900 hover:bg-gold-300"
+              >
+                {lockedPlan.ctaLabel}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLockedPlan(null);
+                  handleNav('/app/premium-status');
+                }}
+                className="w-full rounded-xl border border-slate-300 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                See Plans
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
