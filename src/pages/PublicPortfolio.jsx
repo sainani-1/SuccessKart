@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Award, ExternalLink, Github, Globe2, Link2, Linkedin, Mail, Phone, ShieldCheck } from 'lucide-react';
+import { Award, ExternalLink, Github, Globe2, Link2, Linkedin, Mail, MapPin, Phone, ShieldCheck } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import AvatarImage from '../components/AvatarImage';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -167,10 +167,22 @@ const PublicPortfolio = () => {
       .map((item) => ({ label: item.name?.trim() || 'Link', href: toExternalUrl(item.url), icon: Link2 })),
   ].filter((item) => item.href);
 
+  const overviewStats = [
+    { label: 'Skills', value: (Array.isArray(content.skills) ? content.skills : []).filter(Boolean).length },
+    { label: 'Projects', value: (Array.isArray(content.projects) ? content.projects : []).filter((project) => project?.title || project?.description || getItemLinks(project, 'link').length).length },
+    { label: 'Certs', value: certificates.length },
+  ].filter((stat) => stat.value > 0);
+
+  const isCompactProfile = String(content.summary || '').trim().length < 120;
+  const educationDetails = [
+    profile?.education_level,
+    profile?.study_stream || profile?.core_subject,
+  ].filter(Boolean).join(' ');
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <section className={`bg-gradient-to-br ${theme.hero} px-4 py-12 text-white sm:py-16`}>
-        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_320px] lg:items-end">
+        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_400px] lg:items-stretch">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white">
               <Globe2 size={14} />
@@ -191,19 +203,55 @@ const PublicPortfolio = () => {
               })}
             </div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-5 backdrop-blur">
-            <AvatarImage
-              userId={profile?.id || portfolio.user_id}
-              avatarUrl={profile?.avatar_url}
-              alt={profile?.full_name || portfolio.username}
-              fallbackName={profile?.full_name || portfolio.username}
-              className="h-28 w-28 rounded-2xl border-2 border-white/30 object-cover"
-            />
-            <h2 className="mt-4 text-2xl font-black">{profile?.full_name || portfolio.username}</h2>
-            <p className="mt-1 text-sm text-slate-300">@{portfolio.username}</p>
-            {content.location ? <p className="mt-3 text-sm text-slate-200">{content.location}</p> : null}
-            {profile?.education_level ? <p className="mt-2 text-sm text-slate-300">{profile.education_level}{profile.study_stream ? `, ${profile.study_stream}` : ''}</p> : null}
-            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-100">
+          <div className={`flex flex-col rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur ${isCompactProfile ? 'self-start' : 'h-full'}`}>
+            {isCompactProfile ? (
+              <AvatarImage
+                userId={profile?.id || portfolio.user_id}
+                avatarUrl={profile?.avatar_url}
+                alt={profile?.full_name || portfolio.username}
+                fallbackName={profile?.full_name || portfolio.username}
+                className="h-40 w-40 shrink-0 rounded-xl border-2 border-white/30 object-cover"
+              />
+            ) : (
+              <div className="relative min-h-[16rem] flex-1 overflow-hidden rounded-2xl border-2 border-white/30">
+                <AvatarImage
+                  userId={profile?.id || portfolio.user_id}
+                  avatarUrl={profile?.avatar_url}
+                  alt={profile?.full_name || portfolio.username}
+                  fallbackName={profile?.full_name || portfolio.username}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            )}
+            {content.location ? (
+              <p className={`${isCompactProfile ? 'mt-2 text-xs' : 'mt-3 text-sm'} flex shrink-0 items-center gap-1.5 text-slate-200`}>
+                <MapPin size={14} className="shrink-0" />
+                {content.location}
+              </p>
+            ) : null}
+            <div className={isCompactProfile ? 'mt-3 shrink-0' : 'mt-4 shrink-0'}>
+              <h2 className={`${isCompactProfile ? 'text-3xl' : 'text-4xl'} font-black leading-tight`}>{profile?.full_name || portfolio.username}</h2>
+              <p className="mt-1 text-sm text-slate-300">@{portfolio.username}</p>
+              {content.headline || content.role || portfolio.tagline ? (
+                <p className={`mt-2 line-clamp-2 text-sm font-bold ${theme.accent}`}>{content.headline || content.role || portfolio.tagline}</p>
+              ) : null}
+              {educationDetails ? (
+                <p className={`${isCompactProfile ? 'mt-1 text-xs' : 'mt-2 text-sm'} text-slate-300`}>
+                  <span className="font-semibold text-slate-100">Education:</span> {educationDetails}
+                </p>
+              ) : null}
+            </div>
+            {!isCompactProfile && overviewStats.length ? (
+              <div className="mt-4 grid shrink-0 grid-cols-3 gap-2">
+                {overviewStats.map((stat) => (
+                  <div key={stat.label} className="rounded-xl border border-white/10 bg-slate-950/20 px-2 py-2 text-center">
+                    <p className="text-lg font-black leading-none">{stat.value}</p>
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-300">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div className="mt-3 inline-flex w-fit shrink-0 items-center gap-2 self-start rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-100">
               <ShieldCheck size={15} />
               SuccessKart verified profile
             </div>
