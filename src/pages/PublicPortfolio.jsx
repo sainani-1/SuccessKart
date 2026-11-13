@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Award, ExternalLink, Github, Globe2, Linkedin, Mail, Phone, ShieldCheck } from 'lucide-react';
+import { Award, ExternalLink, Github, Globe2, Link2, Linkedin, Mail, Phone, ShieldCheck } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import AvatarImage from '../components/AvatarImage';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -31,6 +31,23 @@ const toExternalUrl = (value) => {
 };
 
 const isImageUrl = (value) => /\.(png|jpe?g|webp|gif|avif)(\?.*)?$/i.test(String(value || ''));
+
+const normalizeAchievement = (item) => (
+  typeof item === 'string'
+    ? { title: item, description: '' }
+    : { title: item?.title || '', description: item?.description || '' }
+);
+
+const getItemLinks = (item, legacyKey) => {
+  const links = Array.isArray(item?.links)
+    ? item.links
+      .filter((link) => link?.url)
+      .map((link) => ({ name: link.name?.trim() || '', url: toExternalUrl(link.url) }))
+    : [];
+  if (links.length) return links;
+  const legacy = item?.[legacyKey];
+  return legacy ? [{ name: '', url: toExternalUrl(legacy) }] : [];
+};
 
 const generateDeterministicCode = (seed) => {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -137,13 +154,17 @@ const PublicPortfolio = () => {
     );
   }
 
+  const phoneHref = String(content.phone || '').replace(/[^\d+]/g, '');
   const links = [
     { label: 'Email', href: content.email ? `mailto:${content.email}` : '', icon: Mail },
-    { label: 'Phone', href: content.phone ? `tel:${content.phone}` : '', icon: Phone },
+    { label: 'Phone', href: phoneHref ? `tel:${phoneHref}` : '', icon: Phone },
     { label: 'LinkedIn', href: toExternalUrl(content.linkedin), icon: Linkedin },
     { label: 'GitHub', href: toExternalUrl(content.github), icon: Github },
     { label: 'Website', href: toExternalUrl(content.website), icon: ExternalLink },
     { label: 'Resume / CV', href: resumeUrl, icon: ExternalLink },
+    ...(Array.isArray(content.links) ? content.links : [])
+      .filter((item) => item?.url)
+      .map((item) => ({ label: item.name?.trim() || 'Link', href: toExternalUrl(item.url), icon: Link2 })),
   ].filter((item) => item.href);
 
   return (
@@ -157,7 +178,7 @@ const PublicPortfolio = () => {
             </div>
             <h1 className="mt-6 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">{content.headline || portfolio.title}</h1>
             <p className={`mt-4 text-xl font-bold ${theme.accent}`}>{content.role || portfolio.tagline || profile?.core_subject || 'Student'}</p>
-            {content.summary ? <p className="mt-5 max-w-3xl text-base leading-8 text-slate-200">{content.summary}</p> : null}
+            {content.summary ? <ScrollText text={content.summary} maxHeight="max-h-48" className="portfolio-hero-scroll mt-5 max-w-3xl text-base leading-8 text-slate-200" /> : null}
             <div className="mt-7 flex flex-wrap gap-3">
               {links.map((item) => {
                 const Icon = item.icon;
@@ -196,13 +217,13 @@ const PublicPortfolio = () => {
             {content.about ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 className="text-2xl font-black">About Me</h2>
-                <p className="mt-4 text-sm leading-7 text-slate-600">{content.about}</p>
+                <ScrollText text={content.about} maxHeight="max-h-64" className="mt-4 text-sm leading-7 text-slate-600" />
               </div>
             ) : null}
             {content.goals ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 className="text-2xl font-black">Goals and Personality</h2>
-                <p className="mt-4 text-sm leading-7 text-slate-600">{content.goals}</p>
+                <ScrollText text={content.goals} maxHeight="max-h-64" className="mt-4 text-sm leading-7 text-slate-600" />
               </div>
             ) : null}
           </section>
@@ -283,74 +304,32 @@ const PublicPortfolio = () => {
           </section>
         ) : null}
 
-        {(content.caseStudies || []).filter((study) => study?.title || study?.problem || study?.process || study?.outcome).length ? (
+        {(content.caseStudies || []).filter((study) => study?.title || study?.problem || study?.process || study?.outcome || getItemLinks(study, 'link').length).length ? (
           <section>
             <h2 className="text-2xl font-black">Case Studies / Work Samples</h2>
             <div className="mt-4 grid gap-5">
-              {(content.caseStudies || []).filter((study) => study?.title || study?.problem || study?.process || study?.outcome).map((study, index) => (
-                <article key={index} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <h3 className="text-xl font-black">{study.title || `Case Study ${index + 1}`}</h3>
-                    {study.link ? (
-                      <a href={toExternalUrl(study.link)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-amber-700 hover:text-amber-800">
-                        View work
-                        <ExternalLink size={15} />
-                      </a>
-                    ) : null}
-                  </div>
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
-                    <CaseBlock title="Problem" value={study.problem} />
-                    <CaseBlock title="My Role" value={study.role} />
-                    <CaseBlock title="Process" value={study.process} />
-                    <CaseBlock title="Outcome" value={study.outcome} />
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {(content.projects || []).filter((project) => project?.title || project?.description).length ? (
-          <section>
-            <h2 className="text-2xl font-black">Projects</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {(content.projects || []).filter((project) => project?.title || project?.description).map((project, index) => (
-                <article key={index} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h3 className="text-lg font-black">{project.title || 'Untitled Project'}</h3>
-                  {project.description ? <p className="mt-3 text-sm leading-6 text-slate-600">{project.description}</p> : null}
-                  {project.link ? (
-                    <a href={toExternalUrl(project.link)} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-amber-700 hover:text-amber-800">
-                      View project
-                      <ExternalLink size={15} />
-                    </a>
-                  ) : null}
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {(content.visuals || []).filter((visual) => visual?.url || visual?.caption || visual?.title).length ? (
-          <section>
-            <h2 className="text-2xl font-black">Visual Work</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {(content.visuals || []).filter((visual) => visual?.url || visual?.caption || visual?.title).map((visual, index) => {
-                const visualUrl = toExternalUrl(visual.url);
+              {(content.caseStudies || []).filter((study) => study?.title || study?.problem || study?.process || study?.outcome || getItemLinks(study, 'link').length).map((study, index) => {
+                const studyLinks = getItemLinks(study, 'link');
                 return (
-                  <article key={index} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    {visualUrl && isImageUrl(visualUrl) ? (
-                      <img src={visualUrl} alt={visual.title || 'Portfolio visual'} className="h-64 w-full object-cover" />
-                    ) : visualUrl ? (
-                      <div className="flex h-40 items-center justify-center bg-slate-100">
-                        <a href={visualUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
-                          Open visual
-                          <ExternalLink size={15} />
-                        </a>
-                      </div>
-                    ) : null}
-                    <div className="p-5">
-                      <h3 className="font-black">{visual.title || `Visual ${index + 1}`}</h3>
-                      {visual.caption ? <p className="mt-2 text-sm leading-6 text-slate-600">{visual.caption}</p> : null}
+                  <article key={index} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <h3 className="text-xl font-black">{study.title || `Case Study ${index + 1}`}</h3>
+                      {studyLinks.length ? (
+                        <div className="flex flex-wrap gap-2 sm:justify-end">
+                          {studyLinks.map((link, linkIndex) => (
+                            <a key={linkIndex} href={link.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-700 hover:bg-amber-100">
+                              {link.name || 'View work'}
+                              <ExternalLink size={15} />
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                      <CaseBlock title="Problem" value={study.problem} />
+                      <CaseBlock title="My Role" value={study.role} />
+                      <CaseBlock title="Process" value={study.process} />
+                      <CaseBlock title="Outcome" value={study.outcome} />
                     </div>
                   </article>
                 );
@@ -359,33 +338,106 @@ const PublicPortfolio = () => {
           </section>
         ) : null}
 
-        {(content.processDocs || []).filter((doc) => doc?.title || doc?.description || doc?.link).length ? (
+        {(content.projects || []).filter((project) => project?.title || project?.description || getItemLinks(project, 'link').length).length ? (
           <section>
-            <h2 className="text-2xl font-black">Process Documentation</h2>
+            <h2 className="text-2xl font-black">Projects</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {(content.processDocs || []).filter((doc) => doc?.title || doc?.description || doc?.link).map((doc, index) => (
-                <article key={index} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h3 className="text-lg font-black">{doc.title || `Process Item ${index + 1}`}</h3>
-                  {doc.description ? <p className="mt-3 text-sm leading-6 text-slate-600">{doc.description}</p> : null}
-                  {doc.link ? (
-                    <a href={toExternalUrl(doc.link)} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-amber-700 hover:text-amber-800">
-                      View prototype/document
-                      <ExternalLink size={15} />
-                    </a>
-                  ) : null}
-                </article>
-              ))}
+              {(content.projects || []).filter((project) => project?.title || project?.description || getItemLinks(project, 'link').length).map((project, index) => {
+                const projectLinks = getItemLinks(project, 'link');
+                return (
+                  <article key={index} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h3 className="text-lg font-black">{project.title || 'Untitled Project'}</h3>
+                    {project.description ? <ScrollText text={project.description} maxHeight="max-h-40" className="mt-3 text-sm leading-6 text-slate-600" /> : null}
+                    {projectLinks.length ? (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {projectLinks.map((link, linkIndex) => (
+                          <a key={linkIndex} href={link.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-700 hover:bg-amber-100">
+                            {link.name || 'View project'}
+                            <ExternalLink size={15} />
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
             </div>
           </section>
         ) : null}
 
-        {(content.achievements || []).filter(Boolean).length ? (
+        {(content.visuals || []).filter((visual) => visual?.caption || visual?.title || getItemLinks(visual, 'url').length).length ? (
+          <section>
+            <h2 className="text-2xl font-black">Visual Work</h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {(content.visuals || []).filter((visual) => visual?.caption || visual?.title || getItemLinks(visual, 'url').length).map((visual, index) => {
+                const visualLinks = getItemLinks(visual, 'url');
+                return (
+                  <article key={index} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    {visualLinks.length ? (
+                      <div className="grid gap-2">
+                        {visualLinks.map((link, linkIndex) => (
+                          isImageUrl(link.url) ? (
+                            <a key={linkIndex} href={link.url} target="_blank" rel="noreferrer" className="block">
+                              <img src={link.url} alt={link.name || visual.title || 'Portfolio visual'} className="h-64 w-full object-cover" />
+                              {link.name ? <span className="block bg-slate-50 px-5 py-2 text-xs font-bold text-slate-500">{link.name}</span> : null}
+                            </a>
+                          ) : (
+                            <div key={linkIndex} className="flex h-40 items-center justify-center bg-slate-100">
+                              <a href={link.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
+                                {link.name || 'Open visual'}
+                                <ExternalLink size={15} />
+                              </a>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className="p-5">
+                      <h3 className="font-black">{visual.title || `Visual ${index + 1}`}</h3>
+                      {visual.caption ? <ScrollText text={visual.caption} maxHeight="max-h-32" className="mt-2 text-sm leading-6 text-slate-600" /> : null}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
+
+        {(content.processDocs || []).filter((doc) => doc?.title || doc?.description || getItemLinks(doc, 'link').length).length ? (
+          <section>
+            <h2 className="text-2xl font-black">Process Documentation</h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {(content.processDocs || []).filter((doc) => doc?.title || doc?.description || getItemLinks(doc, 'link').length).map((doc, index) => {
+                const docLinks = getItemLinks(doc, 'link');
+                return (
+                  <article key={index} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h3 className="text-lg font-black">{doc.title || `Process Item ${index + 1}`}</h3>
+                    {doc.description ? <ScrollText text={doc.description} maxHeight="max-h-40" className="mt-3 text-sm leading-6 text-slate-600" /> : null}
+                    {docLinks.length ? (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {docLinks.map((link, linkIndex) => (
+                          <a key={linkIndex} href={link.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-700 hover:bg-amber-100">
+                            {link.name || 'View prototype/document'}
+                            <ExternalLink size={15} />
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
+
+        {(Array.isArray(content.achievements) ? content.achievements : []).map(normalizeAchievement).filter((item) => item.title || item.description).length ? (
           <section>
             <h2 className="text-2xl font-black">Achievements</h2>
             <div className="mt-4 grid gap-3">
-              {(content.achievements || []).filter(Boolean).map((item, index) => (
-                <div key={`${item}-${index}`} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 shadow-sm">
-                  {item}
+              {(Array.isArray(content.achievements) ? content.achievements : []).map(normalizeAchievement).filter((item) => item.title || item.description).map((item, index) => (
+                <div key={`${item.title}-${index}`} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                  {item.title ? <p className="text-sm font-bold text-slate-900">{item.title}</p> : null}
+                  {item.description ? <ScrollText text={item.description} maxHeight="max-h-32" className="mt-2 text-sm leading-6 text-slate-600" /> : null}
                 </div>
               ))}
             </div>
@@ -398,7 +450,9 @@ const PublicPortfolio = () => {
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               {(content.testimonials || []).filter((item) => item?.quote || item?.author).map((item, index) => (
                 <figure key={index} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  {item.quote ? <blockquote className="text-sm leading-7 text-slate-700">"{item.quote}"</blockquote> : null}
+                  {item.quote ? (
+                    <ScrollText text={`"${item.quote}"`} maxHeight="max-h-40" className="text-sm leading-7 text-slate-700" />
+                  ) : null}
                   <figcaption className="mt-4">
                     <p className="font-black text-slate-900">{item.author || 'Reviewer'}</p>
                     {item.context ? <p className="text-sm text-slate-500">{item.context}</p> : null}
@@ -413,12 +467,19 @@ const PublicPortfolio = () => {
   );
 };
 
+const ScrollText = ({ text, className = '', maxHeight = 'max-h-48' }) => {
+  if (!text) return null;
+  return (
+    <div className={`${maxHeight} overflow-y-auto whitespace-pre-line break-words pr-1 ${className}`}>{text}</div>
+  );
+};
+
 const CaseBlock = ({ title, value }) => {
   if (!value) return null;
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-700">{value}</p>
+      <ScrollText text={value} className="mt-2 text-sm leading-6 text-slate-700" />
     </div>
   );
 };

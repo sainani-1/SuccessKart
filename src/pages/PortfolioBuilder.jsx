@@ -4,12 +4,55 @@ import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-const emptyProject = { title: '', description: '', link: '' };
+const emptyProject = { title: '', description: '', links: [] };
 const emptySkill = '';
-const emptyCaseStudy = { title: '', problem: '', process: '', role: '', outcome: '', link: '' };
+const emptyCaseStudy = { title: '', problem: '', process: '', role: '', outcome: '', links: [] };
 const emptyTestimonial = { quote: '', author: '', context: '' };
-const emptyVisual = { title: '', url: '', caption: '' };
-const emptyProcessDoc = { title: '', description: '', link: '' };
+const emptyVisual = { title: '', caption: '', links: [] };
+const emptyProcessDoc = { title: '', description: '', links: [] };
+const emptyAchievement = { title: '', description: '' };
+const emptyLink = { name: '', url: '' };
+
+const normalizeLinks = (links, legacyUrl) => {
+  if (Array.isArray(links) && links.length) {
+    return links.map((item) => ({ name: item?.name || '', url: item?.url || '' }));
+  }
+  return legacyUrl ? [{ name: '', url: legacyUrl }] : [];
+};
+
+const normalizeContent = (value) => {
+  const source = value || {};
+  const achievements = Array.isArray(source.achievements) ? source.achievements : [];
+  const projects = (Array.isArray(source.projects) ? source.projects : []).map((item) => {
+    const { link, ...rest } = item || {};
+    return { ...rest, links: normalizeLinks(item?.links, link) };
+  });
+  const caseStudies = (Array.isArray(source.caseStudies) ? source.caseStudies : []).map((item) => {
+    const { link, linkLabel, ...rest } = item || {};
+    return { ...rest, links: normalizeLinks(item?.links, link) };
+  });
+  const visuals = (Array.isArray(source.visuals) ? source.visuals : []).map((item) => {
+    const { url, linkLabel, ...rest } = item || {};
+    return { ...rest, links: normalizeLinks(item?.links, url) };
+  });
+  const processDocs = (Array.isArray(source.processDocs) ? source.processDocs : []).map((item) => {
+    const { link, linkLabel, ...rest } = item || {};
+    return { ...rest, links: normalizeLinks(item?.links, link) };
+  });
+  return {
+    ...source,
+    links: Array.isArray(source.links) ? source.links : [],
+    achievements: achievements.map((item) =>
+      typeof item === 'string'
+        ? { title: item, description: '' }
+        : { title: item?.title || '', description: item?.description || '' }
+    ),
+    caseStudies,
+    visuals,
+    processDocs,
+    projects,
+  };
+};
 
 const defaultContent = (profile) => ({
   headline: profile?.full_name ? `${profile.full_name} Portfolio` : 'My Portfolio',
@@ -24,15 +67,16 @@ const defaultContent = (profile) => ({
   linkedin: '',
   github: '',
   website: '',
+  links: [],
   skills: ['Communication', 'Problem Solving', 'Learning'],
   projects: [
     {
       title: 'SuccessKart Learning Journey',
       description: 'A collection of courses, certificates, and practical work completed through SuccessKart.',
-      link: '',
+      links: [],
     },
   ],
-  achievements: ['SuccessKart learner'],
+  achievements: [{ title: 'SuccessKart learner', description: '' }],
   caseStudies: [],
   testimonials: [],
   visuals: [],
@@ -58,7 +102,8 @@ const PortfolioBuilder = () => {
     return `${window.location.origin}/view-portfolio/${encodeURIComponent(username)}`;
   }, [username]);
 
-  const content = portfolio?.content || defaultContent(profile);
+  const rawContent = portfolio?.content || defaultContent(profile);
+  const content = useMemo(() => normalizeContent(rawContent), [rawContent]);
 
   useEffect(() => {
     let active = true;
@@ -147,6 +192,40 @@ const PortfolioBuilder = () => {
     const next = [...(content.processDocs || [])];
     next[index] = { ...next[index], ...patch };
     updateContent({ processDocs: next });
+  };
+
+  const updateAchievement = (index, patch) => {
+    const next = [...(content.achievements || [])];
+    next[index] = { ...next[index], ...patch };
+    updateContent({ achievements: next });
+  };
+
+  const updateLink = (index, patch) => {
+    const next = [...(content.links || [])];
+    next[index] = { ...next[index], ...patch };
+    updateContent({ links: next });
+  };
+
+  const updateItemLink = (key, itemIndex, linkIndex, patch) => {
+    const items = [...(content[key] || [])];
+    const links = [...(items[itemIndex]?.links || [])];
+    links[linkIndex] = { ...links[linkIndex], ...patch };
+    items[itemIndex] = { ...items[itemIndex], links };
+    updateContent({ [key]: items });
+  };
+
+  const addItemLink = (key, itemIndex) => {
+    const items = [...(content[key] || [])];
+    items[itemIndex] = { ...items[itemIndex], links: [...(items[itemIndex]?.links || []), emptyLink] };
+    updateContent({ [key]: items });
+  };
+
+  const removeItemLink = (key, itemIndex, linkIndex) => {
+    const items = [...(content[key] || [])];
+    const links = [...(items[itemIndex]?.links || [])];
+    links.splice(linkIndex, 1);
+    items[itemIndex] = { ...items[itemIndex], links };
+    updateContent({ [key]: items });
   };
 
   const savePortfolio = async (publish = false) => {
@@ -266,11 +345,26 @@ const PortfolioBuilder = () => {
           <EditorPanel title="Contact Links">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Email" value={content.email || ''} onChange={(value) => updateContent({ email: value })} />
-              <Field label="Phone" value={content.phone || ''} onChange={(value) => updateContent({ phone: value })} />
+              <Field label="Phone" type="tel" placeholder="+91 9XXXXXXXXX" value={content.phone || ''} onChange={(value) => updateContent({ phone: value })} />
               <Field label="LinkedIn URL" value={content.linkedin || ''} onChange={(value) => updateContent({ linkedin: value })} />
               <Field label="GitHub URL" value={content.github || ''} onChange={(value) => updateContent({ github: value })} />
               <Field label="Website URL" value={content.website || ''} onChange={(value) => updateContent({ website: value })} />
               <Field label="Resume / CV URL" value={content.resumeUrl || ''} onChange={(value) => updateContent({ resumeUrl: value })} />
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="font-bold text-slate-900">Extra Links</p>
+              <div className="mt-3 space-y-3">
+                {(content.links || []).map((link, index) => (
+                  <div key={index} className="grid gap-3 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end">
+                    <Field label="Name" value={link.name || ''} onChange={(value) => updateLink(index, { name: value })} />
+                    <Field label="Link" value={link.url || ''} onChange={(value) => updateLink(index, { url: value })} />
+                    <button type="button" onClick={() => removeListItem('links', index)} className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-500 hover:bg-red-50">
+                      <Trash2 size={17} />
+                    </button>
+                  </div>
+                ))}
+                <AddButton label="Add link" onClick={() => updateContent({ links: [...(content.links || []), emptyLink] })} />
+              </div>
             </div>
           </EditorPanel>
 
@@ -302,7 +396,13 @@ const PortfolioBuilder = () => {
                   <div className="mt-3 grid gap-3">
                     <Field label="Title" value={project.title || ''} onChange={(value) => updateProject(index, { title: value })} />
                     <TextArea label="Description" value={project.description || ''} onChange={(value) => updateProject(index, { description: value })} />
-                    <Field label="Project Link" value={project.link || ''} onChange={(value) => updateProject(index, { link: value })} />
+                    <LinkListEditor
+                      label="Project Links"
+                      links={project.links}
+                      onUpdate={(linkIndex, patch) => updateItemLink('projects', index, linkIndex, patch)}
+                      onAdd={() => addItemLink('projects', index)}
+                      onRemove={(linkIndex) => removeItemLink('projects', index, linkIndex)}
+                    />
                   </div>
                 </div>
               ))}
@@ -326,7 +426,13 @@ const PortfolioBuilder = () => {
                     <TextArea label="Your Process" value={study.process || ''} onChange={(value) => updateCaseStudy(index, { process: value })} />
                     <Field label="Your Specific Role" value={study.role || ''} onChange={(value) => updateCaseStudy(index, { role: value })} />
                     <TextArea label="Final Outcome" value={study.outcome || ''} onChange={(value) => updateCaseStudy(index, { outcome: value })} />
-                    <Field label="Work Sample Link" value={study.link || ''} onChange={(value) => updateCaseStudy(index, { link: value })} />
+                    <LinkListEditor
+                      label="Work Sample Links"
+                      links={study.links}
+                      onUpdate={(linkIndex, patch) => updateItemLink('caseStudies', index, linkIndex, patch)}
+                      onAdd={() => addItemLink('caseStudies', index)}
+                      onRemove={(linkIndex) => removeItemLink('caseStudies', index, linkIndex)}
+                    />
                   </div>
                 </div>
               ))}
@@ -346,7 +452,13 @@ const PortfolioBuilder = () => {
                   </div>
                   <div className="mt-3 grid gap-3">
                     <Field label="Title" value={visual.title || ''} onChange={(value) => updateVisual(index, { title: value })} />
-                    <Field label="Image / Video URL" value={visual.url || ''} onChange={(value) => updateVisual(index, { url: value })} />
+                    <LinkListEditor
+                      label="Image / Video Links"
+                      links={visual.links}
+                      onUpdate={(linkIndex, patch) => updateItemLink('visuals', index, linkIndex, patch)}
+                      onAdd={() => addItemLink('visuals', index)}
+                      onRemove={(linkIndex) => removeItemLink('visuals', index, linkIndex)}
+                    />
                     <TextArea label="Caption" value={visual.caption || ''} onChange={(value) => updateVisual(index, { caption: value })} />
                   </div>
                 </div>
@@ -368,7 +480,13 @@ const PortfolioBuilder = () => {
                   <div className="mt-3 grid gap-3">
                     <Field label="Title" value={doc.title || ''} onChange={(value) => updateProcessDoc(index, { title: value })} />
                     <TextArea label="Sketches, Drafts, Prototype Notes" value={doc.description || ''} onChange={(value) => updateProcessDoc(index, { description: value })} />
-                    <Field label="Prototype / Document Link" value={doc.link || ''} onChange={(value) => updateProcessDoc(index, { link: value })} />
+                    <LinkListEditor
+                      label="Prototype / Document Links"
+                      links={doc.links}
+                      onUpdate={(linkIndex, patch) => updateItemLink('processDocs', index, linkIndex, patch)}
+                      onAdd={() => addItemLink('processDocs', index)}
+                      onRemove={(linkIndex) => removeItemLink('processDocs', index, linkIndex)}
+                    />
                   </div>
                 </div>
               ))}
@@ -379,15 +497,21 @@ const PortfolioBuilder = () => {
           <EditorPanel title="Achievements">
             <div className="space-y-3">
               {(content.achievements || []).map((item, index) => (
-                <ListRow
-                  key={index}
-                  value={item}
-                  placeholder="Achievement"
-                  onChange={(value) => updateListItem('achievements', index, value)}
-                  onRemove={() => removeListItem('achievements', index)}
-                />
+                <div key={index} className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <ListRow
+                    value={item.title || ''}
+                    placeholder="Achievement"
+                    onChange={(value) => updateAchievement(index, { title: value })}
+                    onRemove={() => removeListItem('achievements', index)}
+                  />
+                  <TextArea
+                    label="Description (optional)"
+                    value={item.description || ''}
+                    onChange={(value) => updateAchievement(index, { description: value })}
+                  />
+                </div>
               ))}
-              <AddButton label="Add achievement" onClick={() => updateContent({ achievements: [...(content.achievements || []), ''] })} />
+              <AddButton label="Add achievement" onClick={() => updateContent({ achievements: [...(content.achievements || []), emptyAchievement] })} />
             </div>
           </EditorPanel>
 
@@ -454,11 +578,13 @@ const EditorPanel = ({ title, children }) => (
   </section>
 );
 
-const Field = ({ label, value, onChange }) => (
+const Field = ({ label, value, onChange, placeholder = '', type = 'text' }) => (
   <div>
     <label className="mb-2 block text-sm font-semibold text-slate-700">{label}</label>
     <input
+      type={type}
       value={value}
+      placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
     />
@@ -488,6 +614,24 @@ const ListRow = ({ value, placeholder, onChange, onRemove }) => (
     <button type="button" onClick={onRemove} className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-500 hover:bg-red-50">
       <Trash2 size={17} />
     </button>
+  </div>
+);
+
+const LinkListEditor = ({ label, links, onUpdate, onAdd, onRemove }) => (
+  <div>
+    <label className="mb-2 block text-sm font-semibold text-slate-700">{label}</label>
+    <div className="space-y-3">
+      {(links || []).map((link, index) => (
+        <div key={index} className="grid gap-3 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end">
+          <Field label="Name" value={link.name || ''} onChange={(value) => onUpdate(index, { name: value })} />
+          <Field label="Link" value={link.url || ''} onChange={(value) => onUpdate(index, { url: value })} />
+          <button type="button" onClick={() => onRemove(index)} className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-500 hover:bg-red-50">
+            <Trash2 size={17} />
+          </button>
+        </div>
+      ))}
+      <AddButton label="Add link" onClick={onAdd} />
+    </div>
   </div>
 );
 
