@@ -182,6 +182,17 @@ const PublicPortfolio = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <section className={`bg-gradient-to-br ${theme.hero} px-4 py-12 text-white sm:py-16`}>
+        <div className="mx-auto mb-8 flex max-w-6xl items-center gap-4">
+          <img
+            src="/NewLogo.jpeg"
+            alt="SuccessKart logo"
+            className="h-16 w-16 rounded-2xl border border-white/30 bg-white object-contain p-1 shadow-lg"
+          />
+          <div>
+            <p className="text-2xl font-black leading-none tracking-tight">SuccessKart</p>
+            <p className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-300">Student Portfolio</p>
+          </div>
+        </div>
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_400px] lg:items-stretch">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white">
