@@ -30,8 +30,6 @@ const toExternalUrl = (value) => {
   return `https://${url}`;
 };
 
-const isImageUrl = (value) => /\.(png|jpe?g|webp|gif|avif)(\?.*)?$/i.test(String(value || ''));
-
 const normalizeAchievement = (item) => (
   typeof item === 'string'
     ? { title: item, description: '' }
@@ -135,6 +133,25 @@ const PublicPortfolio = () => {
     };
   }, [decodedUsername]);
 
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      const key = String(event.key || '').toLowerCase();
+      const withModifier = event.ctrlKey || event.metaKey;
+      const isPrintScreen = key === 'printscreen';
+      const isPrint = withModifier && key === 'p';
+      const isSave = withModifier && event.shiftKey && key === 's';
+      const isMacCapture = withModifier && event.shiftKey && ['3', '4', '5'].includes(key);
+      if (!isPrintScreen && !isPrint && !isSave && !isMacCapture) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText('Screenshots are not allowed on this portfolio.').catch(() => {});
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, []);
+
   if (loading) return <LoadingSpinner message="Opening portfolio..." />;
 
   if (error || !portfolio) {
@@ -181,8 +198,9 @@ const PublicPortfolio = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
+      <style>{'@media print { body { visibility: hidden !important; } }'}</style>
       <section className={`bg-gradient-to-br ${theme.hero} px-4 py-12 text-white sm:py-16`}>
-        <div className="mx-auto mb-8 flex max-w-6xl items-center gap-4">
+        <Link to="/" className="mx-auto mb-8 flex max-w-6xl items-center gap-4 transition hover:opacity-90">
           <img
             src="/NewLogo.jpeg"
             alt="SuccessKart logo"
@@ -190,9 +208,8 @@ const PublicPortfolio = () => {
           />
           <div>
             <p className="text-2xl font-black leading-none tracking-tight">SuccessKart</p>
-            <p className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-300">Student Portfolio</p>
           </div>
-        </div>
+        </Link>
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_400px] lg:items-stretch">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white">
@@ -221,7 +238,9 @@ const PublicPortfolio = () => {
                 avatarUrl={profile?.avatar_url}
                 alt={profile?.full_name || portfolio.username}
                 fallbackName={profile?.full_name || portfolio.username}
-                className="h-40 w-40 shrink-0 rounded-xl border-2 border-white/30 object-cover"
+                draggable={false}
+                onContextMenu={(event) => event.preventDefault()}
+                className="h-40 w-40 shrink-0 select-none rounded-xl border-2 border-white/30 object-cover"
               />
             ) : (
               <div className="relative min-h-[16rem] flex-1 overflow-hidden rounded-2xl border-2 border-white/30">
@@ -230,7 +249,9 @@ const PublicPortfolio = () => {
                   avatarUrl={profile?.avatar_url}
                   alt={profile?.full_name || portfolio.username}
                   fallbackName={profile?.full_name || portfolio.username}
-                  className="h-full w-full object-cover"
+                  draggable={false}
+                  onContextMenu={(event) => event.preventDefault()}
+                  className="h-full w-full select-none object-cover"
                 />
               </div>
             )}
@@ -435,19 +456,7 @@ const PublicPortfolio = () => {
                     {visualLinks.length ? (
                       <div className="grid gap-2">
                         {visualLinks.map((link, linkIndex) => (
-                          isImageUrl(link.url) ? (
-                            <a key={linkIndex} href={link.url} target="_blank" rel="noreferrer" className="block">
-                              <img src={link.url} alt={link.name || visual.title || 'Portfolio visual'} className="h-64 w-full object-cover" />
-                              {link.name ? <span className="block bg-slate-50 px-5 py-2 text-xs font-bold text-slate-500">{link.name}</span> : null}
-                            </a>
-                          ) : (
-                            <div key={linkIndex} className="flex h-40 items-center justify-center bg-slate-100">
-                              <a href={link.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
-                                {link.name || 'Open visual'}
-                                <ExternalLink size={15} />
-                              </a>
-                            </div>
-                          )
+                          <VisualPreview key={linkIndex} link={link} fallbackAlt={visual.title || 'Portfolio visual'} />
                         ))}
                       </div>
                     ) : null}
@@ -523,6 +532,53 @@ const PublicPortfolio = () => {
         ) : null}
       </main>
     </div>
+  );
+};
+
+const getGoogleDriveId = (value) => {
+  const url = String(value || '');
+  const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/i);
+  if (fileMatch) return fileMatch[1];
+  const openMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:[^#]*&)?id=([^&#]+)/i);
+  if (openMatch) return openMatch[1];
+  return '';
+};
+
+const VisualPreview = ({ link, fallbackAlt }) => {
+  const driveId = getGoogleDriveId(link.url);
+  const sources = driveId
+    ? [
+      `https://drive.google.com/thumbnail?id=${driveId}&sz=w1200`,
+      `https://lh3.googleusercontent.com/d/${driveId}=w1200`,
+      link.url,
+    ]
+    : [link.url];
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const failed = sourceIndex >= sources.length;
+
+  if (failed) {
+    return (
+      <div className="flex h-40 items-center justify-center bg-slate-100">
+        <a href={link.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
+          {link.name || 'Open visual'}
+          <ExternalLink size={15} />
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <a href={link.url} target="_blank" rel="noreferrer" className="block">
+      <img
+        src={sources[sourceIndex]}
+        alt={link.name || fallbackAlt || 'Portfolio visual'}
+        className="h-64 w-full bg-slate-100 object-contain"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => setSourceIndex((current) => current + 1)}
+      />
+      {link.name ? <span className="block bg-slate-50 px-5 py-2 text-xs font-bold text-slate-500">{link.name}</span> : null}
+    </a>
   );
 };
 

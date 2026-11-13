@@ -6,7 +6,7 @@ import {
   normalizeAvatarUrl
 } from '../utils/avatarUtils';
 
-const AvatarImage = ({ userId, avatarUrl, alt = 'Avatar', className = '', fallbackName = 'User' }) => {
+const AvatarImage = ({ userId, avatarUrl, alt = 'Avatar', className = '', fallbackName = 'User', draggable = false, onContextMenu }) => {
   const [index, setIndex] = useState(0);
 
   const candidates = useMemo(() => {
@@ -44,6 +44,11 @@ const AvatarImage = ({ userId, avatarUrl, alt = 'Avatar', className = '', fallba
       loading="eager"
       decoding="async"
       fetchpriority="high"
+      draggable={draggable}
+      onContextMenu={onContextMenu}
+      onDragStart={(event) => {
+        if (!draggable) event.preventDefault();
+      }}
       onError={() => {
         setIndex((i) => (i < candidates.length - 1 ? i + 1 : i));
       }}
