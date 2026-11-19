@@ -845,7 +845,7 @@ const Payment = () => {
   const handleGatewayFailure = async (error, defaultMessage = 'Your payment did not complete. Please try again.') => {
     const failureMessage = error?.description || error?.reason || error?.step || defaultMessage;
 
-    await finalizePayment(
+    const result = await finalizePayment(
       {
         status: 'failed',
         razorpay_payment_id: error?.metadata?.payment_id || null,
@@ -853,6 +853,15 @@ const Payment = () => {
       },
       failureMessage
     );
+
+    if (result) {
+      setAlertModal({
+        show: true,
+        title: 'Payment Cancelled',
+        message: error ? failureMessage : 'Your payment was cancelled. No amount was charged.',
+        type: 'warning',
+      });
+    }
 
     resetAttemptState();
   };
